@@ -79,7 +79,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0001 — Backend Application Skeleton
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Initialize the FastAPI application with CORS middleware, lifespan, and the modular router structure defined in SPEC Section 4.
 
@@ -133,7 +133,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0002 — Frontend Application Skeleton
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Initialize the Next.js 14 App Router project with Ant Design 5, React Markdown, and the project structure defined in SPEC Section 4.
 

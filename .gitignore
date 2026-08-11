@@ -41,6 +41,9 @@ data/
 # Dependencies
 node_modules/
 
+# Next.js
+.next/
+
 # Test
 .pytest_cache/
 .coverage
