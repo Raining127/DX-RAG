@@ -269,7 +269,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0005 — Pydantic Data Models & API Schemas
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Define all shared Pydantic request/response models matching SPEC Section 6 API contracts and SPEC Section 7 Data Models.
 
