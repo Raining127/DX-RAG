@@ -225,7 +225,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0004 — Unified Error Response & Global Exception Handler
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement the unified error response format (SPEC Section 6.7) and a global FastAPI exception handler that formats all unhandled errors.
 
