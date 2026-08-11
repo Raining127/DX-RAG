@@ -183,7 +183,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0003 — Configuration Foundation
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement the Pydantic `BaseSettings` configuration model that loads all Section 8.1 parameters from environment variables.
 
