@@ -22,9 +22,9 @@ SPEC.md  >  TASKS.md  >  CLAUDE.md
 ## Current State
 
 - **SPEC:** v1.4 FROZEN, 0 Blocking Questions
-- **Tasks:** 54 implementation Tasks across 13 phases, all `TODO`
-- **Implementation:** Not started
-- **First Task:** T0001 (Backend Application Skeleton)
+- **Tasks:** 54 implementation Tasks across 13 phases
+- **Implementation status:** `docs/TASKS.md` is the authoritative source for all Task statuses
+- **Before starting any Task:** Read TASKS.md to determine the current state — do not rely on CLAUDE.md for which Tasks are DONE, TODO, or in-progress
 
 ## Core Rule — One Task At A Time
 

@@ -57,6 +57,8 @@ _ERROR_CATALOG: Dict[str, tuple] = {
     "ENCRYPTED_PDF": (422, "PDF文件已加密，无法解析"),
     "OCR_NOT_CONFIGURED": (500, "DashScope API密钥未配置"),
     "OCR_AUTH_FAILED": (500, "DashScope API认证失败"),
+    # WARNING-ONLY codes (SPEC Section 9.2: used in UploadResponse.warnings[],
+    # NOT raised as standalone AppError — HTTP status is a sentinel, never exposed)
     "OCR_PAGE_FAILED": (500, "OCR识别单页失败"),
     "PAGE_RENDER_FAILED": (500, "页面渲染失败"),
     # --- Query ---
