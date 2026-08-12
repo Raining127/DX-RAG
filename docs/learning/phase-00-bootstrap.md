@@ -1,218 +1,416 @@
 # Phase 0 — Project Bootstrap 学习笔记
 
----
-
-## 1. Phase 0 到底解决了什么问题
-
-### 为什么一个项目不能一开始就直接写 RAG
-
-想象你要盖一栋楼。地基、水电管道、墙壁粉刷可以同时进行吗？可以——但前提是你已经画好了建筑图纸，确定了每面墙的位置。
-
-Phase 0 就是 **画建筑图纸的过程**。
-
-如果跳过 Phase 0 直接开始写 RAG 检索逻辑，你会遇到：
-
-- **配置散落各处**: `DEEPSEEK_API_KEY` 在 `qa.py` 里硬编码，`CHROMA_PERSIST_DIR` 在 `vector_store.py` 里写死。改一个配置要搜遍整个项目。
-- **错误格式混乱**: 某个 endpoint 返回 `{"error": "something wrong"}`，另一个返回 `{"detail": "bad request"}`。前端同学要写 N 种不同的错误解析逻辑。
-- **代码无处安放**: 新建一个 API endpoint，不知道该放在哪个目录。"放 `backend/` 根目录？`backend/api/`？`backend/routers/`？"
-- **依赖冲突**: A 同事 pip install 了 chromadb 0.4.15，B 同事装了 0.5.0，代码在两边表现不一致。
-
-Phase 0 解决的就是这些问题。它为之后的所有 Phase 提供了：
-
-| 基础能力 | 对应 Task | 后续谁依赖它 |
-|----------|----------|------------|
-| 项目目录结构 | T0001, T0002 | 所有后续 Task 都知道代码放哪 |
-| 配置管理 | T0003 | 所有需要读取配置的模块 |
-| 错误处理基础 | T0004 | 所有 API endpoint |
-| 数据模型定义 | T0005 | 所有需要定义 Request/Response 的 Task |
-| 依赖声明 | T0001, T0002 | 所有需要引入新库的 Task |
+> 这是一份随项目开发和个人理解逐步演进的学习文档。当前版本优先服务于"前端开发者进入 Python 后端"的第一阶段理解；后续可以随着 Phase 推进补充更深入内容。
 
 ---
 
-## 2. Phase 0 完成了哪些 Tasks
+## 0. 阅读指南
+
+### 这一章的目标是什么
+
+读完 Phase 0 后，你不需要成为 Python 专家。你只需要做到：
+
+- 能基本看懂项目里的 Python 代码
+- 知道每个模块（main.py、config.py、errors.py、schemas.py）是干什么的
+- 能用你已有的 TypeScript / React 知识来理解 Python 后端的结构
+- 知道将来你自己的代码应该放在哪个目录
+
+### 本章阅读路线
+
+| 章节 | 深度 | 说明 |
+|------|------|------|
+| 第 1–3 节 | 🟢 必看 | 先建立"Phase 0 做了什么"的整体印象 |
+| 第 4 节 Python 生存基础 | 🟢 必看 | 看懂 Python 代码的最低语法知识，只讲 Phase 0 实际用到的 |
+| 第 5 节 T0001 Backend | 🟢 必看 | 理解 FastAPI 是什么、main.py 在做什么 |
+| 第 6 节 T0002 Frontend | 🟢 可选 | 你是前端开发者，这部分可以快速扫过 |
+| 第 7 节 T0003 Config | 🟢 必看 | 理解 Python 如何管理配置（对比 Node.js process.env） |
+| 第 8 节 T0004 Error | 🟢 必看 | 理解 Backend 错误如何变成 HTTP Response |
+| 第 9 节 T0005 Schema | 🟢 必看 | 理解 Pydantic 是什么——它不是你熟悉的 TypeScript interface |
+| 第 10 节 请求路径 | 🟡 建议理解 | 整合前 9 节，追踪一次完整请求 |
+| 第 11–13 节 | 🟡 建议理解 | 对照表、目录结构、阅读路线——以后可以当速查手册 |
+| 第 14 节 10 件事 | 🟢 必看 | Phase 0 的最低要求 |
+| 第 16 节 FAQ | 🟡 建议理解 | 以前端视角回答常见困惑 |
+| 第 21 节 进阶阅读 | 🔵 以后再看 | 等 Python 更熟悉后回来读 |
+
+### 三种学习深度标记
+
+| 标记 | 含义 |
+|------|------|
+| 🟢 **入门理解** | 第一遍必须理解的内容。用 TypeScript 类比 + 简单解释。|
+| 🟡 **项目理解** | 解释 DX-RAG 为什么这样设计。帮你理解架构决策。|
+| 🔵 **进阶阅读** | 可以以后回来看。不影响理解 Phase 0 的核心内容。|
+
+---
+
+## 1. Phase 0 到底做了什么
+
+### 从你熟悉的事情开始理解
+
+假设你要启动一个新的前端项目。你不会一上来就写组件代码。你会先：
+
+```bash
+npx create-next-app@14 my-app
+# 或者
+npm init && npm install next react react-dom typescript
+```
+
+然后配置 `tsconfig.json`、`next.config.js`、`package.json`。搭建好目录结构：`app/`、`components/`、`lib/`。
+
+**Phase 0 就是后端 + 前端的 "create-next-app" 阶段。**
+
+它搭建了：
+
+| 基础设施 | 对应前端类比 | 后续谁依赖它 |
+|----------|------------|------------|
+| 后端项目目录结构（T0001） | `npx create-next-app` 搭出来的骨架 | 所有后端代码都知道放哪 |
+| 前端项目骨架（T0002） | 同上 | 所有前端组件在此基础上构建 |
+| 配置管理（T0003） | `.env.local` + 一个类型安全的 config 对象 | 所有需要 API Key / 参数的地方 |
+| 统一错误格式（T0004） | 一个全局 `errorHandler` middleware | 所有 API endpoint |
+| API 数据模型（T0005） | `types/api.ts` 里的 TypeScript interface | 所有 Request/Response |
+
+### 为什么不能跳过 Phase 0 直接写 RAG
+
+如果跳过 Phase 0：
+
+- **配置散落各处**：`DEEPSEEK_API_KEY` 在 `qa.py` 里硬编码，改一个配置要搜遍整个项目（类比：把 API URL 硬编码在每个组件里）
+- **错误格式混乱**：有的 endpoint 返回 `{"error": "xxx"}`，有的返回 `{"detail": "bad request"}`，前端要写 N 种 error parser
+- **代码无处安放**：新建一个 API，不知道放哪个目录
+- **没有类型契约**：不知道 Request body 长什么样、Response 返回什么字段
+
+Phase 0 把"地基"打好，后面 12 个 Phase 才可能在上面盖楼。
+
+---
+
+## 2. 用一个前端开发者熟悉的方式理解整个项目
+
+### 整体架构（当前 Phase 0 状态）
+
+```text
+┌──────────────────────────────────────────────┐
+│  frontend/  (Next.js 14 App Router)           │
+│  layout.tsx → page.tsx                        │
+│  localhost:3000                               │
+│       │                                        │
+│       │ 未来通过 fetch 调用后端 API              │
+│       │ (Phase 10-11 实现)                     │
+│       ▼                                        │
+│  ┌─────────────────────────────────────┐      │
+│  │ backend/  (FastAPI)                  │      │
+│  │ localhost:8000                       │      │
+│  │                                      │      │
+│  │ main.py  ← 应用入口                   │      │
+│  │   ├── CORS middleware                │      │
+│  │   ├── Exception handlers             │      │
+│  │   └── api_router (/api prefix)       │      │
+│  │       └── (未来: collections,        │      │
+│  │            upload, query, files)      │      │
+│  │                                      │      │
+│  │ core/                                │      │
+│  │   ├── config.py  ← 环境变量 → 配置对象 │      │
+│  │   └── errors.py  ← 统一错误定义       │      │
+│  │                                      │      │
+│  │ models/                              │      │
+│  │   └── schemas.py ← API 数据模型      │      │
+│  └─────────────────────────────────────┘      │
+│       │                                        │
+│       │ 未来（Phase 1+）                        │
+│       ▼                                        │
+│  ┌─────────────────────────────────────┐      │
+│  │ services/ (Phase 3-8 逐步实现)       │      │
+│  │ ChromaDB / Embedding / RAG / LLM    │      │
+│  └─────────────────────────────────────┘      │
+└──────────────────────────────────────────────┘
+```
+
+### Phase 0 只搭到了哪里
+
+- ✅ 后端能启动（`localhost:8000`）
+- ✅ 前端能启动（`localhost:3000`）
+- ✅ 配置可以从环境变量读取
+- ✅ 错误有统一格式
+- ✅ API 数据类型已定义
+- ❌ 没有任何业务 API（`/api/collections`, `/api/upload`, `/api/query` 都还没实现）
+- ❌ 前端还没有任何交互组件
+- ❌ 前后端还没有连接
+
+---
+
+## 3. Phase 0 的 5 个 Tasks
 
 ### T0001 — Backend Application Skeleton
 
-**Goal**: 初始化 FastAPI 应用骨架——创建目录结构、FastAPI 实例、CORS 中间件、Router 占位。
-
-**实际产生的能力**: 可以执行 `uvicorn app.main:app` 启动一个 FastAPI 服务。虽然没有任何业务 endpoint，但应用能成功启动，CORS 已配置，Router 结构已就位。
-
-**为什么后续阶段依赖它**: 后续所有 Backend Task 都需要往 `app/api/` 下添加 Router、往 `app/core/` 下添加核心模块、往 `app/services/` 下添加业务逻辑。T0001 定义了"代码应该放在哪里"。
+- **做什么**：创建 FastAPI 应用、目录结构、CORS、Router 占位
+- **为什么需要**：后续所有后端代码都需要一个"家"——知道放哪个目录、怎么注册路由
+- **你应该学到**：FastAPI 是什么、Uvicorn 是干什么的、`app/main.py` 就是后端的入口文件
 
 ### T0002 — Frontend Application Skeleton
 
-**Goal**: 初始化 Next.js 14 App Router 项目——安装依赖、创建 `layout.tsx`、`page.tsx`、`globals.css`。
-
-**实际产生的能力**: 可以执行 `npm run dev` 启动 Next.js 开发服务器，浏览器访问 `localhost:3000` 看到 "DX-RAG" 标题。
-
-**为什么后续阶段依赖它**: 后续所有 Frontend Task 都需要在这个骨架之上添加组件（`components/`）、API 客户端（`lib/`）、业务页面逻辑。
+- **做什么**：Next.js 14 App Router 项目骨架
+- **为什么需要**：后续所有前端组件都在这个骨架上构建
+- **你应该学到**：这和你熟悉的 create-next-app 基本一样，快速扫过即可
 
 ### T0003 — Configuration Foundation
 
-**Goal**: 实现 Pydantic `BaseSettings` 配置模型，从环境变量加载 SPEC Section 8.1 定义的 22 个参数。
-
-**实际产生的能力**: 任何模块都可以通过 `from app.core.config import settings` 获取类型安全、有默认值、可被环境变量覆盖的配置对象。
-
-**为什么后续阶段依赖它**: 所有需要读取配置的模块——VectorStore 需要 `CHROMA_PERSIST_DIR`、Embedding 需要 `EMBED_MODEL`、LLM Client 需要 `DEEPSEEK_API_KEY`——都依赖 T0003。
+- **做什么**：用 Pydantic BaseSettings 集中管理 22 个配置参数
+- **为什么需要**：API Key、路径、大小限制等参数需要一处定义、处处使用
+- **你应该学到**：Python 的配置管理方式（对比 Node.js 的 `process.env`）
 
 ### T0004 — Unified Error Response & Global Exception Handler
 
-**Goal**: 实现统一错误响应格式（`{error: {code, message, details}}`）和全局 FastAPI 异常处理器。
-
-**实际产生的能力**: 任何模块都可以通过 `raise AppError("FILE_TOO_LARGE", details={"max_size_mb": 50})` 抛出一个带有正确 HTTP 状态码、中文错误消息和结构化详情的错误。未预期的异常会被全局 handler 捕获，返回 `INTERNAL_ERROR` 而不泄露 traceback。
-
-**为什么后续阶段依赖它**: 所有 API endpoint 的错误处理都依赖 T0004 定义的 `AppError` 类和全局 handler。
+- **做什么**：定义 `{error: {code, message, details}}` 格式，注册全局异常处理器
+- **为什么需要**：所有 API 的错误格式统一，前端只需要写一种 error parser
+- **你应该学到**：Python Exception 如何变成 HTTP Response
 
 ### T0005 — Pydantic Data Models & API Schemas
 
-**Goal**: 定义所有与 SPEC Section 6 API Contracts 和 Section 7 Data Models 对齐的 Pydantic Request/Response 模型。
-
-**实际产生的能力**: 其他模块可以 import `CollectionCreate`、`UploadResponse`、`QueryRequest`、`SourceObject` 等类型，在编写 endpoint 或 service 时使用它们定义数据契约。
-
-**为什么后续阶段依赖它**: 所有 API endpoint 的 Request 解析和 Response 序列化都依赖这些 Pydantic 模型。例如 T0101（VectorStore ABC）需要 `ChunkRecord` 类型；T0805（Query endpoint）需要 `QueryRequest` / `QueryResponse`。
+- **做什么**：定义 16 个 Request/Response 的 Pydantic 模型
+- **为什么需要**：API 的数据契约——前端知道该发什么、该收什么
+- **你应该学到**：Pydantic 不只是 TypeScript interface，它是 runtime 可验证的类型系统
 
 ---
 
-## 3. Phase 0 最终目录结构解析
+## 4. Python 生存基础：只讲 Phase 0 实际用到的
 
-以下是 Phase 0 完成后与学习有关的真实目录结构（省略 `node_modules/`、`.next/`、`__pycache__/` 等自动生成内容）：
+> 这一节不是 Python 教程。只解释你在阅读 Phase 0 代码时会遇到的 Python 语法。
 
-```
-dx-rag/
-├── CLAUDE.md                         # Agent 操作契约（SPEC > TASKS > CLAUDE）
-├── .gitignore                        # Git 忽略规则
-│
-├── backend/
-│   ├── app/
-│   │   ├── __init__.py               # 标记 app/ 为 Python package
-│   │   ├── main.py                   # FastAPI 应用入口
-│   │   ├── api/
-│   │   │   ├── __init__.py           # 标记 api/ 为 Python package
-│   │   │   └── router.py            # 主 APIRouter，聚合子 router
-│   │   ├── core/
-│   │   │   ├── __init__.py           # 标记 core/ 为 Python package
-│   │   │   ├── config.py            # Settings 配置类（T0003）
-│   │   │   └── errors.py            # 错误模型 + 错误码目录（T0004）
-│   │   ├── models/
-│   │   │   ├── __init__.py           # 标记 models/ 为 Python package
-│   │   │   └── schemas.py           # Pydantic 数据模型（T0005）
-│   │   └── services/
-│   │       └── __init__.py           # 标记 services/ 为 Python package（空）
-│   ├── requirements.txt              # Python 依赖声明
-│   └── .env.example                  # 环境变量模板
-│
-├── frontend/
-│   ├── app/
-│   │   ├── layout.tsx                # Next.js Root Layout（T0002）
-│   │   ├── page.tsx                  # Next.js 首页（T0002）
-│   │   └── globals.css               # 全局样式
-│   ├── package.json                  # Node 依赖声明 + npm scripts
-│   ├── package-lock.json             # 精确版本锁定
-│   ├── next.config.js                # Next.js 配置
-│   └── tsconfig.json                 # TypeScript 配置
-│
-└── docs/
-    ├── SPEC.md                       # 产品规格（FROZEN）
-    ├── TASKS.md                      # 任务分解
-    └── learning/                     # 学习文档（本目录）
-```
+### 4.1 Python 文件就是 Module
 
-### 逐项解释
+**Python 语法**：一个 `.py` 文件就是一个 module。
 
-#### `backend/app/` — Python Package 根
+**TypeScript 思维**：类比一个 `.ts` 文件。Python 的 `config.py` 就像 TypeScript 的 `config.ts`。
 
-所有 Backend 代码都在这个 package 下。`__init__.py` 是空的——它的作用仅仅是告诉 Python："这个目录是一个 package，可以被 import"。
+### 4.2 import
 
-当你写 `from app.core.config import settings` 时，Python 会沿着 `app` → `app/core` 的 package 路径寻找 `config.py` 中的 `settings` 对象。
-
-#### `backend/app/main.py` — 应用入口
-
-这是整个 Backend 的启动文件。后续所有 Phase 的 API endpoint 都是通过 `app.include_router()` 挂载到这上面的。它定义了：
-
-- FastAPI 应用实例（`app = FastAPI(...)`）
-- CORS 中间件
-- 全局异常处理器
-- `/api` 前缀的路由聚合
-
-#### `backend/app/api/router.py` — 路由聚合器
-
-当前只有注释掉的占位 import。未来每个 API 模块（collections、upload、query、files）会在这里被 import 并 `include_router`，然后由 `main.py` 统一挂载到 `/api` 前缀下。
-
-#### `backend/app/core/` — 核心基础设施
-
-这个目录放的是"与业务无关、但整个应用都需要的"东西。目前有：
-
-- `config.py` — 配置加载
-- `errors.py` — 错误定义
-
-未来还会添加 `vector_store.py`（VectorStore 接口）等。
-
-#### `backend/app/models/` — 数据模型
-
-当前有 `schemas.py`——Pydantic 模型定义。注意：这些模型是 **API 契约层的模型**，不是数据库 ORM 模型。DX-RAG v1 不使用 SQLite/PostgreSQL。
-
-后续 Phase 会定义 `ChunkRecord`、`SearchResult` 等内部数据模型（也可能放在 schemas.py 中）。
-
-#### `backend/app/services/` — 业务逻辑
-
-当前为空目录（只有空的 `__init__.py`）。
-
-这里将是未来业务逻辑的所在地：`ingest.py`（文档处理管道）、`qa.py`（检索 + QA 服务）。
-
-#### `backend/requirements.txt` — Python 依赖
-
-声明了 FastAPI、Uvicorn、ChromaDB、Sentence Transformers 等所有 Python 依赖。使用 `>=` 方式声明最低版本。
-
-#### `backend/.env.example` — 环境变量模板
-
-包含所有 22 个配置参数及其默认值。实际使用时，开发者需要复制为 `.env` 并填入真实的 API Key。
-
-#### `frontend/app/layout.tsx` — Root Layout
-
-Next.js App Router 的根布局。所有页面都会被包裹在这个布局中。当前实现了：
-
-- `<html lang="zh-CN">` 声明
-- Ant Design `ConfigProvider` 包裹（全局组件配置）
-- 中文 locale 配置
-
-#### `frontend/app/page.tsx` — 首页
-
-当前是一个简单的占位页面，显示 "DX-RAG" 标题。后续 Phase 10-11 会将这里改造为带有 SideMenu 和四个功能区域的单页应用。
-
-#### `frontend/app/globals.css` — 全局样式
-
-当前是极简的 CSS reset（box-sizing、margin、padding、font-family）。后续会随组件开发而扩展。
-
----
-
-## 4. T0001 — Backend Foundation 深度学习
-
-### 4.1 FastAPI Application 是什么
-
-**FastAPI** 是一个 Python 异步 Web 框架。简单说，它的职责是：
-
-1. **接收** HTTP 请求（通过 ASGI 服务器如 Uvicorn）
-2. **路由**：根据 URL path 和 HTTP method 找到对应的处理函数
-3. **校验**：自动根据类型注解校验请求参数
-4. **调用**：执行你的业务逻辑
-5. **序列化**：将返回值转为 JSON 响应
-
-"FastAPI 应用" 的核心就是 `FastAPI()` 这个类的实例。在 DX-RAG 项目中，这个实例叫 `app`，定义在 [backend/app/main.py](backend/app/main.py) 中。
+**Python 原代码**：
 
 ```python
-app = FastAPI(
-    title="DX-RAG",
-    description="Enterprise knowledge base Q&A system",
-    version="0.1.0",
-    lifespan=lifespan,
-)
+from app.core.config import settings
 ```
 
-这三个参数（`title`、`description`、`version`）会自动出现在自动生成的 OpenAPI 文档中（访问 `http://localhost:8000/docs` 即可看到）。
+**怎么读**：
 
-### 4.2 app/main.py 的职责 — 逐段解释
+- `from app.core.config` → 在 `app/core/config.py` 这个文件里
+- `import settings` → 拿出那个叫 `settings` 的东西
 
-#### 第一段：imports
+**TypeScript 思维**：
+
+```ts
+import { settings } from "./app/core/config";
+```
+
+**差异注意**：
+- Python 用 `.` 分隔路径（app.core.config），TS 用 `/`
+- Python 不加文件扩展名 `.py`
+- Python 的 `from X import Y` 可以选择性导入，不像 `import *`
+
+### 4.3 def — 定义函数
+
+**Python 原代码**：
+
+```python
+def get_deepseek_key(self) -> Optional[str]:
+    if self.DEEPSEEK_API_KEY is not None:
+        return self.DEEPSEEK_API_KEY.get_secret_value()
+    return None
+```
+
+**怎么读**：
+
+- `def` → "定义一个函数"
+- `get_deepseek_key` → 函数名
+- `(self)` → 参数
+- `-> Optional[str]` → 返回值类型（类似 TS 的 `string | null`）
+
+**TypeScript 思维**：
+
+```ts
+function getDeepseekKey(): string | null {
+    if (this.deepseekApiKey !== null) {
+        return this.deepseekApiKey.getSecretValue();
+    }
+    return null;
+}
+```
+
+### 4.4 type hints
+
+**Python 语法**：
+
+```python
+name: str = "hello"           # str ≈ string
+count: int = 5                # int ≈ number
+price: float = 3.14           # float ≈ number
+items: List[str] = ["a","b"]  # List[str] ≈ string[]
+config: Dict[str, int] = {}    # Dict[str, int] ≈ Record<string, number>
+maybe: Optional[str] = None    # Optional[str] ≈ string | null | undefined
+```
+
+**TypeScript 思维**：语法像把 TS 的类型标注翻转了位置（`name: str` vs `name: string`）。
+
+**关键差异**：Python type hints **默认不做运行时检查**。它们主要给 IDE 和类型检查器（mypy）用。TS 的编译检查更严格。
+
+### 4.5 class
+
+**Python 原代码**：
+
+```python
+class Settings(BaseSettings):
+    APP_NAME: str = "dx-rag-demo"
+```
+
+**怎么读**：
+
+- `class Settings` → 定义一个类
+- `(BaseSettings)` → 继承自 `BaseSettings`
+
+**TypeScript 思维**：
+
+```ts
+class Settings extends BaseSettings {
+    APP_NAME: string = "dx-rag-demo";
+}
+```
+
+### 4.6 self — 就是 this
+
+**Python 原代码**：
+
+```python
+class Settings(BaseSettings):
+    def get_deepseek_key(self) -> Optional[str]:
+        if self.DEEPSEEK_API_KEY is not None:    # self ≈ this
+            return self.DEEPSEEK_API_KEY.get_secret_value()
+```
+
+**关键区别**：Python 的 `self` 必须显式写在**方法参数列表里**（`def method(self, ...)`），而 TS/JS 的 `this` 是隐式的。这是 Python 设计哲学："显式优于隐式"。
+
+**TypeScript 思维**：
+
+```ts
+class Settings extends BaseSettings {
+    getDeepseekKey(): string | null {
+        if (this.DEEPSEEK_API_KEY !== null) {    // this 不需要写在参数里
+            return this.DEEPSEEK_API_KEY.getSecretValue();
+        }
+    }
+}
+```
+
+### 4.7 `__init__` — 就是 constructor
+
+**Python 原代码**：
+
+```python
+class AppError(Exception):
+    def __init__(self, code: str, *, details=None, message=None):
+        self.code = code
+        self.http_status = ...
+```
+
+**TypeScript 思维**：
+
+```ts
+class AppError extends Error {
+    constructor(code: string, opts?: { details?: any; message?: string }) {
+        super();
+        this.code = code;
+        this.httpStatus = ...;
+    }
+}
+```
+
+**注意**：Python 的 `__init__` 和 TS 的 `constructor` 不完全一样（Python 对象在 `__new__` 阶段就创建了，`__init__` 只是初始化）。但 Phase 0 不需要关心这个区别。
+
+### 4.8 decorator — 先理解成"给函数加标签"
+
+**Python 原代码**（在 main.py 中）：
+
+```python
+@app.exception_handler(AppError)
+async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
+    return JSONResponse(status_code=exc.http_status, content=...)
+```
+
+**先这样理解**：`@app.exception_handler(AppError)` 的意思是"把下面这个函数注册为 FastAPI 的异常处理器：当 `AppError` 被抛出时，调用这个函数来处理。"
+
+**TypeScript 思维**：没有直接等价物。最接近的可能是 NestJS 的 decorator：
+
+```ts
+@Catch(AppError)
+async appErrorHandler(request, exception) { ... }
+```
+
+🔵 **不需要理解 decorator 的实现原理**。只需要知道它让框架"知道"下面这个函数有特殊用途。
+
+### 4.9 async / await
+
+**Python 语法**：和你熟悉的 JS async/await 基本一样：
+
+```python
+async def lifespan(app: FastAPI):   # async function
+    yield                            # 类似 generator，先不深入
+```
+
+**TypeScript 思维**：
+
+```ts
+async function lifespan(app: FastAPI) {
+    // startup
+    await someAsyncInit();
+    // ready
+}
+```
+
+Python 的 async/await 概念和 JS 非常接近——同样是"标记函数为异步，用 await 等待结果"。
+
+### 4.10 `yield` — Python context manager
+
+**Python 原代码**：
+
+```python
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: 启动时执行
+    yield
+    # Shutdown: 关闭时执行
+```
+
+**先这样理解**：`yield` 上面的代码在"服务启动时"运行，`yield` 下面的代码在"服务关闭时"运行。目前 Phase 0 两边都是空的。
+
+**TypeScript 思维**：类似 Express 的服务启停，但没有直接语法对应。你可以先当成"启动钩子 + 关闭钩子"。
+
+🔵 `yield` 的 generator/context manager 原理现在不需要深究。
+
+---
+
+## 5. T0001 — FastAPI Backend Skeleton
+
+### 🟢 FastAPI 是什么
+
+**先建立类比**：
+
+| 你熟悉的 | FastAPI |
+|----------|---------|
+| **Express** (Node.js) | FastAPI 是 Web 框架——处理 HTTP 请求、路由、中间件 |
+| **NestJS** | FastAPI 也提供类似 decorator 的路由注册 + 依赖注入 |
+| **Next.js API Routes** | FastAPI 类似 Next.js 的 `app/api/` 目录，但更专业 |
+
+**不完全等价**，但你可以先这样理解：
+
+```text
+Node.js 世界:  Express → HTTP Server
+Python 世界:   FastAPI → ASGI Server (Uvicorn)
+```
+
+FastAPI 负责"定义路由、解析请求、校验参数、生成文档"，Uvicorn 负责"真正监听端口、收发 HTTP 字节流"。
+
+### 🟢 app/main.py 是什么
+
+**这是整个后端的入口文件。** 类比 Node.js 项目的 `server.ts` 或 `index.ts`。
+
+当前 69 行代码做了 5 件事：
+
+#### 第 1 步：导入依赖（lines 1-12）
 
 ```python
 import logging
@@ -227,15 +425,14 @@ from app.api.router import api_router
 from app.core.errors import AppError, ErrorDetail, ErrorResponse
 ```
 
-- `logging` 和 `traceback`：Python 标准库，用于记录错误日志
-- `asynccontextmanager`：Python 标准库，用于创建 async context manager（lifespan 要用）
-- `FastAPI`, `Request`：FastAPI 核心类
-- `CORSMiddleware`：FastAPI 内置的 CORS 中间件
-- `JSONResponse`：FastAPI 的 JSON 响应类
-- `api_router`：我们自己定义的 APIRouter（来自 `app.api.router`）
-- `AppError`, `ErrorDetail`, `ErrorResponse`：我们自己定义的错误模型（来自 `app.core.errors`）
+**Python 语法怎么读**：
+- `import logging` → 导入标准库模块（类似 Node.js 的 `import fs from "fs"`）
+- `from fastapi import FastAPI` → 从 fastapi 包里拿出 FastAPI 这个类（类似 `import { FastAPI } from "fastapi"`）
+- `from app.api.router import api_router` → 从自己项目的 `app/api/router.py` 中导入 `api_router` 变量
 
-#### 第二段：Lifespan
+**TypeScript 思维**：这些 import 就像你的 `server.ts` 顶部的 import 语句。
+
+#### 第 2 步：Lifespan（lines 15-18）
 
 ```python
 @asynccontextmanager
@@ -245,18 +442,26 @@ async def lifespan(app: FastAPI):
     # Shutdown: nothing to clean up at this stage
 ```
 
-`lifespan` 是 FastAPI 的 **生命周期管理器**。它是一个 async context manager：
+**它在干什么**：定义服务启动/关闭时要做什么。Phase 0 是空的（因为还没有数据库连接、模型加载等需要初始化的资源）。
 
-- `yield` **之前**的代码：服务启动时执行（加载模型、初始化数据库连接等）
-- `yield` **之后**的代码：服务关闭时执行（清理连接、释放资源等）
+**TypeScript 思维**：
 
-在 Phase 0，lifespan 是空的——因为还没有需要初始化的资源。后续 Phase 可能在这里执行一些启动逻辑。
+```ts
+// 类比 Express / Node server
+server.on('listening', () => { /* startup */ });
+server.on('close', () => { /* shutdown */ });
+```
 
-**通用知识**：lifespan 替代了旧版 FastAPI 的 `@app.on_event("startup")` 和 `@app.on_event("shutdown")` 装饰器。它的优势是可以管理有状态的资源（比如用一个变量保存数据库连接，在 shutdown 时关闭）。
-
-#### 第三段：CORS 中间件
+#### 第 3 步：创建 FastAPI 实例 + CORS（lines 22-35）
 
 ```python
+app = FastAPI(
+    title="DX-RAG",
+    description="Enterprise knowledge base Q&A system",
+    version="0.1.0",
+    lifespan=lifespan,
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -266,13 +471,30 @@ app.add_middleware(
 )
 ```
 
-**CORS（Cross-Origin Resource Sharing，跨域资源共享）** 是浏览器的一种安全机制。默认情况下，浏览器会阻止 `localhost:3000`（前端）向 `localhost:8000`（后端）发送请求，因为它们属于不同的 "origin"。
+**`app = FastAPI(...)` — 它是什么？**
 
-`CORSMiddleware` 告诉浏览器："我允许来自任何 origin（`["*"]`）的请求访问这个 API"。
+`app` 是整个后端的"根对象"。类比：
 
-**为什么 v1 用 `["*"]`**：SPEC 明确假设 v1 部署在本地/可信内网环境，不需要严格的 CORS 限制。生产环境部署时，应通过 `CORS_ORIGINS` 配置项限制为具体的域名。
+```ts
+const app = express();  // Express
+// 或
+const app = await NestFactory.create(AppModule);  // NestJS
+```
 
-#### 第四段：全局异常处理器
+之后所有的 middleware、路由、异常处理器都注册在这个 `app` 对象上。
+
+**CORS 是干什么的？**
+
+浏览器的安全机制：默认禁止 `localhost:3000`（前端）向 `localhost:8000`（后端）发请求（因为端口不同 = 不同 origin）。`CORSMiddleware` 告诉浏览器"我允许跨域请求"。v1 用 `["*"]` 允许所有来源，因为是本地/内网部署。
+
+**TypeScript 思维**：
+
+```ts
+import cors from 'cors';
+app.use(cors({ origin: '*' }));
+```
+
+#### 第 4 步：全局异常处理器（lines 43-65）
 
 ```python
 @app.exception_handler(AppError)
@@ -295,535 +517,326 @@ async def unhandled_error_handler(request: Request, exc: Exception) -> JSONRespo
     )
 ```
 
-两个 handler 形成两层安全网：
+**它在干什么**：两层安全网：
+1. **第一层**：我们主动抛出的 `AppError`（如 "文件太大"）→ 转为规范的 JSON 错误响应
+2. **第二层（兜底）**：所有未预期的异常（如 Python 的 `ValueError`）→ 记录日志，返回 500，不泄露 traceback
 
-1. **第一层** `AppError` handler：捕获我们主动抛出的 AppError。例如我们 `raise AppError("FILE_TOO_LARGE")`，它会被转换为带有正确 HTTP 状态码、错误码和中文消息的 JSON 响应。
+**TypeScript 思维**：
 
-2. **第二层** `Exception` handler（兜底）：捕获所有未被第一层捕获的异常——比如 Python 的 `ValueError`、未预期的 `KeyError` 等。它：
-   - 用 `logger.error()` 记录完整 traceback（开发者可以看到）
-   - 向前端返回 `INTERNAL_ERROR` 的 500 响应（用户看不到 traceback，安全）
+```ts
+// Express middleware 风格
+app.use((err, req, res, next) => {
+    if (err instanceof AppError) {
+        return res.status(err.httpStatus).json({ error: { ... } });
+    }
+    console.error(err);
+    return res.status(500).json({ error: { code: 'INTERNAL_ERROR' } });
+});
+```
 
-这是 **T0004 的核心价值**详见第 7 节。
-
-#### 第五段：Router 注册
+#### 第 5 步：挂载路由（line 68）
 
 ```python
 app.include_router(api_router, prefix="/api")
 ```
 
-这行代码告诉 FastAPI："所有 `api_router` 中的路由，都挂载在 `/api` 前缀下"。
+**它在干什么**：把所有 API 路由挂载在 `/api` 前缀下。未来 `collections.py` 里定义了 `GET /collections`，实际 URL 就是 `GET /api/collections`。
 
-例如，如果 `api_router` 中有一个 `GET /health`，它实际对外暴露的 URL 是 `GET /api/health`。
+**TypeScript 思维**：
 
-### 4.3 Python Package 结构
-
-在 DX-RAG Backend 中，每个目录下都有一个 `__init__.py` 文件。这些文件目前都是空的，但它们的存在本身有重要意义：
-
-```
-backend/app/
-├── __init__.py          # 使得 app/ 成为一个 Python package
-├── api/
-│   ├── __init__.py      # 使得 app.api/ 成为一个 sub-package
-│   └── router.py
-├── core/
-│   ├── __init__.py      # 使得 app.core/ 成为一个 sub-package
-│   ├── config.py
-│   └── errors.py
-├── models/
-│   ├── __init__.py      # 使得 app.models/ 成为一个 sub-package
-│   └── schemas.py
-└── services/
-    └── __init__.py      # 使得 app.services/ 成为一个 sub-package
+```ts
+app.use('/api', apiRouter);  // Express
 ```
 
-**什么是 Python Package**：一个包含 `__init__.py` 的目录。没有这个文件，你就不能写 `from app.core import config`。
+### 🟢 APIRouter 是什么
 
-**每个子目录的职责**：
+**类比 Express Router**：
 
-| 目录 | 职责 | 类比 |
-|------|------|------|
-| `api/` | HTTP 层的路由定义（接收请求、返回响应） | 餐厅的前台 |
-| `core/` | 与业务无关的基础设施（配置、错误、接口定义） | 餐厅的水电系统 |
-| `models/` | 数据结构定义（API 契约、内部数据模型） | 菜单模板 |
-| `services/` | 业务逻辑（文档处理、检索、QA） | 后厨 |
+```text
+Express:
+  const router = express.Router()
+  router.get('/users', ...)
+  app.use('/api', router)
 
-这个分层的核心原则是 **关注点分离（Separation of Concerns）**：API 层只负责 HTTP 协议的事情（解析参数、返回状态码），Service 层只负责业务逻辑（怎么解析 PDF、怎么检索），Core 层提供两者的基础设施。
+FastAPI:
+  router = APIRouter()
+  @router.get('/collections')
+  app.include_router(router, prefix='/api')
+```
 
-### 4.4 APIRouter 是什么
-
-在 FastAPI 中，`APIRouter` 是一个 **可复用的路由组**。
-
-想象你有一个 FastAPI 应用，所有的 endpoint 都直接注册在 `app` 上：
+当前 [api/router.py](../../backend/app/api/router.py) 只有 10 行，实际业务路由都还是注释：
 
 ```python
-@app.get("/api/collections")
-def list_collections(): ...
+from fastapi import APIRouter
 
-@app.post("/api/collections")
-def create_collection(): ...
+api_router = APIRouter()
 
-@app.get("/api/files")
-def list_files(): ...
+# Sub-routers will be included here in future tasks:
+# from app.api.collections import router as collections_router
+# ...
 ```
 
-当应用有 4 个模块、每个模块有 3-4 个 endpoint 时，`main.py` 会变得非常长。而且每个模块的 endpoint 混在一起，难以维护。
+### 🟢 Uvicorn — 你启动后端时真正发生了什么
 
-`APIRouter` 解决了这个问题：
-
-1. 每个模块定义自己的 router（例如 `collections.py` 中有一个 `router = APIRouter()`）
-2. 所有 router 在 `api/router.py` 中聚合
-3. `main.py` 只做一件事：`app.include_router(api_router)`
-
-当前 DX-RAG 的 `api/router.py` 是空的（只有注释掉的 import），但这正是框架的价值——后续 Phase 只需要取消注释、添加 import 即可。
-
-**请求路由的完整路径**：
-
-```
-HTTP Request
-  → Uvicorn (ASGI server)
-    → FastAPI app (main.py)
-      → APIRouter prefix="/api" (router.py)
-        → Feature Router (collections.py, upload.py, ... )
-          → Endpoint function
-```
-
-### 4.5 Uvicorn 启动过程
-
-启动命令：
+**启动命令**：
 
 ```bash
 uvicorn app.main:app
 ```
 
-我们用这个命令拆解每个部分：
+**逐段翻译**：
 
-| 部分 | 含义 | 解释 |
-|------|------|------|
-| `uvicorn` | ASGI 服务器程序 | Uvicorn 是一个 Python ASGI 服务器。它的职责是接收 TCP 连接、解析 HTTP 协议、将请求转交给 ASGI 应用。 |
-| `app.main` | Python 模块路径 | 等价于 `from app.main import ...`。Uvicorn 会 import `app/main.py` 这个文件。 |
-| `:app` | 变量名 | `app/main.py` 中定义的 `app = FastAPI(...)` 那个变量。Uvicorn 会找到这个 FastAPI 实例。 |
+| 部分 | 含义 |
+|------|------|
+| `uvicorn` | ASGI 服务器程序（负责接收 TCP 连接、解析 HTTP） |
+| `app.main` | 等价于 `from app.main import ...`——Uvicorn 去加载 `app/main.py` |
+| `:app` | 从 `app/main.py` 中取出名为 `app` 的那个 FastAPI 实例 |
 
-**从命令到应用启动的完整流程**：
+**完整启动流程图**：
 
-```
-1. 你在终端输入: uvicorn app.main:app
-
-2. Uvicorn 启动，做两件事：
-   a. Import "app.main" module
-      → Python 首先找到 app/ 目录（有 __init__.py）
-      → 然后找到 app/main.py
-      → 执行 main.py 中的所有顶层代码：
-          - import 各种模块
-          - 创建 FastAPI() 实例 (变量名 "app")
-          - 注册 CORS 中间件
-          - 注册异常处理器
-          - include_router(api_router)
-   b. 从 app.main 模块中取出 "app" 变量
-
-3. Uvicorn 将 FastAPI app 实例作为 ASGI application 启动
-   → 开始监听 localhost:8000
-
-4. Uvicorn 调用 lifespan(app)
-   → 执行 yield 之前的 startup 代码（当前为空）
-   → 应用就绪
-
-5. 当有 HTTP 请求到来时：
-   → Uvicorn 接收 TCP 连接
-   → 解析 HTTP 请求
-   → 构造 ASGI scope/event
-   → 调用 FastAPI app
-   → FastAPI 根据 path + method 找到匹配的 endpoint
-   → 执行 endpoint 函数
-   → 返回 Response
-   → Uvicorn 将 Response 序列化为 HTTP 字节流返回给客户端
+```text
+终端输入: uvicorn app.main:app
+    │
+    ▼
+Uvicorn 启动
+    │
+    ├─ 1. Import "app.main" module → 执行 main.py 顶层代码
+    │     ├─ 所有 import 被执行
+    │     ├─ lifespan 函数被定义
+    │     ├─ app = FastAPI(...) 实例被创建
+    │     ├─ CORS、异常处理器、路由被注册
+    │
+    ├─ 2. 从 main.py 中取出 app 变量
+    │
+    ├─ 3. 将 FastAPI app 作为 ASGI application 启动
+    │     → 监听 localhost:8000
+    │
+    ├─ 4. 调用 lifespan(app)
+    │     → 执行 yield 之前的 startup 代码
+    │
+    └─ 5. 就绪，等待 HTTP 请求
 ```
 
-### 4.6 我应该理解的关键代码
+**TypeScript 思维**：类比 `node server.js`，但你需要额外知道：**FastAPI 和 Uvicorn 是两个人**。FastAPI 定义"收到什么请求该怎么办"，Uvicorn 负责"真的去收请求"。
 
-#### 1. [backend/app/main.py:22-27](backend/app/main.py) — FastAPI 实例化
-
-```python
-app = FastAPI(
-    title="DX-RAG",
-    description="Enterprise knowledge base Q&A system",
-    version="0.1.0",
-    lifespan=lifespan,
-)
-```
-
-**重点看**: 这里生成了整个 Backend 的唯一 FastAPI 实例。所有的 middleware、handler、router 都注册在它上面。
-
-**你应该理解**: `app` 是整个 Backend 的"根"。任何对 Backend 的配置、扩展都是通过 `app.xxx()` 方法完成的。
-
-#### 2. [backend/app/main.py:68](backend/app/main.py) — Router 挂载
-
-```python
-app.include_router(api_router, prefix="/api")
-```
-
-**重点看**: 这是 `/api` 前缀的来源。所有业务 API 的 URL 都从 `/api` 开始。
-
-**你应该理解**: 如果未来想加 `/api/v2` 的 router，就在这里再加一行 `app.include_router(v2_router, prefix="/api/v2")`。
+🔵 ASGI 是 Python 的异步服务器协议。第一遍不需要深入理解它——和 HTTP 协议一样，等需要底层调试时再学。
 
 ---
 
-## 5. T0002 — Frontend Foundation 深度学习
+## 6. T0002 — Next.js Frontend Skeleton
 
-### 5.1 Next.js 在这个项目中的角色
+> 你是前端开发者，这一节可以快速扫过。
 
-**Next.js** 是一个基于 React 的全栈 Web 框架。在 DX-RAG 中，它的角色是：
+### 你熟悉的和你需要知道的
 
-1. **渲染界面**: 将 React 组件转换为浏览器可显示的 HTML/CSS/JavaScript
-2. **路由管理**: 通过 App Router 管理页面组织
-3. **开发体验**: 提供热更新（修改代码后浏览器自动刷新）、TypeScript 支持
-4. **构建优化**: 生产构建时自动优化 JS bundle 大小
+[T0002 创建的骨架](../../frontend/) 和你用 `create-next-app` 搭出来的结构基本一样。
 
-DX-RAG 使用的是 **Next.js 14.2.24** + **App Router**（不是旧的 Pages Router）。
+**你不需要重新学的**：React、TypeScript、Next.js App Router、npm、package.json、CSS。
 
-### 5.2 App Router 是什么
+**你需要了解的**（为后续 Phase 做准备）：
 
-App Router 是 Next.js 13+ 引入的新路由系统。它的核心概念是 **基于文件系统的路由**：
+#### Ant Design 如何进入应用
 
-- `app/layout.tsx` → 根布局（所有页面的外层框架）
-- `app/page.tsx` → `/` 路径的页面（首页）
-- `app/globals.css` → 全局样式
-
-**当前 DX-RAG 只使用了最基础的 App Router 结构**——因为 Phase 0 只是骨架。后续 Phase 10 会在这个基础上添加 SideMenu 和多区域切换。
-
-当前三个文件的关系：
-
-```
-<html lang="zh-CN">            ← layout.tsx 定义
-  <body>
-    <ConfigProvider>            ← Ant Design 全局配置
-      {children}                ← page.tsx 的内容会被插入这里
-    </ConfigProvider>
-  </body>
-</html>
-```
-
-`layout.tsx` 是"外壳"，`page.tsx` 是"内容"。
-
-### 5.3 Root Layout 的生命周期和职责
-
-在 DX-RAG 中，`layout.tsx` 的职责是：
-
-1. **声明 HTML 结构**: `<html lang="zh-CN">` 告诉浏览器这是中文页面
-2. **引入全局配置**: `<ConfigProvider locale={zhCN}>` 确保所有 Ant Design 组件的文案（如日期选择器、分页器）默认显示中文
-3. **包裹子页面**: `{children}` 是一个特殊的 React prop，代表子组件——在这里就是 `page.tsx` 的内容
-
-**通用知识——Next.js Layout 的特性**：
-- Layout 在路由切换时 **不会重新渲染**，只有 `{children}` 部分会变
-- Layout 可以嵌套——可以在 `app/` 下创建子目录，每个子目录有自己的 `layout.tsx`
-- 在 DX-RAG v1 中，由于是单页应用（只有 `page.tsx`），只需要一个根 layout
-
-### 5.4 Ant Design 在哪里进入应用
-
-在 [frontend/app/layout.tsx:3-4](frontend/app/layout.tsx)：
+在 [layout.tsx](../../frontend/app/layout.tsx) 中：
 
 ```tsx
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
-```
 
-然后在组件中：
-
-```tsx
+// ...
 <ConfigProvider locale={zhCN}>
   {children}
 </ConfigProvider>
 ```
 
-**`ConfigProvider`** 是 Ant Design 的全局配置组件。它使用 React 的 **Context API** 向所有子孙组件传递配置。
+`ConfigProvider` 用 React Context 向所有子孙组件提供全局配置。`locale={zhCN}` 确保 Ant Design 组件（Modal、Table）显示中文。
 
-**`locale={zhCN}`** 的作用：确保 Ant Design 内置组件（如 Modal、Table、DatePicker）的中文文案。例如 Modal 的"确定"/"取消"按钮、Table 的"共 X 条"。
+#### 当前项目是单页应用
 
-**为什么放在 layout.tsx**: 因为 layout 是所有页面的最外层。放在这里意味着整个应用的所有 Ant Design 组件都自动获得中文配置，不需要在每个页面重复设置。
+v1 不使用 Next.js 的文件路由（`/kb`、`/upload` 等独立 URL）。所有功能在 `page.tsx` 一个页面内通过 React state 切换。这类似一个 Tab 切换的 SPA。
 
-### 5.5 package.json 是什么
+#### package-lock.json 必须提交
 
-[frontend/package.json](frontend/package.json) 是 Node.js 项目的 **清单文件**。它包含：
-
-```json
-{
-  "name": "dx-rag-frontend",    // 项目名称
-  "version": "0.1.0",           // 项目版本
-  "private": true,              // 标记为私有项目（防止意外发布到 npm）
-  "scripts": {                  // 可执行的脚本命令
-    "dev": "next dev",          // 启动开发服务器
-    "build": "next build",      // 生产构建
-    "start": "next start"       // 启动生产服务器
-  },
-  "dependencies": { ... },      // 生产依赖
-  "devDependencies": { ... }    // 开发依赖
-}
-```
-
-**`dependencies` vs `devDependencies`**:
-
-| 类型 | 说明 | DX-RAG 示例 |
-|------|------|------------|
-| `dependencies` | 运行时需要的包（用户浏览器中执行的代码依赖） | `next`, `react`, `antd`, `react-markdown` |
-| `devDependencies` | 仅在开发/构建时需要 | `typescript`, `@types/react` |
-
-`react-markdown` 在运行时将 Markdown 字符串渲染为 HTML，所以是 `dependencies`。`typescript` 只在开发时做类型检查，构建后不再需要，所以是 `devDependencies`。
-
-### 5.6 package-lock.json 是什么
-
-这是 Node.js 生态中最容易被误解的文件之一。
-
-**`package.json`** 声明了"我需要什么包、最低什么版本"。例如：
-```json
-"antd": "5.22.7"
-```
-
-这告诉 npm："我需要 antd，版本是 5.22.7"。
-
-**`package-lock.json`** 记录了"实际安装了什么包、精确到哪个 commit hash"。例如：
-```json
-"antd": {
-  "version": "5.22.7",
-  "resolved": "https://registry.npmjs.org/antd/-/antd-5.22.7.tgz",
-  "integrity": "sha512-..."
-}
-```
-
-**为什么 AI Coding 项目尤其需要 lockfile**：
-
-当你和 AI Coding Agent 协作时，Agent 执行 `npm install` 的时机和你的时机不同。如果没有 `package-lock.json`：
-
-- Agent 的机器上可能安装 `antd@5.22.8`（一个新发布的补丁版本）
-- 你的机器上是 `antd@5.22.7`
-- 代码在 Agent 那边跑得好好的，到你这边出了问题
-
-有了 `package-lock.json`，无论谁执行 `npm install`，都会得到完全相同的依赖树。
-
-**这就是为什么 `package-lock.json` 必须提交到 Git 仓库中**。
-
-### 5.7 npm install 和 npm run dev 分别发生什么
-
-#### `npm install`
-
-```
-1. npm 读取 package.json，解析 dependencies 和 devDependencies
-2. npm 读取 package-lock.json（如果存在），按 lockfile 中记录的精确版本下载
-3. 下载的包存放在 node_modules/ 目录
-4. 如果 package-lock.json 不存在，npm 会生成一个新的
-```
-
-**没有网络就不能 `npm install`**：npm 需要从 registry（默认 https://registry.npmjs.org/）下载包。
-
-#### `npm run dev`
-
-```
-1. npm 查找 package.json 中 scripts.dev 的值："next dev"
-2. npm 在 node_modules/.bin/ 中找到 next 可执行文件
-3. 执行 next dev
-4. Next.js 开发服务器启动：
-   a. 编译 TypeScript → JavaScript
-   b. 打包 CSS 和资源
-   c. 启动 WebSocket 连接（用于热更新）
-   d. 在 localhost:3000 上监听 HTTP 请求
-5. 当你在浏览器中打开 localhost:3000：
-   a. Next.js 收到请求
-   b. 执行 layout.tsx 和 page.tsx 中的 React 组件（服务端渲染）
-   c. 返回 HTML 给浏览器
-   d. 后续交互由客户端 React 接管（hydration）
-```
+因为你要和 AI Coding Agent 协作。没有 lockfile，Agent 执行 `npm install` 可能安装不同版本，产生"Agent 那边跑得好好的，你这边不行"的诡异问题。
 
 ---
 
-## 6. T0003 — Configuration Foundation
+## 7. T0003 — Configuration
 
-### 6.1 为什么配置不能散落在代码中
+> 这是重点。你需要理解 Python 怎么做到和 Node.js `process.env` + `.env` 一样的效果——以及 Pydantic Settings 额外提供了什么。
 
-假设你在 `qa.py` 中直接写了：
+### 🟢 从你熟悉的事情开始
+
+在 Node.js 项目中，你可能这样处理配置：
+
+```ts
+// lib/config.ts
+const config = {
+    apiKey: process.env.API_KEY || (() => { throw new Error('Missing API_KEY') })(),
+    port: parseInt(process.env.PORT || '3000'),
+    maxUploadMb: parseInt(process.env.MAX_UPLOAD_MB || '50'),
+};
+```
+
+这已经是"集中管理"了——所有配置在一个地方定义，有默认值。但它还有问题：
+
+- 类型丢失：`process.env.PORT` 永远是 `string | undefined`
+- 没有验证：`MAX_UPLOAD_MB=abc` 运行时才报错
+- 没有 secret 保护：如果 console.log(config)，API Key 会明文显示
+
+### 🟢 DX-RAG 的配置加载方式
+
+[config.py](../../backend/app/core/config.py) 的核心代码：
 
 ```python
-# ❌ 错误做法
-deepseek_api_key = "sk-xxxx"
-chroma_dir = "./chroma_db"
-max_upload_mb = 50
-```
-
-这带来了几个问题：
-
-| 问题 | 说明 |
-|------|------|
-| **安全问题** | API Key 被提交到 Git 仓库，任何能访问仓库的人都能看到 |
-| **环境切换困难** | 开发环境用测试 API Key，生产环境用正式 API Key——你需要在每次部署前手动改代码 |
-| **团队协作问题** | 同事 A 的 chroma_db 路径是 `/data/chroma`，同事 B 的路径是 `C:\data\chroma`，代码无法同时满足 |
-| **难以发现** | 当应用变大，很难快速回答"当前 max_upload_size 是多少？" |
-
-**正确做法**是将配置集中管理，从环境变量中读取，代码只引用一个配置对象。
-
-### 6.2 当前项目实际配置加载路径
-
-DX-RAG 使用 **Pydantic `BaseSettings`** 实现配置管理。完整的配置数据流：
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ Environment Variables / .env file                               │
-│ DEEPSEEK_API_KEY=sk-xxx                                         │
-│ CHROMA_PERSIST_DIR=chroma_db                                    │
-│ MAX_UPLOAD_SIZE_MB=50                                           │
-│ ...                                                             │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │ Pydantic BaseSettings 自动读取
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ backend/app/core/config.py                                       │
-│ class Settings(BaseSettings):                                   │
-│     DEEPSEEK_API_KEY: Optional[SecretStr] = Field(default=None) │
-│     MAX_UPLOAD_SIZE_MB: int = 50                                │
-│     ...                                                         │
-│                                                                  │
-│ settings = Settings()  ← 模块级单例                              │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │ from app.core.config import settings
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ 任意 Backend 模块                                                 │
-│ settings.MAX_UPLOAD_SIZE_MB  → 50                                │
-│ settings.CHROMA_PERSIST_DIR  → "chroma_db"                       │
-│ settings.get_deepseek_key() → "sk-xxx" (明文)                    │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### 6.3 BaseSettings / Pydantic Settings
-
-Pydantic 的 `BaseSettings` 是一个特殊的 Pydantic Model，它会 **自动从环境变量中读取值**。
-
-```python
-from pydantic_settings import BaseSettings, SettingsConfigDict
-
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",           # 也读取 .env 文件
+        env_file=".env",
         env_file_encoding="utf-8",
-        case_sensitive=True,       # 环境变量名大小写敏感
+        case_sensitive=True,
     )
 
-    MAX_UPLOAD_SIZE_MB: int = 50  # 如果环境变量中有 MAX_UPLOAD_SIZE_MB，使用它的值；否则用 50
+    # API Keys
+    DEEPSEEK_API_KEY: Optional[SecretStr] = Field(default=None)
+    DASHSCOPE_API_KEY: Optional[SecretStr] = Field(default=None)
+
+    # 应用
+    APP_NAME: str = "dx-rag-demo"
+
+    # ChromaDB
+    CHROMA_COLLECTION: str = "knowledge_chunks"
+    CHROMA_PERSIST_DIR: str = "chroma_db"
+
+    # 文件上传
+    UPLOAD_DIR: str = "uploads"
+    MAX_UPLOAD_SIZE_MB: int = 50
+
+    # Chunk 参数
+    MAX_CHUNK_SIZE: int = 800
+    CHUNK_OVERLAP: int = 120
+
+    # LLM
+    LLM_TEMPERATURE: float = 0.2
+    LLM_MAX_TOKENS: int = 2048
+    LLM_TIMEOUT: int = 60
+    LLM_MAX_RETRIES: int = 2
+
+    # 检索
+    DEFAULT_TOP_K: int = 5
+    TOP_K_MIN: int = 1
+    TOP_K_MAX: int = 20
+
+    # 历史
+    MAX_HISTORY_LENGTH: int = 20
+
+    # RAG Context
+    MAX_CONTEXT_CHARS: int = 4000
+
+    # 文件预览
+    MAX_PREVIEW_CHARS: int = 5000
+
+    # 混合检索
+    MIN_RELEVANCE_SCORE: float = 0.30
+
+    # CORS
+    CORS_ORIGINS: List[str] = Field(default_factory=lambda: ["*"])
+
+
+# 模块级单例
+settings = Settings()
+
+
+def get_settings() -> Settings:
+    return settings
 ```
 
-当 `Settings()` 被实例化时，Pydantic 按以下优先级查找每个字段的值：
+### Python 语法怎么读
 
-1. 操作系统环境变量（最高优先级）
-2. `.env` 文件
-3. Field 默认值（最低优先级）
+```python
+class Settings(BaseSettings):        # 继承 BaseSettings
+    APP_NAME: str = "dx-rag-demo"   # 字段名: 类型 = 默认值
+    MAX_UPLOAD_SIZE_MB: int = 50    # int 就是 number
+    LLM_TEMPERATURE: float = 0.2    # float 也是 number
+```
 
-这意味着你可以设置 `export MAX_UPLOAD_SIZE_MB=100` 来覆盖默认的 50——不需要修改任何代码。
+**TypeScript 思维**：
 
-### 6.4 .env 和 .env.example
+```ts
+class Settings extends BaseSettings {
+    APP_NAME: string = "dx-rag-demo";
+    MAX_UPLOAD_SIZE_MB: number = 50;
+    LLM_TEMPERATURE: number = 0.2;
+}
+```
 
-| 文件 | 作用 | 是否提交到 Git |
-|------|------|:---:|
-| `.env` | 实际的配置值（含真实 API Key） | ❌ 绝对不能提交 |
-| `.env.example` | 配置模板（不含真实值，只有参数说明） | ✅ 应该提交 |
+### 🟢 BaseSettings 解决了什么
 
-**为什么需要 `.env.example`**：当一个新开发者 clone 项目时，他们可以 `cp .env.example .env`，然后填入自己的 API Key。`.env.example` 充当了 **配置文档** 的角色。
+`BaseSettings` 会**自动**从环境变量和 `.env` 文件中读取值。优先级：
 
-DX-RAG 的 [backend/.env.example](backend/.env.example) 包含了全部 22 个参数，每个都有注释说明。
+1. **操作系统环境变量**（最高）
+2. **`.env` 文件**
+3. **Field 默认值**（最低）
 
-### 6.5 Secret vs Non-Secret Config
+所以你在服务器上设置 `export MAX_UPLOAD_SIZE_MB=100` 就能覆盖默认的 50，不需要改代码。
 
-在 DX-RAG 的 [backend/app/core/config.py](backend/app/core/config.py) 中，API Key 使用了 `SecretStr` 类型：
+**TypeScript 思维**：你不需要手动写 `process.env.XXX || defaultValue` 了。Pydantic 帮你做了自动查找 + 类型转换。
+
+### 🟢 SecretStr — API Key 为什么不能裸奔
 
 ```python
 DEEPSEEK_API_KEY: Optional[SecretStr] = Field(default=None)
-DASHSCOPE_API_KEY: Optional[SecretStr] = Field(default=None)
 ```
 
-**`SecretStr`** 是 Pydantic 提供的特殊类型。它的行为：
-- 从环境变量读取时：正常工作
-- 被打印/序列化时：显示为 `'**********'` 而非真实值
-- 需要真实值时：调用 `.get_secret_value()` 方法
+`SecretStr` 的行为：
+- 被 `print()` 或序列化时 → 显示 `'**********'`
+- 需要真实值时 → 调用 `.get_secret_value()`
 
-这就是为什么 `config.py` 中提供了 helper 方法：
+**TypeScript 思维**：就像你永远不会把 `API_KEY` 放在前端 `NEXT_PUBLIC_*` 环境变量里——`SecretStr` 是后端侧的同样原则。
+
+### 🟡 get_settings() — 为什么不用每次都 new Settings()
 
 ```python
-def get_deepseek_key(self) -> Optional[str]:
-    if self.DEEPSEEK_API_KEY is not None:
-        return self.DEEPSEEK_API_KEY.get_secret_value()
-    return None
+settings = Settings()           # 模块加载时创建一次
+
+def get_settings() -> Settings: # 返回同一个实例
+    return settings
 ```
 
-### 6.6 为什么 API Key 不能放 Frontend
+这确保整个应用共享同一个配置对象（单例）。从任何模块 `from app.core.config import settings` 拿到的都是同一个对象。
 
-这是一个关键的安全原则：
+**TypeScript 思维**：
 
-**任何进入浏览器的东西都是公开的。**
-
-即使用户看不到你的源代码，浏览器的 DevTools → Network 标签页可以清楚地看到所有 API 请求。如果你把 `DEEPSEEK_API_KEY` 放在前端代码中，任何人打开开发者工具就能获取。
-
-**SPEC 明确规定**: API keys env-only, never in frontend, never committed.
-
-**正确的架构**:
-
+```ts
+// config.ts
+export const settings = loadConfig();  // 模块级单例，import 时只执行一次
 ```
-Frontend (浏览器)                    Backend (服务器)
-     │                                    │
-     │  POST /api/query                   │
-     │  {question: "xxx"}                  │
-     │  (无需 API Key)                     │
-     │ ──────────────────────────────────► │
-     │                                    │ 从环境变量读取 DEEPSEEK_API_KEY
-     │                                    │ 调用 DeepSeek API（附加 API Key）
-     │                                    │
-     │  {answer: "xxx", sources: [...]}   │
-     │ ◄────────────────────────────────── │
-     │                                    │
-```
-
-API Key **只存在于 Backend 环境变量中**，Frontend 只知道如何调用自己的 Backend API，Backend 代替 Frontend 调用第三方 AI 服务。
 
 ---
 
-## 7. T0004 — Error / API Foundation
+## 8. T0004 — Error Handling
 
-### 7.1 HTTP Error 和 Python Exception 的区别
+### 🟢 从你熟悉的事情开始
 
-| 概念 | 是什么 | 例子 |
-|------|--------|------|
-| **HTTP Error** | HTTP 协议层面的状态码，告诉客户端"请求失败了" | `404 Not Found`, `500 Internal Server Error` |
-| **Python Exception** | Python 程序内部的异常，表示"代码执行出错了" | `ValueError`, `KeyError`, `FileNotFoundError` |
+在 Node.js 后端中，你可能有这样的错误处理：
 
-两者的关系：在 Web 框架中，Python Exception 需要被 **转换** 为 HTTP Error Response。如果你不处理一个 Python Exception，FastAPI 默认会返回 500 Internal Server Error（有时候还会暴露 traceback）。
-
-**T0004 要解决的问题**: 建立一套"将 Python Exception 系统地转换为 HTTP Error Response"的机制。
-
-### 7.2 为什么项目需要统一 Error Schema
-
-没有统一 Error Schema 时，不同 endpoint 返回的错误格式可能不一致：\
-
-```json
-// Endpoint A 的错误
-{"error": "File not found"}
-
-// Endpoint B 的错误
-{"detail": "Invalid input", "code": 400}
-
-// Endpoint C 的错误（FastAPI 默认）
-{"detail": [{"loc": ["body", "name"], "msg": "field required"}]}
+```ts
+// Express error middleware
+app.use((err, req, res, next) => {
+    if (err instanceof ValidationError) {
+        return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: err.message } });
+    }
+    console.error(err);
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Internal error' } });
+});
 ```
 
-前端必须写三种不同的解析逻辑。统一 Error Schema 解决这个问题：
+DX-RAG 的 T0004 做了完全一样的事情——但用 Python 的异常机制来实现。
 
-```json
-// 所有 endpoint 的错误都遵循这个格式
-{
-  "error": {
-    "code": "FILE_NOT_FOUND",
-    "message": "文件不存在",
-    "details": {}
-  }
-}
-```
+### 🟢 两层安全网
 
-### 7.3 FastAPI Exception Handler 的工作原理
+在 `main.py` 中注册了两个异常处理器：
 
-FastAPI 允许你注册 **exception handler**——类似于全局的 `try/except`：
+**第一层：AppError（我们主动抛的）**
 
 ```python
 @app.exception_handler(AppError)
@@ -836,1116 +849,731 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
     )
 ```
 
-当任何 endpoint 中 `raise AppError(...)` 时，FastAPI 不会让这个异常传播到用户。它会：
-1. 拦截这个 `AppError` 异常
-2. 调用我们注册的 handler
-3. 将 handler 返回的 `JSONResponse` 作为 HTTP 响应发送
+当你（或任何服务）执行 `raise AppError("FILE_TOO_LARGE", details={"max_size_mb": 50})`，FastAPI 会自动：
+1. 查错误目录，找到 FILE_TOO_LARGE → 413 + "文件大小超出限制"
+2. 返回 `{"error": {"code": "FILE_TOO_LARGE", "message": "文件大小超出限制", "details": {"max_size_mb": 50}}}`
 
-**调用流程**：
-
-```
-Endpoint 函数中 raise AppError("FILE_TOO_LARGE", details={"max_size_mb": 50})
-    │
-    ▼
-FastAPI 捕获异常
-    │
-    ▼
-匹配到 app_error_handler（因为异常是 AppError 类型）
-    │
-    ▼
-handler 返回 JSONResponse(status_code=413, content={...})
-    │
-    ▼
-用户收到 HTTP 413，body = {"error": {"code": "FILE_TOO_LARGE", ...}}
-```
-
-### 7.4 error.code / error.message / error.details
-
-这三个字段各司其职：
-
-| 字段 | 类型 | 目的 | 示例 |
-|------|------|------|------|
-| `error.code` | `str` | 机器可读的错误标识（UPPER_SNAKE_CASE） | `"FILE_TOO_LARGE"` |
-| `error.message` | `str` | 人类可读的中文描述 | `"文件大小超出限制"` |
-| `error.details` | `dict` | 可选的附加上下文信息 | `{"max_size_mb": 50}` |
-
-**前端如何使用**：
-- `code` 用于程序化判断——例如 `if (error.code === "COLLECTION_EMPTY") { showUploadPrompt(); }`
-- `message` 用于用户提示——直接展示给用户
-- `details` 用于更丰富的错误展示——例如 `"文件大小超出限制（最大 50 MB）"`
-
-### 7.5 为什么前端不能依赖 Python Traceback
-
-Python 的 traceback 长这样：
-
-```
-Traceback (most recent call last):
-  File "/app/services/qa.py", line 42, in search
-    result = model.encode(query)
-  File "/venv/lib/site-packages/sentence_transformers/...", line 128, in encode
-    ...
-```
-
-这些信息对前端开发者和用户毫无意义，而且可能暴露：
-
-- 服务器文件系统路径
-- 使用的第三方库版本
-- 内部数据结构
-
-**因此 SPEC Section 9.4 明确要求**：500 错误时，traceback 必须被记录到 Backend 日志中（开发者查看），但 **不得暴露给用户**。
-
-在 DX-RAG 的实现中，这体现在第二层 handler：
+**第二层：兜底（Python 自带的异常）**
 
 ```python
 @app.exception_handler(Exception)
 async def unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
     logger.error("Unhandled exception: %s\n%s", exc, traceback.format_exc())
-    # ↑ traceback 被写入了日志
-
     return JSONResponse(
         status_code=500,
         content=ErrorResponse(
             error=ErrorDetail(code="INTERNAL_ERROR", message="服务器内部错误", details={})
-            # ↑ 用户只看到这行，看不到 traceback
         ).model_dump(),
     )
 ```
 
-### 7.6 INTERNAL_ERROR 的作用
+如果 Python 代码自己抛了 `ValueError`、`KeyError`——先记录完整 traceback（开发者能看到），再返回 500（用户看不到 traceback）。
 
-`INTERNAL_ERROR` 是一个 **兜底错误码**。它的含义是：
+### 🟢 AppError 类
 
-> "发生了服务器内部未预期的错误。我们不告诉用户具体是什么（安全考虑），但我们记录了完整日志（开发者排查用）。"
-
-它在两种情况下出现：
-
-1. **代码中主动 raise** `AppError("INTERNAL_ERROR")`——但实际项目中很少主动用
-2. **兜底 handler 捕获未知异常**——这是主要使用场景
-
----
-
-## 8. T0005 — Pydantic Data Models & API Schemas
-
-### 8.1 T0005 的真正职责
-
-T0005 的职责是 **定义数据契约**——API 的 Request 长什么样、Response 长什么样。
-
-它不实现任何业务逻辑。它只是"预先声明"了数据结构，让后续 Task 在写 endpoint 时可以直接使用这些类型。
-
-### 8.2 Pydantic BaseModel 是什么
-
-**Pydantic** 是 Python 的数据验证库。它的 `BaseModel` 类允许你声明一个数据结构的"形状"：
+[errors.py](../../backend/app/core/errors.py) 的核心：
 
 ```python
-from pydantic import BaseModel, Field
-
-class CollectionCreate(BaseModel):
-    name: str = Field(description="Collection name (3-50 chars)")
+class AppError(Exception):          # 继承 Python 原生 Exception
+    def __init__(                    # __init__ = constructor
+        self,
+        code: str,                   # 错误码，如 "FILE_TOO_LARGE"
+        *,
+        details: Optional[Dict[str, Any]] = None,
+        message: Optional[str] = None,
+    ):
+        self.code = code
+        _http_status, default_message = _get_catalog_entry(code)
+        self.http_status = _http_status      # 自动查表得到 HTTP 状态码
+        self.message = message or default_message
+        self.details = details or {}
 ```
 
-当你使用这个模型时：
+**Python 语法怎么读**：
+- `class AppError(Exception):` — 定义一个类，继承 `Exception`
+- `def __init__(self, code: str, *, details=None):` — constructor。`*` 后面的参数必须用名字传参
+- 从 `_ERROR_CATALOG` 字典里查 `code` → 得到 `(http_status, chinese_message)`
 
-```python
-# 自动验证 + 类型转换
-data = CollectionCreate(name="my-kb")    # ✅ 正常
-data = CollectionCreate(name=123)        # ✅ Pydantic 自动将 123 转为 "123"
-data = CollectionCreate(name="")         # ❌ 如果定义了 min_length 会报错
-```
+**TypeScript 思维**：
 
-**Pydantic vs dataclass vs TypedDict**：Pydantic 在数据验证方面更强大，而且是 FastAPI 的原生选择——FastAPI 用 Pydantic 做自动的 Request 解析、Response 序列化和 OpenAPI Schema 生成。
+```ts
+class AppError extends Error {
+    code: string;
+    httpStatus: number;
+    details: Record<string, any>;
 
-### 8.3 当前项目中定义的主要模型
-
-在 [backend/app/models/schemas.py](backend/app/models/schemas.py) 中，定义了以下模型：
-
-| 模型 | 用途 | 关联 SPEC |
-|------|------|----------|
-| `ChatMessage` | 单条对话消息（role + content） | Section 6.4, 7.6 |
-| `CollectionCreate` | 创建知识库的 Request Body | Section 6.5 |
-| `CollectionRename` | 重命名知识库的 Request Body | Section 6.5 |
-| `CollectionItem` | 列表中的单个知识库条目 | Section 7.2 |
-| `CollectionResponse` | 创建/删除知识库的 Response | Section 6.5 |
-| `CollectionRenameResponse` | 重命名知识库的 Response | Section 6.5 |
-| `CollectionListResponse` | 知识库列表的 Response | Section 6.5 |
-| `UploadWarning` | 上传处理中的一条 warning | Section 6.3 |
-| `UploadResponse` | 上传成功的 Response | Section 6.3 |
-| `SourceObject` | 答案中引用的一条来源 | Section 6.4, 7.5 |
-| `QueryRequest` | QA 请求的 Request Body | Section 6.4 |
-| `QueryResponse` | QA 响应的 Response | Section 6.4 |
-| `FileItem` | 文件列表中的单个文件条目 | Section 6.6 |
-| `FileListResponse` | 文件列表的 Response | Section 6.6 |
-| `FilePreviewResponse` | 文件预览的 Response | Section 6.6 |
-| `FileDeleteResponse` | 文件删除的 Response | Section 6.6 |
-
-### 8.4 为什么 v1 不引入通用成功响应包装器
-
-你可能在其他项目中见过这种模式：
-
-```json
-// ❌ DX-RAG v1 明确不采用这种格式
-{
-  "code": 200,
-  "data": { ... },
-  "message": "success"
+    constructor(code: string, opts?: { details?: Record<string, any>; message?: string }) {
+        const [httpStatus, defaultMessage] = ERROR_CATALOG[code] ?? [500, '内部错误'];
+        super(opts?.message ?? defaultMessage);
+        this.code = code;
+        this.httpStatus = httpStatus;
+        this.details = opts?.details ?? {};
+    }
 }
 ```
 
-SPEC Section 7.7 明确禁止这种"通用成功包装器"。
+### 🟢 错误目录（Error Catalog）
 
-**为什么禁止**：
-- 增加了一层没有语义价值的嵌套
-- 前端每次都要 `.data` 才能拿到真正需要的字段
-- 不同类型的响应有不同的字段，强行包装会让类型定义变复杂
-- 错误有独立的 error format，不需要在成功响应中携带 code/message
+```python
+_ERROR_CATALOG: Dict[str, tuple] = {
+    "INVALID_COLLECTION_NAME": (400, "知识库名称格式无效"),
+    "COLLECTION_NOT_FOUND": (404, "知识库不存在"),
+    "COLLECTION_ALREADY_EXISTS": (409, "知识库名称已存在"),
+    "FILE_TOO_LARGE": (413, "文件大小超出限制"),
+    "FILE_PARSE_ERROR": (422, "文件解析失败"),
+    # ... 共 26 个
+}
+```
 
-**DX-RAG 的做法**：每个 API endpoint 使用自己独立的 Response Model，字段就是业务需要的字段。例如 UploadResponse 直接有 `status`、`file_id`、`chunks` 等字段，没有外层包装。
+**它在干什么**：一个"错误码 → (HTTP 状态码, 中文消息)" 的映射表。统一定义的好处：所有地方 raise 同一个 `AppError("FILE_TOO_LARGE")`，返回的状态码和消息永远一致。
+
+**TypeScript 思维**：类似你项目的 `errorCodes.ts` 常量文件。
+
+### 🟢 Python Exception vs HTTP Error
+
+| 概念 | 是什么 | 类比 |
+|------|--------|------|
+| Python Exception | 程序内部的异常信号 | TS `throw new Error()` |
+| HTTP Error | 返回给客户端的 4xx/5xx | Express `res.status(400).json(...)` |
+| try / except | 捕获异常 | try / catch |
+
+**关键关系**：FastAPI Exception Handler 的作用就是 **把 Python Exception 翻译成 HTTP Error Response**。
 
 ---
 
-## 9. Backend 启动完整流程
+## 9. T0005 — Pydantic / API Schema
 
-以 `uvicorn app.main:app` 为起点：
+> 这一节对你最重要。Pydantic 不是你熟悉的 TypeScript interface。
 
-```
-Shell Command
-  uvicorn app.main:app
-    │
-    ▼
-Uvicorn 启动
-    │ import "app.main" module
-    ▼
-Python 执行 backend/app/main.py 顶层代码
-    │
-    ├─ import logging, traceback
-    ├─ from fastapi import FastAPI, ...
-    ├─ from app.api.router import api_router
-    │   │
-    │   └─ Python 执行 backend/app/api/router.py
-    │       │
-    │       └─ 创建 api_router = APIRouter()
-    │           （当前为空，无子 router）
-    │
-    ├─ from app.core.errors import AppError, ErrorDetail, ErrorResponse
-    │   │
-    │   └─ Python 执行 backend/app/core/errors.py
-    │       │
-    │       ├─ 定义 ErrorDetail(BaseModel)
-    │       ├─ 定义 ErrorResponse(BaseModel)
-    │       ├─ 定义 _ERROR_CATALOG dict（26 个错误码）
-    │       └─ 定义 AppError(Exception)
-    │
-    ├─ 创建 app = FastAPI(title="DX-RAG", ...)
-    ├─ 注册 CORSMiddleware
-    │   allow_origins=["*"]
-    │
-    ├─ 注册 AppError 异常处理器
-    │   @app.exception_handler(AppError)
-    │
-    ├─ 注册兜底 Exception 异常处理器
-    │   @app.exception_handler(Exception)
-    │
-    └─ 注册主 Router
-        app.include_router(api_router, prefix="/api")
-    │
-    ▼
-Uvicorn 取得 "app" 变量（FastAPI 实例）
-    │
-    ▼
-Uvicorn 启动 ASGI 服务器
-    │ 执行 lifespan(app):
-    │   yield 之前：startup（当前为空）
-    │   应用就绪
-    │
-    ▼
-监听 localhost:8000，等待 HTTP 请求
-    │
-    ▼
-HTTP 请求到来时：
-    Request → Uvicorn → FastAPI app → Middleware(CORS) → Router → Endpoint → Response
+### 🟢 TypeScript interface 能做什么
+
+```ts
+interface QueryRequest {
+    question: string;
+    collection_name: string;
+    top_k: number;
+    history: ChatMessage[];
+}
 ```
 
-**当前阶段的特点**：所有 import 都能成功，没有循环依赖，应用能启动。但因为没有业务 endpoint，所有请求会返回 404。
+这是纯**编译时**类型检查。运行时你收到一个 JSON，TypeScript 不会自动帮你验证 `question` 是不是 string。
+
+### 🟢 Pydantic BaseModel 额外能做什么
+
+Pydantic 不仅是类型标注，它是**运行时**的。同样一个 QueryRequest：
+
+```python
+class QueryRequest(BaseModel):
+    question: str = Field(description="User question")
+    collection_name: str = Field(description="Target knowledge base name")
+    top_k: int = Field(default=5, description="Number of chunks to retrieve (1-20)")
+    history: List[ChatMessage] = Field(default_factory=list)
+```
+
+当 FastAPI 收到一个请求 body，它会：
+1. **解析** JSON → Python dict
+2. **验证** 每个字段的类型是否正确
+3. **转换** "5"（字符串）→ 5（整数）如果类型是 int
+4. **填充** 默认值（top_k 没传 → 自动填 5）
+5. **拒绝** 多余字段或错误类型 → 返回 422
+
+**先这样理解**：Pydantic Model ≈ TypeScript interface + Zod schema 的组合。
+
+```ts
+// TypeScript 等价思维（但本质不同）
+import { z } from 'zod';
+
+const QueryRequestSchema = z.object({
+    question: z.string(),
+    collection_name: z.string(),
+    top_k: z.number().default(5),
+    history: z.array(ChatMessageSchema).default([]),
+});
+
+type QueryRequest = z.infer<typeof QueryRequestSchema>;
+```
+
+这个类比并不完美，但它帮你理解：Pydantic 不止描述 shape，还在 runtime 做验证。
+
+### 🟢 读取一段真实的 Pydantic 代码
+
+```python
+class UploadResponse(BaseModel):
+    """POST /api/upload (200) response."""
+    status: Literal["SUCCESS", "SUCCESS_WITH_WARNINGS"] = Field(...)
+    message: str = Field(description="Human-readable result message")
+    file_id: str = Field(description="UUID of the uploaded file")
+    file_name: str = Field(description="Original filename")
+    chunks: int = Field(description="Number of chunks generated")
+    collection_name: str = Field(description="Target collection name")
+    warnings: List[UploadWarning] = Field(default_factory=list)
+```
+
+**Python 语法怎么读**：
+- `class UploadResponse(BaseModel):` — 定义一个数据模型，继承 BaseModel
+- `status: Literal["SUCCESS", "SUCCESS_WITH_WARNINGS"]` — status 字段只能是这两个值之一
+- `chunks: int` — chunks 是一个整数
+- `warnings: List[UploadWarning]` — warnings 是一个 UploadWarning 数组
+- `Field(default_factory=list)` — 默认值是空列表 `[]`
+
+**TypeScript 思维**：
+
+```ts
+interface UploadResponse {
+    status: "SUCCESS" | "SUCCESS_WITH_WARNINGS";
+    message: string;
+    file_id: string;        // UUID
+    file_name: string;       // 原始文件名
+    chunks: number;
+    collection_name: string;
+    warnings: UploadWarning[];
+}
+```
+
+### 🟢 16 个 Pydantic 模型一览
+
+| 模型 | 用途 | TypeScript 等价思维 |
+|------|------|-------------------|
+| `ChatMessage` | 单条对话（用户/助手） | `{ role: 'user' \| 'assistant', content: string }` |
+| `CollectionCreate` | 创建知识库的请求 | `{ name: string }` |
+| `CollectionRename` | 重命名请求 | `{ new_name: string }` |
+| `CollectionItem` | 列表中一条知识库 | `{ name: string, file_count: number }` |
+| `CollectionResponse` | 创建/删除的响应 | `{ message: string, name: string }` |
+| `CollectionRenameResponse` | 重命名响应 | `{ message, old_name, new_name }` |
+| `CollectionListResponse` | 知识库列表响应 | `{ collections: CollectionItem[] }` |
+| `UploadWarning` | 上传警告 | `{ page_number: number, error_code: string }` |
+| `UploadResponse` | 上传成功响应 | `{ status, message, file_id, chunks, ... }` |
+| `SourceObject` | 一条来源引用 | `{ file_id, file_name, chunk_id, relevance_score }` |
+| `QueryRequest` | QA 请求 | `{ question, collection_name, top_k?, history? }` |
+| `QueryResponse` | QA 响应 | `{ answer, sources, query, collection_name }` |
+| `FileItem` | 文件列表中一条 | `{ file_id, file_name, size, upload_time, ... }` |
+| `FileListResponse` | 文件列表响应 | `{ collection_name, files: FileItem[] }` |
+| `FilePreviewResponse` | 文件预览响应 | `{ file_id, content, preview_chars, total_chars }` |
+| `FileDeleteResponse` | 文件删除响应 | `{ message, file_name, collection_name }` |
+
+### 🟡 Pydantic 和 TypeScript 的关键区别
+
+| 维度 | TypeScript interface | Pydantic BaseModel |
+|------|---------------------|-------------------|
+| **检查时机** | 编译时（build/CI） | 运行时（请求进来时） |
+| **验证** | 不验证 | 自动类型验证 + 转换 |
+| **默认值** | 无（需手动解构 + 默认值） | `Field(default=...)` |
+| **序列化** | `JSON.stringify` | `.model_dump()` |
+| **反序列化** | `JSON.parse` + 手动验证 | `Model(**json_dict)` 自动 |
+| **文档生成** | 需额外工具 | 自动生成 OpenAPI JSON Schema |
+
+**一句话总结**：TypeScript interface 帮你写好代码；Pydantic BaseModel 帮你在运行时挡住错误数据。
 
 ---
 
-## 10. Frontend 启动完整流程
+## 10. 从前端请求到 FastAPI 的完整路径
 
-以 `npm run dev` 为起点：
+> 整合 T0001–T0005，追踪一次（未来的）完整请求。
 
-```
-Shell Command
-  npm run dev
-    │
-    ▼
-npm 在 package.json 中找到 "dev": "next dev"
-    │
-    ▼
-npm 在 node_modules/.bin/ 中找到 next 可执行文件
-    │ next dev
-    ▼
-Next.js 开发服务器启动
-    │
-    ├─ 读取 next.config.js
-    │   transpilePackages: ['antd']
-    │
-    ├─ 读取 tsconfig.json
-    │   strict: true, jsx: "preserve", ...
-    │
-    ├─ 编译 App Router（基于文件系统）
-    │   │
-    │   ├─ 发现 app/layout.tsx → RootLayout 组件
-    │   └─ 发现 app/page.tsx   → Home 组件
-    │
-    ├─ 应用全局 CSS (globals.css)
-    │
-    ▼
-启动 WebSocket 热更新服务
-    │
-    ▼
-监听 localhost:3000，等待 HTTP 请求
-    │
-    ▼
-浏览器访问 localhost:3000 时：
-    │
-    ├─ Next.js 服务端渲染 (SSR)：
-    │   1. 执行 RootLayout 组件
-    │      <html lang="zh-CN">
-    │        <body>
-    │          <ConfigProvider locale={zhCN}>
-    │            渲染 {children}（即 Home 组件）
-    │              └─ <main><h1>DX-RAG</h1><p>Enterprise knowledge base...</p></main>
-    │            完成
-    │          </ConfigProvider>
-    │        </body>
-    │      </html>
-    │
-    │   2. 序列化为 HTML 字符串，发送给浏览器
-    │
-    ├─ 浏览器接收 HTML，开始渲染
-    │
-    ├─ 浏览器加载 JavaScript bundle（hydration）
-    │   React 接管页面，绑定事件处理器
-    │
-    ▼
-页面渲染完成 → 用户看到 "DX-RAG" 标题
+```text
+1. 用户在浏览器输入问题，点击发送
+       │
+2.     ▼
+   Next.js (localhost:3000)
+   React 组件触发 fetch("/api/query", { method: "POST", body: ... })
+       │                                    ↑
+       │  HTTP POST /api/query                │
+       ▼                                    │
+3. Uvicorn (ASGI Server, port 8000)         │
+   接收 TCP 连接，解析 HTTP 字节流            │
+       │                                    │
+       ▼                                    │
+4. FastAPI app (main.py)                    │
+   检查 URL path: /api/query                │
+       │                                    │
+       ▼                                    │
+5. CORS Middleware                          │
+   允许 localhost:3000 的跨域请求            │
+       │                                    │
+       ▼                                    │
+6. APIRouter (prefix="/api")                │
+   匹配 /query → query.py 的 endpoint        │
+       │                                    │
+       ▼                                    │
+7. Pydantic 验证 (QueryRequest)              │
+   检查 question 是 string、top_k 在 1-20     │
+   验证失败 → 422                            │
+       │                                    │
+       ▼                                    │
+8. Endpoint function                        │
+   执行业务逻辑 (Phase 3-8 实现)              │
+       │                                    │
+       ▼                                    │
+9. Pydantic 序列化 (QueryResponse)           │
+   Python 对象 → JSON                        │
+       │                                    │
+       ▼                                    │
+10. 响应原路返回                              │
+    FastAPI → Uvicorn → HTTP → fetch ───────┘
+       │
+       ▼
+11. Next.js 收到响应，更新 React state
+    用户看到答案
 ```
 
-**开发服务器启动成功 vs 浏览器页面无 console error 不是同一回事**：
-
-- `npm run dev` 成功启动 = "Webpack/Turbopack 编译成功，没有语法错误，TypeScript 类型检查通过"
-- 浏览器无 console error = "React 组件渲染正常，没有运行时错误，没有未捕获的异常"
-
-一个常见的场景：`npm run dev` 成功（代码编译通过），但浏览器 Console 中有红色错误（如 Ant Design 组件缺少必需的 prop）。
-
-**当前 Phase 0 的 Frontend 状态**：两种验证都应该通过——页面只是一个简单的 `<h1>` 标签，Ant Design 的 ConfigProvider 只是设置 locale，不渲染任何组件。
+**Phase 0 当前实现了什么**：步骤 3-6 的基础设施已就绪。步骤 7-9 的类型定义已完成。步骤 8 的业务逻辑由后续 Phase 实现。
 
 ---
 
-## 11. Browser → Backend 请求将来会怎么走
+## 11. Python 与 TypeScript 对照表
 
-Phase 0 已经建立了 Frontend 和 Backend 之间的 **HTTP 通信基础**。以下是未来请求的完整路径：
+> 只收录 Phase 0 真实出现的内容。
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│ Browser (localhost:3000)                                            │
-│                                                                     │
-│ 用户点击 "发送" 按钮                                                  │
-│   │                                                                 │
-│   ▼                                                                 │
-│ QAPanel 组件调用 api-client.ts 中的 queryQA()                        │
-│   │                                                                 │
-│   ▼                                                                 │
-│ fetch("http://localhost:8000/api/query", {                          │
-│   method: "POST",                                                   │
-│   body: JSON.stringify({question, collection_name, top_k, history}) │
-│ })                                                                  │
-└──────────────────────────────┬──────────────────────────────────────┘
-                               │ HTTP POST /api/query
-                               │ (JSON body)
-                               ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│ Backend (localhost:8000)                                            │
-│                                                                     │
-│ Uvicorn 接收 HTTP 请求                                               │
-│   │                                                                 │
-│   ▼                                                                 │
-│ FastAPI app (main.py)                                               │
-│   │ CORSMiddleware: 检查 Origin → 允许 localhost:3000                │
-│   ▼                                                                 │
-│ APIRouter (prefix="/api")                                           │
-│   │ 路由匹配: POST /api/query → query.py 中的 query endpoint         │
-│   ▼                                                                 │
-│ Endpoint 函数:                                                       │
-│   1. Pydantic 自动解析 + 校验 Request Body                           │
-│   2. 调用 Service 层业务逻辑                                         │
-│   3. Pydantic 自动序列化 Response                                    │
-│   ▼                                                                 │
-│ JSONResponse → Uvicorn → HTTP Response                              │
-└──────────────────────────────┬──────────────────────────────────────┘
-                               │ HTTP 200 OK
-                               │ {answer, sources, query, collection_name}
-                               ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│ Browser                                                             │
-│                                                                     │
-│ QAPanel 组件接收响应                                                  │
-│   → 更新 React state                                                 │
-│   → react-markdown 渲染 answer                                       │
-│   → 展开 sources 列表                                                │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-**Phase 0 已就位的基础设施**：
-
-- CORS 中间件允许 Frontend → Backend 跨域请求
-- `/api` Router 结构已就位，后续只需添加子 Router
-- 错误处理机制已就位，异常会被正确转换为 JSON Error Response
-- Response 模型已在 T0005 中定义，endpoint 可以直接使用
-
-**后续 Task 将在这个基础上加入具体业务 Endpoint。**
+| Python | TypeScript / Node 类比 | 差异 / 注意 | 在 DX-RAG 哪里出现 |
+|--------|----------------------|-----------|------------------|
+| `str` | `string` | | schemas.py、config.py 到处可见 |
+| `int` | `number` | Python 区分 `int`/`float`，TS 只有 `number` | config.py |
+| `float` | `number` | | config.py |
+| `bool` | `boolean` | Python 的是 `True`/`False`（大写） | |
+| `list[str]` | `string[]` | | config.py: `List[str]` |
+| `dict[str, any]` | `Record<string, any>` | | errors.py: `Dict[str, Any]` |
+| `Optional[str]` | `string \| null \| undefined` | | config.py |
+| `None` | `null`（大部分语境）/ `void`（函数返回值） | Python 没有 `undefined` | 到处可见 |
+| `def` | `function` / method | | 所有函数定义 |
+| `class` | `class` | | 所有类定义 |
+| `self` | `this` | Python 必须显式写在方法参数里 | errors.py, config.py |
+| `__init__` | `constructor` | Python 对象在 `__new__` 时就创建了 | errors.py |
+| `import X` | `import X from ...` | Python 可以只 import module 不 import 具体项 | main.py |
+| `from X import Y` | `import { Y } from X` | Python 用 `.` 分隔路径 | main.py, router.py |
+| `BaseModel` | TS `interface` + Zod `z.object()` | Pydantic 是 runtime + compile-time | schemas.py, errors.py |
+| `BaseSettings` | `process.env` + 类型验证库 | 自动读环境变量 + 类型转换 + 默认值 | config.py |
+| `@decorator` | 无直接等价，类似 NestJS decorator | 给函数/类附加框架行为 | main.py |
+| `try / except` | `try / catch` | | |
+| `async / await` | `async / await` | 概念基本相同 | main.py |
+| `yield` | 无直接等价 | Context manager，先理解成"启动/关闭钩子" | main.py |
+| `Field(...)` | 类似 Zod 的 `.describe()` | Pydantic 字段元数据 | schemas.py, errors.py |
 
 ---
 
-## 12. 依赖管理
+## 12. 项目目录：用前端工程思维理解
 
-### Python 依赖管理
-
-DX-RAG Backend 使用 [requirements.txt](backend/requirements.txt) 声明 Python 依赖：
-
+```text
+backend/app/
+├── main.py             ← 后端入口，类比 server.ts / index.ts
+├── api/                ← 类比 Next.js 的 app/api/ 目录
+│   ├── __init__.py
+│   └── router.py       ← 主路由，类比 Express Router
+├── core/               ← 类比 lib/ 或 utils/
+│   ├── __init__.py
+│   ├── config.py       ← 类比 config.ts（环境变量 → 类型安全对象）
+│   └── errors.py       ← 类比 errorCodes.ts + errorHandler.ts
+├── models/             ← 类比 types/api.ts
+│   ├── __init__.py
+│   └── schemas.py      ← API 的 Request/Response 类型定义
+└── services/           ← 类比 services/ 或 useCases/
+    └── __init__.py     ← 目前空，未来放业务逻辑
 ```
-fastapi>=0.104.1
-uvicorn>=0.24.0
-chromadb>=0.4.15
-...
+
+### 每个目录的职责边界
+
+| 目录 | 职责 | 我不应该在这里看到什么 |
+|------|------|---------------------|
+| `api/` | HTTP 层——路由定义、参数解析、返回响应 | 不应该有数据库操作、文件解析逻辑 |
+| `core/` | 基础设施——配置、错误、接口定义 | 不应该有业务逻辑、API 特定代码 |
+| `models/` | 数据结构——API 契约 | 不应该有函数实现 |
+| `services/` | 业务逻辑——文档处理、检索、QA | 不应该直接处理 HTTP Request/Response |
+
+### 空 `__init__.py` 是干什么的
+
+Python 要求：一个目录要被 `import`（如 `from app.core import config`），必须包含一个 `__init__.py` 文件。它可以是空的——它的存在本身就是 "这个目录是 Python package" 的声明。
+
+**TypeScript 思维**：类比 `index.ts` 的 re-export 文件，但 Python 的 `__init__.py` 即使空着也有作用（标记 package）。
+
+---
+
+## 13. Phase 0 关键代码阅读路线
+
+> 不要一次读所有文件。按这个顺序来。
+
+### 第一遍阅读（目标：看懂后端是怎么启动的）
+
+#### 1. [backend/app/main.py](../../backend/app/main.py) — 69 行
+
+**第一遍只看**：
+- import 区域（知道引入了什么）
+- `app = FastAPI(...)` — 入口
+- `app.include_router(api_router, prefix="/api")` — 理解 `/api` 前缀怎么来的
+
+**暂时跳过**：
+- `@asynccontextmanager` 语法细节
+- `@app.exception_handler` decorator 原理
+
+**能回答这些就算看懂**："整个后端的入口是什么？CORS 在哪配置？`/api` 前缀在哪定义？"
+
+#### 2. [backend/app/api/router.py](../../backend/app/api/router.py) — 10 行
+
+**第一遍只看**：`api_router = APIRouter()` 这一行 + 注释中的未来 import。
+
+**能回答这些就算看懂**："目前有什么 API？未来 API 会怎么添加？"
+
+#### 3. [backend/app/core/config.py](../../backend/app/core/config.py) — 111 行
+
+**第一遍只看**：
+- `class Settings(BaseSettings)` 下面的 22 个字段
+- `settings = Settings()` 这一行（最后几行）
+- `get_deepseek_key()` 方法
+
+**暂时跳过**：
+- `field_validator` 细节
+- `model_config` 细节
+
+**能回答这些就算看懂**："配置从哪里来？`MAX_UPLOAD_SIZE_MB` 的默认值是多少？怎么读到真实的 API Key？"
+
+#### 4. [backend/app/core/errors.py](../../backend/app/core/errors.py) — 114 行
+
+**第一遍只看**：
+- `_ERROR_CATALOG` 字典（理解有哪些错误码）
+- `AppError.__init__` 方法（理解 error code → HTTP status 的查找逻辑）
+
+**暂时跳过**：
+- Pydantic `BaseModel` 的 `model_dump()` 方法
+
+**能回答这些就算看懂**："如果我想抛一个'文件不存在'的错误，应该用什么 code？前端的 error parser 应该怎么解析？"
+
+#### 5. [backend/app/models/schemas.py](../../backend/app/models/schemas.py) — 189 行
+
+**第一遍只看**：
+- `class ChatMessage` — 最简单的模型
+- `class QueryRequest` — 理解 Pydantic 模型的结构
+- `class UploadResponse` — 理解 `Literal` 类型的用法
+
+**暂时跳过**：
+- 每个 `Field(description=...)` 的具体内容
+
+**能回答这些就算看懂**："QA 请求需要哪些字段？上传成功后的 Response 长什么样？这些模型和 TypeScript interface 有什么关键不同？"
+
+---
+
+## 14. 我现在只需要掌握的 10 件事
+
+1. **`self` ≈ `this`**，但 Python 要求你显式写在方法参数列表的第一个位置
+
+2. **`__init__` ≈ `constructor`**，实例化时自动调用
+
+3. **Uvicorn 是服务器，FastAPI 是 Web 框架**——类似 Node.js 里 Express 处理路由、底层 http 模块监听端口
+
+4. **`app/main.py` = 后端入口文件**——类比 `server.ts`
+
+5. **`BaseSettings`** 自动从环境变量和 `.env` 文件读取配置，不需要手动 `process.env.xxx`
+
+6. **Pydantic `BaseModel` ≠ TypeScript `interface`**——Pydantic 在 runtime 做验证和转换，不只是编译时检查
+
+7. **`AppError("FILE_TOO_LARGE")`** 会被全局 handler 自动转换为 `{"error": {"code": "FILE_TOO_LARGE", "message": "文件大小超出限制"}}`
+
+8. **`/api` 前缀**来自 `main.py` 中 `app.include_router(api_router, prefix="/api")`
+
+9. **`__init__.py`** 即使是空文件也不可少——它告诉 Python 这个目录是一个 package
+
+10. **API Key 永远只在 Backend**——通过环境变量和 `SecretStr` 保护，前端不持有任何第三方 API Key
+
+---
+
+## 15. 现在可以暂时不懂的内容
+
+> 以下内容不影响你理解 Phase 0 的核心。以后遇到实际需求再回来学。
+
+- **ASGI protocol 细节** — Uvicorn 和 FastAPI 之间的通信协议。先当成"类似 Node.js HTTP server 和 Express 的关系"就够用
+- **decorator 实现原理** — `@app.exception_handler` 怎么工作的。先当成"框架给函数加标签"就行
+- **Pydantic internals** — model 验证/序列化的底层机制。先知道 `.model_dump()` 就是"转成 dict"就够了
+- **Python descriptor / metaclass** — Phase 0 完全没用到
+- **Dependency injection** — FastAPI 的 `Depends()` Phase 0 还没用
+- **FastAPI internal routing machinery** — 路由匹配的底层算法
+- **Python async event loop** — `asyncio` 的事件循环机制
+- **Context manager protocol** — `yield` 在 `@asynccontextmanager` 背后的 `__enter__`/`__exit__` 机制
+- **SettingsConfigDict 的细节** — `case_sensitive=True` 具体是什么意思、还有哪些配置项
+
+---
+
+## 16. 常见问题：以前端开发者视角回答
+
+### Q1: 为什么 Python 文件里到处有 `__init__.py`？它是干什么的？
+
+**简单回答**：它告诉 Python "这个目录是一个 package，可以被 import"。
+
+如果没有 `app/core/__init__.py`，你就不能写 `from app.core import config`。
+
+**前端类比**：不完全等价，但可以类比 `index.ts` barrel export 文件——它标识一个目录是一个模块入口。但 Python 的即使是空文件也有作用（不像 TS 的 index.ts 必须包含 export 才有意义）。
+
+### Q2: `self` 为什么必须写在参数里？
+
+**简单回答**：这是 Python 设计哲学——"显式优于隐式"。Python 的设计者认为方法第一个参数应该明确说出来，而不是像 JS 的 `this` 那样隐式传入。
+
+```python
+# Python: self 是显式的
+class Foo:
+    def method(self, x):  # self 在参数列表里
+        self.x = x        # 访问实例属性也显式写 self
 ```
 
-**`>=` 的含义**：最低版本约束。"我需要 chromadb 0.4.15 或更高版本。"
+### Q3: 为什么 Python 有 type hint 但运行时还能是动态类型？
 
-**安装方式**：
+**简单回答**：Python type hints **不强制运行时检查**。它们给 IDE 和类型检查器（mypy / pyright）用，但 Python 解释器自己不管。这和 TS 不同——TS 编译时会报错拒绝运行，Python 只会"建议"你写类型。
+
+### Q4: Pydantic 和 TypeScript interface 到底有什么区别？
+
+**核心区别**：TypeScript interface 在编译后**消失**——运行时没有任何接口信息。Pydantic model 在运行时**仍然存在**——它可以验证数据、转换类型、生成 JSON Schema。
+
+**类比**：TypeScript interface = 设计图纸（建完房子就没了）。Pydantic BaseModel = 安检门（每个通过的请求都要被检查）。
+
+### Q5: FastAPI 和 Express 有什么区别？
+
+| 维度 | Express | FastAPI |
+|------|---------|---------|
+| **路由定义** | `app.get('/path', handler)` | `@app.get('/path')` 或 `@router.get('/path')` |
+| **参数验证** | 手动或第三方库（Joi, Zod） | 内置（基于 Pydantic） |
+| **类型标注** | TypeScript（编译时） | Python type hints + Pydantic（运行时） |
+| **API 文档** | 需要 swagger-jsdoc 等 | 自动生成 OpenAPI（`/docs`） |
+| **异步** | 原生 Promise/async | asyncio + async/await |
+| **服务器** | 内置 http 模块 | 需要 ASGI 服务器（Uvicorn） |
+
+### Q6: Uvicorn 和 FastAPI 为什么不是一个东西？
+
+**简单回答**：FastAPI 是"业务逻辑框架"（定义路由、解析参数、返回响应），Uvicorn 是"网络服务器"（监听端口、收发 HTTP 字节流）。它们之间通过 ASGI 协议通信。
+
+**前端类比**：就像 Next.js 和 Node.js http 模块的关系——Next.js 处理 React 渲染和路由，Node.js http 负责底层 TCP 连接。但 Python 把它们拆成了两个独立程序。
+
+### Q7: `BaseSettings` 为什么不能直接 `os.getenv()`？
+
+`os.getenv("KEY")` 只能读到一个字符串。`BaseSettings` 额外做了：
+- **类型转换**：`MAX_UPLOAD_SIZE_MB` 是 int，自动把 `"50"` 转成 `50`
+- **默认值**：环境变量没设置时用 default
+- **验证**：可以检查值是否合法
+- **集中管理**：22 个参数在一个地方定义，IDE 可以自动补全
+
+### Q8: 后端为什么需要统一 ErrorResponse？
+
+因为前端只需要写**一个** error parser：
+
+```ts
+// 前端统一的错误处理
+const response = await fetch('/api/upload', { ... });
+if (!response.ok) {
+    const { error } = await response.json();
+    // error.code   → "FILE_TOO_LARGE"
+    // error.message → "文件大小超出限制"
+    // error.details → { max_size_mb: 50 }
+    handleError(error);
+}
+```
+
+而不是每个 API 各自猜格式。
+
+---
+
+## 17. Debug：用我已有经验迁移
+
+### ModuleNotFoundError ←→ Module not found
+
+| 症状 | Node.js | Python |
+|------|---------|--------|
+| 找不到模块 | `Error: Cannot find module './config'` | `ModuleNotFoundError: No module named 'app.core.config'` |
+| 常见原因 | 路径写错 / 文件不存在 | 路径写错 / `__init__.py` 缺失 / PYTHONPATH 问题 |
+| 检查方式 | `ls` 看文件在不在 | 检查目录是否有 `__init__.py`，路径拼写是否正确 |
+| 运行目录 | 从项目根目录 | 从 `backend/` 目录运行（或设置 PYTHONPATH） |
+
+### pip install ←→ npm install
+
+| 操作 | npm | pip |
+|------|-----|-----|
+| 安装依赖 | `npm install` (读 package.json) | `pip install -r requirements.txt` (读 requirements.txt) |
+| 声明文件 | `package.json` | `requirements.txt` |
+| Lock 文件 | `package-lock.json` | Python 没有统一的 lockfile 标准（可用 `pip freeze > ...`） |
+| 安装到哪里 | `node_modules/` | 系统 Python site-packages 或虚拟环境 |
+| 虚拟环境 | `node_modules/.bin/` | `venv/`（需要手动创建和激活） |
+
+### 如何检查 import 是否成功
+
 ```bash
-pip install -r requirements.txt
+# Node.js 等价: node -e "require('./config')"
+cd backend
+python -c "from app.core.config import settings; print(settings.APP_NAME)"
+# 输出 "dx-rag-demo" 表示成功
 ```
 
-**Python 依赖管理的特点**：
-- `requirements.txt` 只声明直接依赖（不声明依赖的依赖）
-- 实际安装的版本取决于 `pip install` 时的最新兼容版本
-- 没有像 `package-lock.json` 那样的标准 lockfile 机制（pip-tools、Poetry、uv 等工具可以生成 lockfile，但不是 Python 标准）
+### 如何定位错误
 
-**这意味着**：如果 `chromadb` 依赖了 `numpy`，而 `numpy` 发布了一个不兼容的新版本，不同时间执行 `pip install` 可能得到不同的 numpy 版本。
+**Python traceback 怎么读**（Node.js 开发者也看 stack trace）：
 
-### Node 依赖管理
-
-DX-RAG Frontend 使用 `package.json` + `package-lock.json` 双重管理：
-
-**`package.json`**: 声明依赖和版本约束。
-```json
-"antd": "5.22.7"       // 精确版本
-"react": "^18.3.1"      // 兼容 18.x 的最新版本
+```text
+Traceback (most recent call last):
+  File "app/main.py", line 68, in <module>      ← 从这里开始
+    app.include_router(api_router, prefix="/api")
+  File "app/api/router.py", line 3, in <module>  ← 跳到这里
+    from app.core.config import settings
+ModuleNotFoundError: No module named 'app.core.config'  ← 这里崩了
 ```
 
-**`package-lock.json`**: 锁定整个依赖树的精确版本。
-
-**安装方式**：
-```bash
-npm install    # 按 package-lock.json 精确安装
-npm ci         # 更严格的安装（要求 package-lock.json 存在且与 package.json 一致）
-```
-
-### Python vs Node 依赖管理对比
-
-| 维度 | Python (pip) | Node (npm) |
-|------|-------------|-----------|
-| 依赖声明 | `requirements.txt` | `package.json` |
-| 版本锁定 | 无标准 lockfile | `package-lock.json` |
-| 安装命令 | `pip install -r requirements.txt` | `npm install` |
-| 可重复构建 | 依赖 pip 生态外的工具 | 原生支持（通过 lockfile） |
-| 依赖存储 | 全局 site-packages 或 venv | 项目本地 `node_modules/` |
-
-### 为什么版本锁定重要
-
-无论是 Python 还是 Node，**可重复构建**都是一个重要的工程实践：
-
-> 同样的代码 + 同样的依赖版本 = 同样的行为
-
-没有版本锁定，可能出现：
-1. 今天代码跑得好好的，明天一个依赖的更新导致 Bug
-2. CI/CD 环境和本地开发环境行为不一致
-3. 团队中不同成员的开发环境不一致
-
-**在 AI Coding 项目中尤为重要**：AI Agent 可能会执行 `pip install` 或 `npm install`，如果依赖版本不确定，AI 验证通过的行为可能在你本地无法复现。
+**读法**：从下往上读——最底部是最终错误，往上是调用链。和 Node.js stack trace 读法一样。
 
 ---
 
-## 13. Git 与 Repository Hygiene
+## 18. 5 道基础自测题
 
-### 13.1 git status --short
+**Q1**：`backend/app/core/config.py` 最后两行是什么？为什么 `settings = Settings()` 要放在模块级别而不是函数内部？
 
-这个命令显示 **工作目录相对于最新 commit 的变化**：
+**Q2**：如果前端发了一个 POST 请求，body 里 `top_k` 的值是 `"abc"`（字符串），Pydantic 会怎么处理？TypeScript interface 会怎么处理？
 
-```
-$ git status --short
- M backend/app/main.py    # M = Modified（已跟踪文件被修改）
-?? new_file.txt           # ?? = Untracked（新文件，从未被 git 跟踪）
-```
+**Q3**：以下代码中，哪个是正确的 import 方式？为什么？
+```python
+# A
+import app.main
 
-**当前项目状态**：`git status --short` 输出为空——意味着工作目录是干净的，所有 Phase 0 的变更都已经 commit。
+# B
+from app.main import app
 
-### 13.2 git diff
-
-显示 **已跟踪文件中未暂存（unstaged）的具体修改内容**：
-
-```bash
-git diff              # 显示所有未暂存的修改
-git diff --staged     # 显示已暂存（git add 后）尚未 commit 的修改
+# C
+from backend.app.main import app
 ```
 
-**重要——git diff 看不到 untracked files**：
+**Q4**：如果我想新增一个配置参数 `MAX_FILE_COUNT = 100`，应该在哪个文件、哪个类的哪个位置添加？
 
-这是初次使用 Git 的人常犯的错误。你创建了一个新文件，执行 `git diff` 看到没有输出，以为"没有改动"——但实际上这个文件根本不在 Git 的视野内。你需要 `git status` 来查看 untracked files。
-
-### 13.3 git ls-files --others --exclude-standard
-
-这个命令列出所有 **untracked 且未被 .gitignore 忽略** 的文件。
-
-`--others`：显示未被 Git 跟踪的文件
-`--exclude-standard`：应用 `.gitignore` 规则
-
-### 13.4 .gitignore 的作用
-
-[.gitignore](.gitignore) 告诉 Git "这些文件/目录不要跟踪"。
-
-**DX-RAG 中忽略的关键目录和文件**：
-
-| 忽略内容 | 原因 |
-|----------|------|
-| `node_modules/` | 第三方依赖，体积巨大（几百 MB），可通过 `package.json` + `npm install` 随时重建 |
-| `.next/` | Next.js 构建产物，可通过 `npm run build` 随时重建 |
-| `__pycache__/`, `*.pyc` | Python 字节码缓存，自动生成 |
-| `.env` | 包含真实的 API Key，绝对不能泄露 |
-| `.env.local`, `.env.*.local` | 本地私有环境变量 |
-
-**为什么这些文件不应该提交**：
-
-1. **体积**：`node_modules/` 通常有几百 MB，提交它会让仓库变得极其臃肿
-2. **可重建性**：只要有 `package.json`，任何人都可以通过 `npm install` 得到完全相同的 `node_modules/`
-3. **安全**：`.env` 包含 API Key，泄露意味着任何人都能用你的 Key 调用 API
-
-**为什么这些文件应该提交**：
-
-| 文件 | 原因 |
-|------|------|
-| `.env.example` | 文档作用——告诉新开发者需要配置哪些环境变量 |
-| `package-lock.json` | 确保所有人安装完全相同的依赖版本 |
-| 所有源代码文件 | 这是项目本身 |
+**Q5**：前端的 error parser 应该怎么写？读完 `errors.py` 后，用 TypeScript 写出一个通用的错误处理函数签名。
 
 ---
 
-## 14. Phase 0 的关键设计决策
+## 19. 3 个小练习
 
-### 决策 1：Backend / Frontend 分离
+### 练习 1：手工翻译
 
-**为什么这么设计**：Backend 和 Frontend 是技术上完全不同的运行时（Python vs Node.js），有不同的依赖管理、构建系统和部署方式。分离使它们可以独立开发、测试和部署。
+把以下 Python 代码翻译成 TypeScript：
 
-**如果不分离呢**：如果强行放在同一个目录，`npm install` 会去安装 `requirements.txt` 中的包（不行），`pip install` 会去安装 `package.json` 中的包（也不行）。构建脚本会变得复杂。一个团队中写 Python 的人需要安装 Node.js，写 React 的人需要安装 Python。
+```python
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"] = Field(description="Message role")
+    content: str = Field(description="Message content")
 
-### 决策 2：FastAPI Modular Router
+class QueryRequest(BaseModel):
+    question: str = Field(description="User question")
+    collection_name: str = Field(description="Target KB name")
+    top_k: int = Field(default=5)
+    history: List[ChatMessage] = Field(default_factory=list)
+```
 
-**为什么这么设计**：4 个 API 模块（collections, upload, query, files）各有一个 Router，通过一个聚合 Router 挂载到 `/api` 前缀。这样每个模块可以独立开发和测试，不会在同一个文件中互相干扰。
+**要求**：分别用 (a) 纯 TypeScript interface 和 (b) Zod schema 两种方式。
 
-**如果不用 Router**：所有 endpoint 都注册在 `main.py` 的 `app` 上，`main.py` 会变成几千行的巨型文件，改一个 endpoint 就要在这几千行中找位置。
+### 练习 2：画出请求流程
 
-### 决策 3：Next.js App Router（而非 Pages Router）
+不参考资料，画一张图：从前端 `fetch("/api/query", ...)` 到 FastAPI 返回 Response 的完整路径。标注每个环节在项目中对应的文件。
 
-**为什么这么设计**：App Router 是 Next.js 13+ 的推荐方式，比 Pages Router 更现代。它支持 React Server Components、嵌套 Layout、Streaming 等新特性。虽然 DX-RAG v1 是单页应用，但选择 App Router 为未来扩展留了余地。
+### 练习 3：不看代码解释
 
-**如果不用 App Router**：用 Pages Router 也能完成任务，但会在项目初期就锁定在旧架构上。而且 App Router 的 `layout.tsx` 天然适合做全局配置（如 Ant Design ConfigProvider），Pages Router 需要额外的 `_app.tsx`。
-
-### 决策 4：Centralized Configuration（集中式配置）
-
-**为什么这么设计**：所有 22 个配置参数集中在一个 `Settings` 类中，通过模块级 singleton 对外提供。任何模块需要配置时，只需要 `from app.core.config import settings`。
-
-**如果不集中管理**：每个模块各自从 `os.environ.get()` 读取配置——重复代码多，默认值散落各处，很难快速回答"当前所有可配置参数有哪些"。
-
-### 决策 5：Unified Error Contract（统一错误契约）
-
-**为什么这么设计**：所有错误响应遵循 `{error: {code, message, details}}` 格式。26 个错误码集中在一个 catalog 中管理。全球异常 handler 兜底。
-
-**如果不统一**：前端需要写多种不同的错误解析逻辑，而且不同开发者会创造不同的错误格式。维护成本随 API 数量增长。
-
-### 决策 6：Secrets Backend-Only（API Key 仅在后端）
-
-**为什么这么设计**：`DEEPSEEK_API_KEY` 和 `DASHSCOPE_API_KEY` 只存在于 Backend 环境变量中。Frontend 不需要知道它们存在。Frontend 调用 Backend API，Backend 调用第三方 AI API。
-
-**如果放到前端**：任何用户打开 DevTools 就能获取你的 API Key，然后可以无限调用 API（消耗你的额度）。
-
-### 决策 7：Pydantic models 预定义所有 API Schemas（T0005）
-
-**为什么这么设计**：在实现任何 endpoint 之前，先把所有 API 的 Request/Response 模型定义好。这样后续 Task 可以直接 import 使用，不需要每个 Task 都重新定义。
-
-**如果不预先定义**：每个 Task 各自定义模型——可能出现同一个 Collection 在 `collections.py` 和 `upload.py` 中有不同的字段定义，导致不一致。
-
-### 决策 8：Minimal Lifespan（Phase 0 无启动逻辑）
-
-**为什么这么设计**：lifespan 中 `yield` 前后都为空。不做任何启动时初始化——不连接数据库、不加载模型、不创建目录。
-
-**为什么不在启动时做这些**：SPEC 要求 Embedding Model 懒加载（首次使用时才加载，不在启动时），ChromaDB 在服务启动时也不需要预连接。Phase 0 遵循"不做不需要做的事情"的原则。
-
-### 决策 9：package-lock.json 必须提交
-
-**为什么这么设计**：见第 12 节。在 AI Coding 项目中，可重复的依赖安装尤其重要——确保 AI Agent 验证通过的行为在你本地能复现。
-
-### 决策 10：空 `__init__.py` 文件的存在
-
-**为什么这么设计**：每个目录下都有一个空的 `__init__.py`。它不包含任何代码，但标志这个目录是一个 Python package。没有它，Python 无法执行 `from app.core import config`。
-
-**如果不加**：你会得到一个 `ModuleNotFoundError: No module named 'app.core'`。
+找一个同事（或者自言自语），不看项目代码，用简单语言解释：
+- `self` 是什么？为什么它和 `this` 不一样？
+- `__init__` 是什么？
+- Pydantic 和 TypeScript interface 有什么区别？
 
 ---
 
-## 15. 常见错误与 Debug 思路
+## 20. Phase 0 快速复习卡
 
-### 错误 1: ModuleNotFoundError: No module named 'app'
+### 一句话总结
 
-**症状**：
-```
-ModuleNotFoundError: No module named 'app'
-```
+Phase 0 搭建了 DX-RAG 的项目骨架——后端 FastAPI 能启动、前端 Next.js 能启动、配置集中管理、错误统一格式、API 数据契约已定义。
 
-**可能原因**：
-- 执行 `python app/main.py` 而不是 `uvicorn app.main:app`
-- 当前工作目录不在 `backend/` 下
-- PYTHONPATH 没有包含 `backend/`
+### Python 5 个关键词（Phase 0 最高频）
 
-**检查方法**：
-1. 确认当前目录：`pwd`（应该在 `backend/` 下）
-2. 使用 `uvicorn app.main:app` 而不是 `python app/main.py`
-3. 如果必须用 `python`，需要设置 PYTHONPATH：`PYTHONPATH=. python app/main.py`
+| 关键词 | 一句话解释 |
+|--------|----------|
+| `self` | 方法的第一个参数，≈ `this`，但必须显式写 |
+| `__init__` | ≈ constructor |
+| `@decorator` | 给函数/类加"框架标签" |
+| `BaseModel` | Pydantic 的数据模型 = TS interface + Zod 验证 |
+| `BaseSettings` | 自动从环境变量读配置的模型 |
 
-**为什么 `uvicorn app.main:app` 能工作**：Uvicorn 在启动时会自动将当前目录加入 Python path。
+### Backend 5 个关键词
 
-### 错误 2: Uvicorn import path 错误
+| 概念 | 一句话解释 |
+|------|----------|
+| **FastAPI** | Python Web 框架，≈ Express |
+| **Uvicorn** | ASGI 服务器，真正监听端口收 HTTP 请求 |
+| **APIRouter** | 路由组，≈ Express Router |
+| **AppError** | 统一业务异常，携带 error code → 自动查表得到 HTTP status + 中文消息 |
+| **settings** | 模块级配置单例，从 `.env` / 环境变量自动加载 |
 
-**症状**：
-```
-Error: Could not import module "app.main"
-```
+### 最重要的流程
 
-**可能原因**：
-- 不在 `backend/` 目录下执行命令
-- 缺少 `__init__.py` 文件
-- 代码中有语法错误导致 import 失败
-
-**检查方法**：
-1. `cd backend/` 确认在正确目录
-2. `ls app/__init__.py` 确认文件存在
-3. `python -c "from app.main import app"` 测试 import
-
-### 错误 3: Next.js dependency 安装问题
-
-**症状**：
-```
-npm install 报错，提示版本冲突或不兼容
+```text
+前端 fetch("/api/xxx")
+  → Uvicorn (收 HTTP)
+    → FastAPI app (路由匹配)
+      → CORS check
+        → APIRouter prefix="/api"
+          → Pydantic 验证 Request
+            → Endpoint handler
+              → Pydantic 序列化 Response
+                → 原路返回前端
 ```
 
-**可能原因**：
-- Node.js 版本低于 18
-- package-lock.json 损坏
-- npm registry 连接问题
+### 3 个最容易混淆的概念
 
-**检查方法**：
-1. `node --version` 确认 Node.js 版本 ≥ 18
-2. 删除 `node_modules/` 和 `package-lock.json`，重新 `npm install`
-3. 尝试 `npm install --legacy-peer-deps`（解决 peer dependency 冲突）
-4. 检查网络是否能访问 `https://registry.npmjs.org/`
-
-### 错误 4: Port 被占用
-
-**症状**：
-```
-Error: listen EADDRINUSE: address already in use :::3000
-# 或
-ERROR: [Errno 98] address already in use
-```
-
-**可能原因**：
-- 已经有一个 Next.js Dev Server 在运行
-- 另一个进程占用了 3000 端口
-
-**检查方法**：
-```bash
-# Windows: 查找占用 3000 端口的进程
-netstat -ano | findstr :3000
-
-# 使用不同端口启动
-npm run dev -- -p 3001   # Next.js
-uvicorn app.main:app --port 8001   # FastAPI
-```
-
-### 错误 5: TypeScript Configuration 错误
-
-**症状**：
-```
-Cannot find module 'antd' or its corresponding type declarations.
-```
-
-**可能原因**：
-- `npm install` 没有正确执行
-- `tsconfig.json` 中 `moduleResolution` 设置错误
-
-**检查方法**：
-1. 确认 `node_modules/antd/` 目录存在
-2. 确认 `tsconfig.json` 中 `"moduleResolution": "bundler"`
-3. 尝试重启 VS Code 的 TypeScript Server（`Ctrl+Shift+P` → "TypeScript: Restart TS Server"）
-
-### 错误 6: Environment Variable 未读取
-
-**症状**：
-```
-settings.DEEPSEEK_API_KEY 返回 None（但实际上已经设置了环境变量）
-```
-
-**可能原因**：
-- `.env` 文件不在当前工作目录
-- `.env` 文件编码不是 UTF-8
-- 环境变量名大小写不匹配
-
-**检查方法**：
-1. 确认 `.env` 文件在 `backend/` 目录下
-2. 在 Python 中测试：`python -c "from app.core.config import settings; print(settings.DEEPSEEK_API_KEY)"`
-3. 检查是否在正确的进程/终端中设置了环境变量
-
-### 错误 7: CORS 问题
-
-**症状**：
-```
-Access to fetch at 'http://localhost:8000/api/query' from origin
-'http://localhost:3000' has been blocked by CORS policy
-```
-
-**可能原因**：
-- Backend 没有配置 CORS 中间件
-- `allow_origins` 没有包含 Frontend 的 origin
-
-**检查方法**：
-1. 确认 `main.py` 中有 `app.add_middleware(CORSMiddleware, ...)`
-2. 确认 `allow_origins=["*"]`（开发环境）
-3. 查看浏览器 Network 标签页中 Response Headers 是否有 `Access-Control-Allow-Origin`
-
-### 错误 8: .env 被误提交
-
-**症状**：
-```
-git log --oneline -- .env    # 发现 .env 出现在 commit 历史中
-```
-
-**处理方法**（如果已经发生）：
-1. 立即轮换所有 API Key（去服务商后台重新生成）
-2. 将 `.env` 加入 `.gitignore`
-3. 从 Git 历史中移除 `.env`（需要 `git filter-branch` 或 `BFG`）
-4. 以后只用 `.env.example` 作为模板
-
-### 错误 9: node_modules 被 Git 跟踪
-
-**症状**：
-```
-$ git status
-... 几千个 node_modules 下的文件显示为 modified ...
-```
-
-**可能原因**：
-- `.gitignore` 中没有 `node_modules/` 这一行
-- 或者 `.gitignore` 是在 `node_modules/` 已经被 `git add` 之后才创建的
-
-**检查方法**：
-1. 确认 `.gitignore` 中有 `node_modules/`
-2. 如果 node_modules 已经被跟踪：`git rm -r --cached node_modules/`
+1. **Uvicorn vs FastAPI** — Uvicorn 是服务器（监听端口），FastAPI 是框架（处理路由）。类比：Node.js `http.createServer()` vs `express()`
+2. **Pydantic vs TypeScript interface** — Pydantic 运行时还在，TS interface 编译后就没了。Pydantic 不"描述"类型，它"执行"验证
+3. **`__init__.py` vs 普通 .py** — `__init__.py` 是 package 标记文件，让它所在的目录可以被 import。普通的 `.py` 是 module
 
 ---
 
-## 16. 本阶段执行过的重要命令
-
-以下命令可根据 Git 历史和项目结构确认：
-
-### `uvicorn app.main:app`
-
-**作用**：启动 FastAPI Backend 开发服务器
-**执行位置**：`backend/` 目录
-**成功意味着**：
-- 所有 Python import 成功（无 ModuleNotFoundError）
-- CORS 中间件注册成功
-- 异常处理器注册成功
-- 服务在 `localhost:8000` 上监听
-**不意味着**：服务有可用的 API endpoint（当前除了 404 不会有其他响应）
-
-### `npm install`
-
-**作用**：安装 `package.json` 中声明的所有依赖
-**执行位置**：`frontend/` 目录
-**成功意味着**：
-- 所有依赖已下载到 `node_modules/`
-- `package-lock.json` 已生成/更新
-**不意味着**：项目可以成功编译（可能有 TypeScript 类型错误）
-
-### `npm run dev`
-
-**作用**：启动 Next.js 开发服务器
-**执行位置**：`frontend/` 目录
-**成功意味着**：
-- TypeScript 编译通过
-- CSS 处理通过
-- 开发服务器在 `localhost:3000` 上监听
-- 浏览器可以打开页面
-**不意味着**：所有 React 组件没有运行时错误（当前 Phase 0 组件很简单，应该没有）
-
-### `git status --short`
-
-**作用**：检查工作目录是否干净
-**成功意味着**：输出为空——所有变更已 commit，没有 untracked files
-**不意味着**：代码是正确的（只是说明没有未保存的修改）
-
-### `git log --oneline`
-
-**作用**：查看 commit 历史
-**在当前仓库中显示**：
-```
-a1976ed 添加项目级 git-save-push 技能，新增数据模型 schemas 模块，更新 TASKS.md
-99cb486 Add error handlers module, enhance main.py startup, update TASKS.md
-beaf705 Add backend config module, update TASKS.md
-3db1b5e Add backend (FastAPI skeleton) and frontend (Next.js skeleton) implementations
-9b2b438 Add CLAUDE.md agent contract, update SPEC to v1.4, add TASKS.md with 54 implementation tasks
-b936491 Initial commit: DX-RAG project setup with SPEC and docs
-```
-
-可以看到 Phase 0 的 5 个 Task 对应了 5 个 commit（从 T0001/T0002 合并提交开始的第一个 commit，到 T0005 的最后一个 commit）。
-
----
-
-## 17. Phase 0 概念地图
-
-```
-DX-RAG Project
-│
-├── Backend (Python / FastAPI)
-│   │
-│   ├── FastAPI Application (main.py)
-│   │   ├── app = FastAPI(title="DX-RAG", version="0.1.0")
-│   │   ├── lifespan（startup/shutdown 生命周期，当前为空）
-│   │   ├── CORSMiddleware（allow_origins=["*"]）
-│   │   └── Exception Handlers
-│   │       ├── AppError handler → 结构化错误响应
-│   │       └── Exception handler → 500 INTERNAL_ERROR（隐藏 traceback）
-│   │
-│   ├── APIRouter (api/router.py)
-│   │   └── prefix="/api" → 所有业务 API 的 URL 前缀
-│   │   └── [未来] collections / upload / query / files 子 Router
-│   │
-│   ├── Configuration (core/config.py)
-│   │   ├── Pydantic BaseSettings
-│   │   ├── 22 参数（来自 SPEC Section 8.1）
-│   │   ├── SecretStr（API Keys 安全存储）
-│   │   └── Singleton（模块级 settings 实例）
-│   │
-│   ├── Error Handling (core/errors.py)
-│   │   ├── ErrorDetail / ErrorResponse（统一错误格式）
-│   │   ├── Error Catalog（26 个错误码 → HTTP 状态码 + 中文消息）
-│   │   └── AppError（可抛出的业务异常）
-│   │
-│   ├── Data Models (models/schemas.py)
-│   │   ├── Collection Models（create, rename, list, response）
-│   │   ├── Upload Models（UploadResponse + UploadWarning）
-│   │   ├── QA Models（QueryRequest, QueryResponse, SourceObject）
-│   │   ├── File Models（FileItem, FileListResponse, Preview, Delete）
-│   │   └── ChatMessage（role: user|assistant）
-│   │
-│   └── Python Package Structure
-│       ├── __init__.py（每个目录）
-│       ├── requirements.txt（依赖声明）
-│       └── .env.example（环境变量模板）
-│
-├── Frontend (TypeScript / Next.js 14)
-│   │
-│   ├── Next.js App Router
-│   │   ├── layout.tsx（根布局：HTML 结构 + Ant Design ConfigProvider）
-│   │   ├── page.tsx（首页占位）
-│   │   └── globals.css（全局样式重置）
-│   │
-│   ├── Ant Design Integration
-│   │   └── ConfigProvider locale={zhCN}（全局中文配置）
-│   │
-│   ├── TypeScript Configuration
-│   │   └── tsconfig.json（strict: true, moduleResolution: bundler）
-│   │
-│   ├── Next.js Configuration
-│   │   └── next.config.js（transpilePackages: ['antd']）
-│   │
-│   └── Node.js Project
-│       ├── package.json（依赖 + scripts）
-│       └── package-lock.json（精确版本锁定）
-│
-└── Engineering Practices
-    │
-    ├── Dependency Management
-    │   ├── Python: requirements.txt（最低版本约束）
-    │   └── Node: package.json + package-lock.json（精确版本锁定）
-    │
-    ├── Environment Variables
-    │   ├── .env（不提交，含真实值）
-    │   └── .env.example（提交，含文档）
-    │
-    ├── Git Hygiene
-    │   ├── .gitignore（排除 node_modules, .next, __pycache__, .env, ...）
-    │   ├── git status --short（检查工作目录状态）
-    │   └── git diff（检查具体修改）
-    │
-    └── API Contract
-        ├── 统一错误格式 {error: {code, message, details}}
-        ├── 无通用成功包装器（v1 明确禁止）
-        └── Pydantic 模型 = API 契约的单一来源
-```
+## 21. 🔵 进阶阅读
 
----
+> 以下内容来自原学习文档中的高级章节。**当前第一遍学习可以跳过。** 等你 Python/后端能力提升后，可以回来阅读。
 
-## 18. 我真正应该理解的代码
+### 21.1 FastAPI Lifespan 的完整机制
 
-建议按照以下顺序亲自打开文件阅读：
+`@asynccontextmanager` 装饰的 `lifespan` 函数是一个 async context manager。FastAPI 在启动时进入 `yield` 之前的代码，关闭时执行 `yield` 之后的代码。这种模式替代了旧版 FastAPI 的 `@app.on_event("startup")` / `@app.on_event("shutdown")` 装饰器。
 
-### 1. [backend/app/main.py](backend/app/main.py) — 整个 Backend 的入口
+优势：可以管理有状态资源（例如用一个变量保存数据库连接引用），在 shutdown 时确保释放。而 `@app.on_event` 方式下，不同 event handler 之间的状态共享比较困难。
 
-**重点看**:
-- `app = FastAPI(...)` 的创建
-- `CORSMiddleware` 的配置
-- 两个 `@app.exception_handler` 的注册
-- `app.include_router(api_router, prefix="/api")`
+Phase 0 中 lifespan 是空的，但后续 Phase 如果需要初始化 ChromaDB 连接或加载模型，代码会加在 `yield` 之前。
 
-**你应该理解**: 为什么这个文件只有 69 行却能支撑整个 Backend 的骨架。
+### 21.2 CORS 的安全考虑
 
-### 2. [backend/app/core/config.py](backend/app/core/config.py) — 配置如何从环境变量流向代码
+Phase 0 使用 `allow_origins=["*"]` 是因为 v1 的部署假设是本地/可信内网环境。生产环境中，应该通过 `CORS_ORIGINS` 配置项限制为具体的域名。
 
-**重点看**:
-- `class Settings(BaseSettings)` 的字段定义和默认值
-- `model_config` 中 `env_file=".env"` 的作用
-- `SecretStr` 的使用方式
-- `get_settings()` 函数如何返回单例
+SPEC Section 8.1 定义了 `CORS_ORIGINS` 参数（List[str]），但 main.py 中没有使用它——这是 T0003 和 T0001 之间的已知不对称（config 提供了参数，但 main.py 没有消费它）。
 
-**你应该理解**: 为什么 `from app.core.config import settings` 就能在任何地方获取配置。
+### 21.3 Python Module 搜索路径
 
-### 3. [backend/app/core/errors.py](backend/app/core/errors.py) — 错误码目录和 AppError
+当 Python 执行 `from app.core.config import settings` 时，它会沿着 `sys.path` 搜索 `app` package。默认情况下，`sys.path` 包含当前工作目录。这就是为什么需要在 `backend/` 目录下运行 `uvicorn app.main:app`——如果从项目根目录运行，Python 可能找不到 `app` module。
 
-**重点看**:
-- `_ERROR_CATALOG` dict 的结构（error_code → (http_status, chinese_message)）
-- `AppError.__init__` 如何从 catalog 查找 HTTP 状态码和默认消息
-- `ErrorDetail` 和 `ErrorResponse` 的 Pydantic 模型定义
+### 21.4 配置管理的设计权衡
 
-**你应该理解**: 为什么 `raise AppError("FILE_TOO_LARGE")` 能自动产生 413 状态码。
+为什么使用 Pydantic BaseSettings 而不是更简单的 `os.getenv()`：
 
-### 4. [backend/app/models/schemas.py](backend/app/models/schemas.py) — 所有 API 的数据契约
+| 方案 | 优点 | 缺点 |
+|------|------|------|
+| `os.getenv()` | 简单，无依赖 | 无类型转换、无默认值管理、无验证 |
+| 自定义 config module | 灵活 | 需要自己处理所有边界情况 |
+| Pydantic BaseSettings | 类型安全、自动加载、验证、secret 保护 | 引入额外依赖 |
 
-**重点看**:
-- `ChatMessage`（role Literal 类型）
-- `UploadResponse`（status Literal 类型 + warnings 列表）
-- `QueryRequest`（question, collection_name, top_k 默认值, history）
-- `FileItem`（file_id, file_name, size, upload_time, chunk_count, status）
+DX-RAG 选择 BaseSettings 是因为 22 个参数分散在后端几乎所有模块中，需要一个"统一真相来源"。
 
-**你应该理解**: Pydantic 的 `Field(description=...)` 如何充当自动文档。
+### 21.5 Error Model 的 Pydantic 序列化
 
-### 5. [backend/app/api/router.py](backend/app/api/router.py) — Router 聚合模式
+`ErrorResponse` 和 `ErrorDetail` 都继承自 `BaseModel`。`model_dump()` 方法将它们转换为 Python dict，然后 `JSONResponse` 将其序列化为 JSON。
 
-**重点看**:
-- `api_router = APIRouter()` 的创建
-- 注释掉的子 Router import（未来 Phase 的接入点）
+设计上 T0004 将 Error model 放在 `errors.py` 中，而不是 `schemas.py` 中，因为 error handling 是基础设施而非 API contract。但在整个应用中，只有一处定义了 ErrorResponse 的结构。
 
-**你应该理解**: 为什么只需要取消注释就能接入新的 API 模块。
+### 21.6 v1 没有 Universal Success Response Wrapper
 
-### 6. [frontend/app/layout.tsx](frontend/app/layout.tsx) — Next.js 的根布局
-
-**重点看**:
-- `'use client'` 指令（为什么需要它）
-- `ConfigProvider` 的包裹方式
-- `{children}` 的位置
-
-**你应该理解**: Ant Design 如何在应用最外层"注入"中文配置。
-
-### 7. [frontend/package.json](frontend/package.json) — 前端依赖清单
-
-**重点看**:
-- `dependencies` vs `devDependencies` 的区别
-- 精确版本（`"antd": "5.22.7"`）vs 范围版本（`"react": "^18.3.1"`）
-- `scripts` 中 `dev/build/start` 的定义
-
-**你应该理解**: `npm run dev` 实际上执行的是 `next dev`。
-
-### 8. [backend/requirements.txt](backend/requirements.txt) — 后端依赖清单
-
-**重点看**:
-- 每个包的用途（fastapi/框架、chromadb/向量数据库、sentence-transformers/嵌入模型...）
-- `>=` 版本约束的含义
-
-**你应该理解**: 为什么 `dashscope` 没有版本号（SPEC 说 "latest compatible"）。
-
-### 9. [.gitignore](.gitignore) — Git 忽略规则
-
-**重点看**:
-- `node_modules/`、`.next/`、`__pycache__/` 等自动生成目录
-- `.env` 安全敏感文件
-- `*.pyc`、`.DS_Store` 等系统文件
-
-**你应该理解**: 每一条规则背后是"可重建"或"安全"或"隐私"的理由。
-
-### 10. [backend/.env.example](backend/.env.example) — 配置模板
-
-**重点看**:
-- 22 个参数的默认值和注释
-- API Key 字段为空（需要开发者自行填入）
-- 注释中标注了相对路径（如 `# ChromaDB persistence directory (relative to backend/)`）
-
-**你应该理解**: 这个文件的读者是谁——新加入项目的开发者。
-
----
-
-## 19. 自测题
-
-### 基础理解
-
-**Q1**: 解释 `uvicorn app.main:app` 中每个部分的含义。如果 Uvicorn 找不到 `app.main` 模块，可能是什么原因？
-
-**Q2**: 一个 Python 目录下有 `__init__.py` 和没有 `__init__.py` 有什么区别？
-
-**Q3**: `package.json` 中的 `dependencies` 和 `devDependencies` 有什么区别？`typescript` 应该放在哪个里面？为什么？
-
-**Q4**: CORS 是什么？为什么 DX-RAG 需要配置 `allow_origins=["*"]`？
-
-**Q5**: `npm install` 和 `pip install -r requirements.txt` 在版本锁定行为上有什么关键区别？
-
-### 项目理解
-
-**Q6**: DX-RAG 的 Backend 为什么在 `config.py` 中使用 `SecretStr` 而不是普通的 `str` 来存储 API Key？
-
-**Q7**: 在 `main.py` 中注册了两个异常处理器。如果 endpoint 中 `raise ValueError("something went wrong")`，用户会收到什么响应？为什么？
-
-**Q8**: SPEC Section 7.7 明确禁止"通用成功响应包装器"。什么是"通用成功响应包装器"？为什么 v1 禁止它？
-
-**Q9**: 当前 DX-RAG 的 Frontend 只有一个 `page.tsx`。Phase 10 会把它改造为带有 SideMenu 的单页应用。为什么选择单页应用而不是独立 URL 路由（如 `/kb`、`/upload`、`/qa`）？
-
-**Q10**: Backend 的 `api/router.py` 当前几乎是空的（只有注释掉的 import）。为什么在 Phase 0 就创建它，而不是等有了具体 endpoint 再创建？
-
-### Debug / 推理题
-
-**Q11**: 你在 `backend/` 目录下执行 `uvicorn app.main:app`，收到 `ModuleNotFoundError: No module named 'app'`。列举三种可能的原因和对应的解决方法。
-
-**Q12**: Frontend `npm run dev` 成功启动，但浏览器访问 `localhost:3000` 时 Console 报错 `ConfigProvider` 相关错误。可能是什么问题？怎么排查？
-
-**Q13**: 你在 `.env` 中设置了 `MAX_UPLOAD_SIZE_MB=100`，但在代码中 `settings.MAX_UPLOAD_SIZE_MB` 仍然是 50。列举可能的原因。
-
-**Q14**: 一个新开发者 clone 了项目，执行 `npm install` 后 `npm run dev` 报大量 TypeScript 类型错误。你怀疑是 `node_modules` 版本不一致导致的。如何验证？如何解决？
-
-**Q15**: 如果你想在不修改代码的情况下，临时改变 FastAPI 的监听端口从 8000 改为 9000，应该怎么做？
-
----
-
-## 20. 动手练习
-
-### 练习 1：手画 Backend Request Flow
-
-**要求**：在一张纸上画出以下流程（不参考代码）：
-
-```
-HTTP Request (GET /api/health)
-  → Uvicorn (做了什么)
-    → FastAPI app (做了什么)
-      → CORSMiddleware (做了什么)
-        → APIRouter (做了什么)
-          → Endpoint (返回了什么)
-            → Response (怎么回到用户)
-```
-
-**训练目的**：理解 HTTP 请求在 FastAPI 栈中的完整路径。
-
-### 练习 2：不看代码写出项目主要目录
-
-**要求**：合上编辑器，手写出 `backend/app/` 下的所有子目录及其职责。然后对照实际目录检查。
-
-**训练目的**：熟悉项目结构，做到"不用看目录就知道代码在哪"。
-
-### 练习 3：解释 package-lock.json
-
-**要求**：向一个完全不了解 Node.js 的 Python 开发者解释：
-- `package.json` 和 `package-lock.json` 的关系
-- 为什么要提交 `package-lock.json`
-- 如果两个人执行 `npm install` 得到不同的 `node_modules`，可能是哪里出了问题
-
-**训练目的**：理解依赖锁定，并能向他人解释。
-
-### 练习 4：判断删除 __init__.py 的后果
-
-**要求**：
-- 如果删除 `backend/app/core/__init__.py`，什么代码会报错？
-- 报什么错？
-- 如果在一个没有 `__init__.py` 的目录下创建一个新 `.py` 文件，其他模块能 import 它吗？
-
-**训练目的**：理解 Python package 机制。
-
-### 练习 5：Debug 路径设计
-
-**要求**：假设以下报错情景，写出你的排查步骤（1→2→3→...）：
-
-```
-$ cd backend
-$ uvicorn app.main:app
-Error: Could not import module "app.main"
-```
-
-写出至少 5 个你依次检查的内容。
-
-**训练目的**：培养系统化的 Debug 思维（而不是乱试）。
-
----
-
-## 21. Phase 0 完成后我应该具备什么能力
-
-完成 Phase 0 的学习后，你应该能够：
-
-1. **解释** `uvicorn app.main:app` 每一部分的含义（uvicorn 是什么、app.main 是什么、:app 是什么）
-2. **指出** 一个新的 API Router（如 `collections.py`）应该放在 `backend/app/api/` 目录下，并在 `router.py` 中注册
-3. **解释** Next.js `layout.tsx` 与 `page.tsx` 的关系——layout 是外壳，page 是内容
-4. **判断** 一个环境变量是否可以作为 `NEXT_PUBLIC_` 前缀暴露给前端（API Key 绝对不能，API Base URL 可以）
-5. **使用** `git status` 判断是否有 untracked files，`git diff` 查看具体修改
-6. **区分** `.env` 和 `.env.example` 的用途——一个含真实值不提交，一个含模板提交
-7. **说明** 为什么 `node_modules/` 被 `.gitignore` 但 `package-lock.json` 被提交
-8. **追踪** 一个 HTTP 请求从浏览器到 Backend 再返回的完整路径
-9. **识别** 模块级 singleton（如 `settings`）和 FastAPI 的 exception handler 注册模式
-10. **解释** `raise AppError("FILE_TOO_LARGE")` 如何最终变成 HTTP 413 + JSON Error Response
-
----
-
-## 22. Phase 1 将建立在什么基础上
-
-读取 TASKS.md Phase 1 章节可知，Phase 1 将实现 **VectorStore Foundation**——ChromaDB 的 Vector Store 公共接口（ABC）和具体实现。
-
-Phase 1 将直接利用 Phase 0 建立的以下基础：
-
-| Phase 0 基础 | Phase 1 如何使用 |
-|-------------|-----------------|
-| **目录结构** | `backend/app/core/vector_store.py` 放在 `core/` 目录下（基础设施，不属于业务 services） |
-| **Config (T0003)** | `VectorStore` 需要 `CHROMA_PERSIST_DIR` 配置项来初始化 ChromaDB PersistentClient |
-| **Data Models (T0005)** | `VectorStore` 的方法签名使用 `ChunkRecord`、`List[dict]` 等已定义的类型 |
-| **Error Handling (T0004)** | `VectorStore` 中的异常通过 `AppError` 和全局 handler 向外传递 |
-| **APIRouter 结构** | 虽然 Phase 1 主要是内部模块，但 Router 结构已就位，后续 Phase 4 接入时无需修改架构 |
-| **Python Package 结构** | `app/core/__init__.py` 使 Phase 1 可以直接创建 `app/core/vector_store.py` 并被其他模块 import |
-| **依赖声明** | `chromadb>=0.4.15` 已在 T0001 的 `requirements.txt` 中声明 |
-
-**高层说明**：Phase 1 不会增加任何 API endpoint。它纯粹是 Backend 内部的抽象层——定义 VectorStore 的公共方法签名，然后用 ChromaDB 实现这些方法。Phase 0 提供的配置、错误处理、项目结构基础使 Phase 1 可以专注于"如何设计一个干净的存储抽象层"，而不需要操心"配置从哪来"或"异常怎么报"。
+SPEC Section 7.7 明确规定 v1 不得引入统一的成功响应包裹器（如 `{"data": ..., "success": true}`）。每个 API endpoint 的 Response 格式是独立的，由各自的 Pydantic model 定义。这是为了防止过度抽象——当项目很小（v1 只有十几个 endpoint）时，统一的 wrapper 增加的复杂度大于它带来的收益。
 
 ---
 
 ## 学习过程中发现的待确认事项
 
-无。
+> 以下是在编写学习文档过程中发现的值得关注的细节，不构成实现缺陷。
 
-Phase 0 的实际实现与 SPEC.md / TASKS.md 一致。所有 5 个 Task 均已按照 SPEC 要求完成，代码结构清晰，无冲突或未完成项。
+| # | 文件 | 现象 | 为什么值得确认 |
+|---|------|------|---------------|
+| 1 | `main.py:31` vs `config.py:31` | 配置中定义了 `CORS_ORIGINS: List[str]`，但 `main.py` 硬编码了 `allow_origins=["*"]` | 后续 Task 应该让 main.py 消费 config 中的 CORS_ORIGINS |
+| 2 | `schemas.py` | 定义了 `ChunkRecord`/`SearchResult` 的引用，但实际定义在 T0101 的 `vector_store.py` 中 | 需要确认这些类型是应该统一到 schemas.py，还是分属不同层 |
+| 3 | `router.py` | 当前完全是空的 APIRouter，所有子路由都是注释 | Phase 4 开始会逐步取消注释并加入真正的 router |
+| 4 | `services/` | 空目录，Phase 0 没有创建任何 service 代码 | Phase 3 开始才会在此目录添加业务逻辑 |
 
 ---
 
-> **文档版本**: v1.0
-> **编写日期**: 2026-08-12
-> **基于代码状态**: Phase 0 DONE, Phase 1 NOT STARTED
-> **Git Commit**: a1976ed（Phase 0 完成时的最新 commit）
+> **下一步**：Phase 1 学习文档 → [phase-01-vectorstore.md](./phase-01-vectorstore.md)（T0101 已完成）

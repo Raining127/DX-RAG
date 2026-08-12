@@ -52,9 +52,9 @@ Task Coding（任务编码）
 
 ### Phase 1 — VectorStore Foundation
 
-**状态**: ⬜ NOT STARTED
+**状态**: 🟡 IN PROGRESS（T0101 Learning Pass completed）
 
-**Tasks**: T0101–T0108
+**Tasks**: T0101 ✅ | T0102–T0108 ⬜
 
 **未来主要学习主题**（仅根据 TASKS.md 列出，具体内容以实际实现为准）:
 

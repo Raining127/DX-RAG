@@ -324,7 +324,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0101 — VectorStore Public Interface (ABC)
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Define the abstract VectorStore interface that all ChromaDB operations must implement through, satisfying F008 design constraints.
 
