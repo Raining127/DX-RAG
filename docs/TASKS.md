@@ -374,7 +374,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0102 — ChromaDB Initialization & Collection Create/List/Delete
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement ChromaDB client initialization and basic collection lifecycle (create, list, delete) through the VectorStore interface.
 
@@ -420,7 +420,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0103 — ChromaDB Rename Collection
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement `rename_collection` through VectorStore, leveraging ChromaDB's native rename capability.
 
@@ -459,7 +459,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0104 — ChromaDB Add Texts (Documents + Embeddings + Metadata)
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement `add_texts` to persist chunks, embeddings, and metadata into a ChromaDB collection.
 
@@ -500,7 +500,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0105 — ChromaDB Search (Distance → Similarity Conversion)
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement `search` method that queries ChromaDB and converts raw distance scores to similarity scores in [0, 1].
 
@@ -545,7 +545,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0106 — ChromaDB Delete by File ID
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement `delete_by_file` to remove all chunks and vectors associated with a specific file_id from a collection.
 
@@ -586,7 +586,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0107 — ChromaDB Get Files (Metadata Aggregation)
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement `get_files` to aggregate FileRecord data from chunk metadata via `file_id` grouping/deduplication.
 
@@ -630,7 +630,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0108 — ChromaDB list_chunks, get_chunk_count, get_chunks_by_file
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement remaining public interface methods for chunk-level data access.
 
