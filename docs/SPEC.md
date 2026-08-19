@@ -1,8 +1,8 @@
 # DX-RAG Development Specification (SPEC.md)
 
-> **版本**: v1.4
+> **版本**: v1.5
 > **状态**: **FROZEN**
-> **最后更新**: 2026-08-11
+> **最后更新**: 2026-08-15
 > **来源**: 基于《DX-RAG 项目说明书》及 Phase 1 Gap Analysis 决策结果整理，经 SPEC Freeze 修订
 > **定位**: Coding Agent 的唯一开发规格入口。所有实现判断以本文档为准。Blocking Open Questions = 0。
 
@@ -318,21 +318,35 @@ dx-rag/
 2. 返回名称列表
 
 **重命名**:
+
+KB Rename 由业务层（KB Management API / Service）与存储层（VectorStore）协作完成。**所有 ChromaDB 操作（含 metadata 更新）必须通过 VectorStore public interface**（F008），业务层不得直接修改 Chroma metadata。
+
+**业务层（KB Management API / Service）负责**:
 1. 校验新名称合法性（同创建规则）
 2. 校验新名称不存在
-3. 重命名 ChromaDB Collection
+3. 调用 `VectorStore.rename_collection(old_name, new_name)`（storage-level rename cascade，见 F008）
 4. 重命名 `uploads/{old_name}/` → `uploads/{new_name}/`
-5. 更新所有 Chunk metadata 中的 `collection_name` 和 `source_file` 字段:
-   - `collection_name`: old_name → new_name
-   - `source_file`: `uploads/{old_name}/...` → `uploads/{new_name}/...`
-6. **不得改变任何 file_id 或 chunk_id**（UUID 不可变）
-7. Invalidate keyword index cache for this collection
-8. 所有持久化操作成功后才返回成功
+5. Invalidate keyword index cache for this collection
+6. 编排与补偿（compensation）：任一步骤失败时 rollback 已完成步骤，并映射为 500 `RENAME_FAILED`（见 Rename 原子性）
+7. 所有持久化操作成功后才返回成功
+
+**存储层（VectorStore.rename_collection）负责**（一次调用内完成）:
+- 重命名 ChromaDB Collection
+- 级联更新该 Collection 中**所有既有 chunks** 的 metadata:
+  - `collection_name`: old_name → new_name
+  - `source_file`: `uploads/{old_name}/{file_name}` → `uploads/{new_name}/{file_name}`（依据 Frozen upload path 语义；`file_name` 段保持不变，不做任意路径字符串替换）
+
+**Identity Invariants（rename 不是重新 ingest）**:
+- `file_id`、`chunk_id`、`chunk_index`、`file_name` 保持不变
+- chunk content 与 embedding 保持不变，不得重新生成
+- 除 `collection_name`、`source_file` 外，其余 metadata 字段（`file_size`、`upload_time`、`ingestion_status`）保持不变
 
 **Rename 原子性**:
 - **成功 → 全部 new_name 状态**: ChromaDB collection name、所有 chunk metadata（`collection_name` + `source_file`）、uploads 目录全部处于 new_name
 - **失败 → 全部 old_name 状态**: 不得出现 mixed state（如 collection 已改名但 source_file 未更新）；实现须 rollback 已完成的步骤或使用 transactional 策略
 - Rollback 实现方式属于 implementation detail，但 observable behavior 必须满足：Rename 失败后，外部观察到的状态完全等同于 Rename 之前（完整 old_name），或完全等同于 Rename 之后（完整 new_name）
+- **禁止长期停留在以下 partial state**: Chroma 已改名但 filesystem 未改；filesystem 已改名但 metadata 仍旧；`collection_name` 新旧混合；`source_file` 新旧混合
+- SPEC 定义结果语义（observable behavior），不要求实现真正的跨文件系统/Chroma ACID transaction；具体 compensation/rollback 实现属于 implementation detail
 
 **删除**:
 1. 删除 ChromaDB Collection 及其所有数据（chunks, vectors, metadata）
@@ -366,15 +380,25 @@ dx-rag/
 - **When**: 用户创建名称为 "ab"（少于 3 字符）的知识库
 - **Then**: 返回 HTTP 400，`INVALID_COLLECTION_NAME`
 
-**AC-F001-04: 重命名知识库**
-- **Given**: 知识库 "old-kb" 存在，包含文件 "doc.pdf"
+**AC-F001-04: 重命名知识库（metadata 级联 + identity 保持）**
+- **Given**: 知识库 "old-kb" 存在，包含已入库文件 "doc.pdf"（chunks > 0，keyword index 已构建）
 - **When**: 用户将 "old-kb" 重命名为 "new-kb"
-- **Then**: ChromaDB Collection 名称变为 "new-kb"，`uploads/old-kb/` 变为 `uploads/new-kb/`，文件内容可正常检索
+- **Then**:
+  - ChromaDB Collection "old-kb" 不存在，"new-kb" 存在，chunk 总数不变
+  - 每个 chunk 的 `file_id`、`chunk_id`、`chunk_index`、`file_name`、content、embedding 保持不变
+  - 所有 chunk 的 `metadata.collection_name` = "new-kb"，`metadata.source_file` = `uploads/new-kb/doc.pdf`
+  - `uploads/old-kb/` 不存在，`uploads/new-kb/` 存在
+  - keyword index 已 invalidate；文件内容可正常检索
 
 **AC-F001-05: 删除知识库**
 - **Given**: 知识库 "test-kb" 存在，包含已上传文件
 - **When**: 用户删除 "test-kb"
 - **Then**: ChromaDB Collection 被删除，`uploads/test-kb/` 目录被删除，知识库列表不再包含 "test-kb"
+
+**AC-F001-06: 重命名失败不留 partial state**
+- **Given**: 知识库 "old-kb" 存在且包含已入库文件；rename 过程中某一步骤失败（如 uploads 目录 rename 失败）
+- **When**: 系统执行 rollback/compensation 并返回 500 `RENAME_FAILED`
+- **Then**: 最终可观察状态完全等同于 rename 之前（完整 old_name）；不存在 Chroma 已改名但 filesystem 未改、filesystem 已改名但 metadata 仍旧、`collection_name` 新旧混合、`source_file` 新旧混合等长期 partial state
 
 #### Dependencies
 
@@ -919,7 +943,7 @@ embeddings = model.encode(chunks, normalize_embeddings=True).tolist()
 |--------|------|------|--------|
 | `create_collection(name)` | 创建 Collection | collection_name: str | None |
 | `delete_collection(name)` | 删除 Collection | collection_name: str | None |
-| `rename_collection(old, new)` | 重命名 Collection | old_name, new_name | None |
+| `rename_collection(old, new)` | 重命名 Collection + 级联更新既有 chunk metadata（`collection_name` / `source_file`） | old_name, new_name | None |
 | `list_collections()` | 列出所有 Collection | - | List[str] |
 | `add_texts(collection, chunks, embeddings, metadatas)` | 添加文档向量 | collection_name, List[str], List[List[float]], List[dict] | List[str] (chunk_ids) |
 | `search(collection, query_vector, top_k)` | 向量相似度检索 | collection_name, List[float], int | List[{chunk_id, file_id, file_name, content, similarity_score, metadata}] |
@@ -928,6 +952,21 @@ embeddings = model.encode(chunks, normalize_embeddings=True).tolist()
 | `list_chunks(collection)` | 获取 Collection 中所有 Chunk 数据 | collection_name: str | List[ChunkRecord] |
 | `get_chunk_count(collection)` | 获取 Collection 的 Chunk 总数 | collection_name: str | int |
 | `get_chunks_by_file(collection, file_id)` | 按 file_id 获取该文件所有 chunks | collection_name: str, file_id: str | List[ChunkRecord]（按 chunk_index ASC 排序） |
+
+**`rename_collection()` — Storage-Level Rename Cascade** (v1.5 contract):
+
+`rename_collection(old_name, new_name)` 是 KB Rename 场景下**唯一合法的 metadata 写入路径**，一次调用内必须完成：
+
+1. 重命名 ChromaDB Collection（old_name → new_name）
+2. 更新该 Collection 中所有既有 chunks 的 `metadata.collection_name` → `new_name`
+3. 更新每个 chunk 的 `metadata.source_file` 使其与 Frozen upload path 语义（`uploads/{collection_name}/{file_name}`）一致:
+   - 原始: `uploads/{old_name}/{file_name}` → 更新后: `uploads/{new_name}/{file_name}`
+   - 依据 metadata 中的 file identity / `file_name` 确定目标路径，**不得**对任意路径内容做模糊字符串替换；`file_name` 本身不变
+4. 保持以下字段与内容不变: `chunk_id`, `file_id`, `file_name`, `chunk_index`, `file_size`, `upload_time`, `ingestion_status`, chunk content, embedding
+5. **不得**重新生成 embeddings、chunk content 或任何 UUID（KB rename 是 metadata / collection namespace 变更，不是重新 ingest）
+6. **不得**向外部暴露 Chroma private API（`_collection` 等）；所有 ChromaDB 操作封装在本方法内部
+
+> **设计约束**: 不新增第 12 个 public method，不引入 generic metadata mutation API（如 update_metadata / patch_metadata / raw Chroma escape hatch）。`list_chunks()` / `get_chunks_by_file()` 是**只读**接口（供 Keyword Retriever / File Preview 使用），**不是** metadata 写入路径。
 
 **`list_chunks()` 方法说明**:
 - 返回 Collection 中所有 ChunkRecord（含 chunk_id, file_id, file_name, content, chunk_index, metadata），不包含 embedding vector
@@ -985,9 +1024,9 @@ embeddings = model.encode(chunks, normalize_embeddings=True).tolist()
 - **Then**: file_a 的 5 个 chunks 全部删除，file_b 的 3 个 chunks 保持不变；返回 deleted_count=5
 
 **AC-F008-03: 私有属性隔离**
-- **Given**: QA Service 需要检索或 Keyword Retriever 需要全量 Chunk 数据
-- **When**: 调用 VectorStore.search() 或 VectorStore.list_chunks()
-- **Then**: 所有操作通过 public interface，不访问 `_collection`
+- **Given**: QA Service 需要检索、Keyword Retriever 需要全量 Chunk 数据、或 KB Rename 需要级联更新 chunk metadata
+- **When**: 分别调用 VectorStore.search()、VectorStore.list_chunks() 或 VectorStore.rename_collection()
+- **Then**: 所有操作（含 rename metadata 级联）通过 public interface 完成，外部代码不访问 `_collection` 或任何 Chroma private API
 
 #### Dependencies
 
@@ -2076,9 +2115,8 @@ Content-Type: application/json
 | 500 | `RENAME_FAILED` | Partial failure during rename operations |
 
 **Side Effects** (all must succeed):
-- ChromaDB collection renamed
+- ChromaDB collection renamed（含 chunk metadata 级联: `collection_name` + `source_file`，由 `VectorStore.rename_collection` 完成，见 F008）
 - `uploads/{old_name}/` → `uploads/{new_name}/`
-- Metadata in all chunks updated
 - Keyword index cache invalidated
 
 #### Delete Collection
@@ -2231,7 +2269,7 @@ All error responses follow this structure:
 2. **file_id**: 每个上传文件拥有独立 file_id（UUID），用于文件级删除、关联 Chunk 和内部数据一致性。**不是** file_name。
 3. **file_name**: 仅作为面向用户的显示名称，**不作为唯一 ID**。
 4. **chunk_index**: 表示 Chunk 在当前文件中的顺序（0-based），**不作为唯一 ID**。
-5. **不可变性**: Knowledge Base Rename 不得改变 file_id 或 chunk_id。重新上传文件视为新的 FileRecord，并生成新的 file_id 和新的 chunk_id。
+5. **不可变性**: Knowledge Base Rename 不得改变 file_id、chunk_id、chunk_index 或 file_name，不得重新生成 embeddings 或 chunk content（rename 是 metadata / namespace 变更，不是重新 ingest）。重新上传文件视为新的 FileRecord，并生成新的 file_id 和新的 chunk_id。
 
 ---
 
@@ -2533,14 +2571,19 @@ No retry for: 401, 403 (auth errors), 400 (bad request). Backoff applies only be
 - **Then**: HTTP 400，`INVALID_COLLECTION_NAME`
 
 **AC-F001-04: 重命名级联成功**
-- **Given**: 知识库 "old-kb" 存在且有文件
+- **Given**: 知识库 "old-kb" 存在且有已入库文件
 - **When**: PUT /api/collections/old-kb `{"new_name": "new-kb"}`
-- **Then**: HTTP 200，ChromaDB collection 名变为 "new-kb"，uploads 目录变为 `uploads/new-kb/`，检索正常
+- **Then**: HTTP 200，ChromaDB collection 名变为 "new-kb"，uploads 目录变为 `uploads/new-kb/`，所有 chunk 的 `metadata.collection_name` = "new-kb"、`metadata.source_file` 指向 `uploads/new-kb/...`，`file_id`/`chunk_id` 不变，keyword index invalidated，检索正常
 
 **AC-F001-05: 删除知识库级联清理**
 - **Given**: 知识库 "test-kb" 存在且有文件
 - **When**: DELETE /api/collections/test-kb
 - **Then**: HTTP 200，ChromaDB collection 删除，`uploads/test-kb/` 目录删除，列表不再包含 "test-kb"
+
+**AC-F001-06: 重命名失败原子性**
+- **Given**: 知识库 "old-kb" 存在且有文件，rename 某步骤失败
+- **When**: PUT /api/collections/old-kb 返回 500 `RENAME_FAILED`
+- **Then**: 最终可观察状态完全等同于 rename 之前（无 partial rename state，无 `collection_name` / `source_file` 新旧混合）
 
 ### 12.2 File Upload (F002)
 
@@ -2753,7 +2796,7 @@ Coding Agent 在完成一个 Feature / Task 时，必须满足以下条件：
 
 ### 14.1 Blocking Open Questions
 
-**None.** 所有 v1 blocking questions 已在 SPEC Freeze (v1.2 → v1.3 → v1.4) 中固化为正式 Specification。SPEC 状态：FROZEN。
+**None.** 所有 v1 blocking questions 已在 SPEC Freeze (v1.2 → v1.3 → v1.4 → v1.5) 中固化为正式 Specification。SPEC 状态：FROZEN。
 
 | Metric | Count |
 |--------|:-----:|
@@ -2776,6 +2819,7 @@ Coding Agent 在完成一个 Feature / Task 时，必须满足以下条件：
 > OQ-003 (HTTP 409 COLLECTION_ALREADY_EXISTS), OQ-004 (in-memory keyword index), OQ-006 (MAX_PREVIEW_CHARS=5000), OQ-007 (file metadata in chunk), OQ-008 (KB switch clears history) — v1.2 Freeze 固化为正式 SPEC。
 > **v1.3 Patch**: 移除 ChunkRecord page_number、新增 MIN_RELEVANCE_SCORE 过滤、API Keys Optional、Embedding 纯懒加载、KB Rename atomicity、File Preview chunk-based、similarity→relevance_score 及其它一致性修复。无新增 Blocking Questions。
 > **v1.4 Patch**: 检索分数术语标准化（similarity_score/vector_score/keyword_score/final_score/relevance_score 分层边界固化）、Relevance Filter 排序与 AC-F011-02 修正、重试语义明确（初始请求 + 最多 2 次重试 = 3 次总尝试）、File API 身份统一为 file_id、File Preview chunk-based 语义澄清（含 overlap artifact 说明）、移除 UNSUPPORTED_PREVIEW_FORMAT、所有剩余 [PROPOSAL] 行为项固化为明确决策、KB 名称验证 canonical regex 固化、新增 File Preview AC 和 INVALID_FILE_NAME Security AC、配置文档措辞修正、API 错误契约按操作明确化。Blocking Open Questions 保持 0。
+> **v1.5 Patch**: Rename Metadata Contract Resolution — 澄清 `VectorStore.rename_collection` 语义，使 KB Rename 可在不暴露 Chroma private API、不新增 VectorStore public method 的前提下更新 persisted chunk 的 collection 引用（Chroma Collection 重命名 + chunk metadata 级联）。Blocking Open Questions 保持 0。
 
 ---
 
@@ -2783,7 +2827,7 @@ Coding Agent 在完成一个 Feature / Task 时，必须满足以下条件：
 
 | Feature | ID | Requirement Defined | API Defined | Error Handling Defined | Acceptance Criteria | Open Questions |
 |---------|-----|:---:|:---:|:---:|:---:|:---:|
-| Knowledge Base Management | F001 | ✅ | ✅ | ✅ | ✅ (5) | — |
+| Knowledge Base Management | F001 | ✅ | ✅ | ✅ | ✅ (6) | — |
 | File Upload | F002 | ✅ | ✅ | ✅ | ✅ (10) | — |
 | Document Parsing | F003 | ✅ | — (internal) | ✅ | ✅ (3) | — |
 | Scanned PDF Processing | F004 | ✅ | — (internal) | ✅ | ✅ (5) | — |
@@ -2806,19 +2850,19 @@ Coding Agent 在完成一个 Feature / Task 时，必须满足以下条件：
 
 ### Summary
 
-| Metric | v1.2 (Freeze) | v1.3 (FROZEN) | v1.4 (FROZEN) |
-|--------|:---:|:---:|:---:|
-| Features with ⚠️ | 0 | 0 | **0** |
-| Total Open Questions | 0 Blocking, 3 Deferred | 0 Blocking, 3 Deferred | **0 Blocking, 3 Deferred** |
-| P0 Blocking Questions | 0 | 0 | **0** |
-| P1 Blocking Questions | 0 | 0 | **0** |
+| Metric | v1.2 (Freeze) | v1.3 (FROZEN) | v1.4 (FROZEN) | v1.5 (FROZEN) |
+|--------|:---:|:---:|:---:|:---:|
+| Features with ⚠️ | 0 | 0 | 0 | **0** |
+| Total Open Questions | 0 Blocking, 3 Deferred | 0 Blocking, 3 Deferred | 0 Blocking, 3 Deferred | **0 Blocking, 3 Deferred** |
+| P0 Blocking Questions | 0 | 0 | 0 | **0** |
+| P1 Blocking Questions | 0 | 0 | 0 | **0** |
 
 ---
 
 > **Document End**
 >
-> **版本**: v1.4
+> **版本**: v1.5
 > **状态**: **FROZEN**
-> **最后更新**: 2026-08-11 (v1.4 Patch: retrieval score terminology normalization, relevance-filter ordering + AC-F011-02 fix, retry semantics clarified (initial + 2 retries = 3 total), File API identity unified to file_id, Preview chunk-based semantics with overlap artifact disclosure, UNSUPPORTED_PREVIEW_FORMAT removed, all remaining [PROPOSAL] items resolved into explicit decisions, KB name validation canonical regex frozen, File Preview + INVALID_FILE_NAME AC coverage added, config doc wording + API error contract clarified)
-> **生成依据**: 《DX-RAG 项目说明书》v1.0 (2026年5月) + Phase 1 Gap Analysis + SPEC Freeze 13 项决策 (v1.2) + SPEC Freeze Patch 8 项修复 (v1.3) + SPEC Freeze Patch 14 项修复 (v1.4)
-> **下一步**: Blocking Open Questions = 0。SPEC 达到 FROZEN 状态。可进入 TASKS.md 拆分阶段。
+> **最后更新**: 2026-08-15 (v1.5 Patch: Rename Metadata Contract Resolution — clarified VectorStore.rename_collection semantics so KB rename can update persisted chunk collection references without exposing Chroma private APIs or adding a new public VectorStore method)
+> **生成依据**: 《DX-RAG 项目说明书》v1.0 (2026年5月) + Phase 1 Gap Analysis + SPEC Freeze 13 项决策 (v1.2) + SPEC Freeze Patch 8 项修复 (v1.3) + SPEC Freeze Patch 14 项修复 (v1.4) + SPEC Freeze Patch Rename Metadata Contract Resolution (v1.5)
+> **下一步**: Blocking Open Questions = 0。SPEC 保持 FROZEN（v1.5）。

@@ -31,9 +31,9 @@ Task Coding（任务编码）
 
 ### Phase 0 — Project Bootstrap
 
-**状态**: ✅ COMPLETED
+**状态**: ✅ COMPLETED（T0006 于 Gate Review 后补充，现 DONE + Learning Pass 完成）
 
-**Tasks**: T0001–T0005
+**Tasks**: T0001–T0006
 
 **学习重点**:
 
@@ -42,7 +42,7 @@ Task Coding（任务编码）
 - 配置管理（Pydantic BaseSettings / 环境变量）
 - 统一错误处理基础（Error Code 目录 / Global Exception Handler）
 - Pydantic Data Models（API Request/Response Schemas）
-- Health Endpoint（SPEC 定义，尚未实现）
+- Health Check Endpoint（SPEC Section 6.2 / T0006 —— 项目第一个真实 endpoint）
 - Python 依赖管理 vs Node 依赖管理
 - Git / Repository Hygiene
 

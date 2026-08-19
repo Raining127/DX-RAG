@@ -1,14 +1,14 @@
 # DX-RAG Implementation Tasks
 
-> **Generated from**: SPEC.md v1.4 (FROZEN)
-> **Generated on**: 2026-08-11
+> **Generated from**: SPEC.md v1.5 (FROZEN)
+> **Generated on**: 2026-08-11 | **Updated**: 2026-08-15 (v1.5 Rename Metadata Contract Resolution), 2026-08-18 (T0006 Health API coverage correction)
 > **Status**: READY FOR IMPLEMENTATION
 
 ---
 
 ## 1. Purpose
 
-This document decomposes the frozen SPEC.md v1.4 into dependency-ordered, implementation-ready Tasks suitable for Coding Agents.
+This document decomposes the frozen SPEC.md v1.5 into dependency-ordered, implementation-ready Tasks suitable for Coding Agents.
 
 Each Task defines a single coherent implementation outcome with explicit scope boundaries, dependencies, and verification criteria.
 
@@ -59,7 +59,7 @@ No Task is complete until all Completion Conditions are met.
 
 | Phase | Goal | Depends On | Task Range |
 |-------|------|------------|------------|
-| Phase 0 | Project Bootstrap — repository, config, error handling, schemas | None | T0001–T0005 |
+| Phase 0 | Project Bootstrap — repository, config, error handling, schemas | None | T0001–T0006 |
 | Phase 1 | VectorStore Foundation — ChromaDB CRUD, search, metadata | Phase 0 | T0101–T0108 |
 | Phase 2 | Embedding — bge-small-zh-v1.5 model loading & generation | Phase 0 | T0201–T0202 |
 | Phase 3 | Document Processing — parsers, cleaning, chunking, ingest pipeline | Phase 1, Phase 2 | T0301–T0308 |
@@ -119,7 +119,7 @@ No Task is complete until all Completion Conditions are met.
 
 **Acceptance / Verification:**
 - `uvicorn app.main:app` starts without import errors (DOD-10)
-- `GET /api/health` is not yet implemented — expected 404 is acceptable at this stage
+- `GET /api/health` is not yet implemented — expected 404 is acceptable at this stage（该 endpoint 由 T0006 实现）
 - Project structure matches SPEC Section 4
 
 **Completion Conditions:**
@@ -320,6 +320,52 @@ No Task is complete until all Completion Conditions are met.
 
 ---
 
+### T0006 — Health Check API
+
+**Status:** DONE
+
+**Goal:** Implement the frozen SPEC-defined backend health endpoint (`GET /api/health`) so external callers can confirm the FastAPI application is running.
+
+**Note:** This Task was added after the Phase 0 Gate Review as a planning coverage correction for an already-frozen SPEC endpoint (Section 6.2). T0001–T0005 remain DONE; the Phase 0 Gate Review result is unaffected.
+
+**SPEC References:**
+- Section 6.1 (API Conventions — Base Path `/api`, JSON responses)
+- Section 6.2 (Health Check — `GET /api/health`, Response 200 `{"status": "ok"}`)
+- NFR Section 11.5 (Observability — health endpoint as basic availability probe)
+- Section 4 (Project Structure — `backend/app/api/router.py` main APIRouter)
+
+**Dependencies:**
+- T0001 (FastAPI app + main APIRouter foundation)
+
+**Implementation Scope:**
+- Register `GET /api/health` in `backend/app/api/router.py` (main APIRouter)
+- Return HTTP 200 with response body exactly `{"status": "ok"}` (Section 6.2)
+- Endpoint must not depend on VectorStore, embedding models, LLM clients, ChromaDB, or any external API key
+
+**Out of Scope:**
+- Do NOT add ChromaDB connectivity check
+- Do NOT add embedding model loading check / DeepSeek API check / Qwen API check
+- Do NOT add filesystem diagnostics or detailed system information
+- Do NOT add authentication
+- Do NOT build monitoring infrastructure or expand readiness/liveness framework
+- Do NOT add frontend health UI
+
+**Expected Files / Areas:**
+- `backend/app/api/router.py` (register health route)
+
+**Acceptance / Verification:**
+- Backend starts / imports without error
+- `GET /api/health` returns HTTP 200 with body exactly `{"status": "ok"}` (Section 6.2)
+- Endpoint requires no external API key
+- Request does not trigger ChromaDB, embedding model loading, DeepSeek, or Qwen
+
+**Completion Conditions:**
+- Health endpoint implemented and registered on the main router
+- Frozen Section 6.2 contract satisfied exactly
+- No unrelated changes; no other Feature pre-built
+
+---
+
 ## 7. Phase 1 — VectorStore Foundation
 
 ### T0101 — VectorStore Public Interface (ABC)
@@ -425,16 +471,15 @@ No Task is complete until all Completion Conditions are met.
 **Goal:** Implement `rename_collection` through VectorStore, leveraging ChromaDB's native rename capability.
 
 **SPEC References:**
-- F001 Detail (Rename behavior — collection rename, metadata update responsibility external to this method)
-- F008 Detail (Public Interface — `rename_collection`)
+- F001 Detail (Rename behavior — responsibility split: VectorStore = collection rename + metadata cascade; Service = orchestration/compensation)
+- F008 Detail (Public Interface — `rename_collection`; Storage-Level Rename Cascade — SPEC v1.5 contract)
 
 **Dependencies:**
 - T0102 (ChromaDB client + basic collection operations)
 
 **Implementation Scope:**
 - `rename_collection(old_name, new_name)`: rename the ChromaDB collection
-- This method only renames the collection itself
-- Metadata update responsibility belongs to the KB Rename endpoint (T0402)
+- This task implemented the base collection rename only (Phase 1 scope)
 - Ensure the method validates old_name exists before renaming
 
 **Out of Scope:**
@@ -454,6 +499,11 @@ No Task is complete until all Completion Conditions are met.
 **Completion Conditions:**
 - `rename_collection` operates correctly on ChromaDB collection
 - Method signature matches VectorStore interface
+
+**SPEC v1.5 Note (Rename Metadata Contract Resolution):**
+- T0103 remains DONE；Phase 1 不因 SPEC v1.5 重开
+- SPEC v1.5 强化了 `rename_collection` 的最终 contract：该方法必须同时完成 Chroma Collection 重命名 + persisted chunk metadata 级联（`collection_name` / `source_file`）
+- 当前代码的诚实状态：collection rename exists；metadata cascade 尚未实现，由 T0402 在 VectorStore 模块内部（`backend/app/core/vector_store.py`）完成——不是由外部通过 read APIs 写入
 
 ---
 
@@ -653,6 +703,7 @@ No Task is complete until all Completion Conditions are met.
 **Out of Scope:**
 - Do NOT return embedding vectors in list_chunks (Keyword Retriever doesn't need them)
 - Do NOT add pagination (v1 scope)
+- Do NOT treat these read APIs as a metadata write path — `list_chunks` / `get_chunks_by_file` are read-only；KB Rename 的 metadata 级联由 `VectorStore.rename_collection` 完成（SPEC v1.5 contract，见 T0402）
 
 **Expected Files / Areas:**
 - `backend/app/core/vector_store.py`
@@ -1207,15 +1258,15 @@ No Task is complete until all Completion Conditions are met.
 **Goal:** Implement collection rename endpoint with full cascade (ChromaDB + uploads directory + chunk metadata + keyword index) and atomicity guarantee.
 
 **SPEC References:**
-- F001 Detail (Rename flow — 8 steps)
-- F001 Detail (Rename Atomicity — success → all new_name; failure → all old_name)
+- F001 Detail (Rename — responsibility split: VectorStore storage-level cascade vs Service orchestration/compensation)
+- F001 Detail (Rename Atomicity — success → all new_name; failure → all old_name; no partial state)
+- F008 Detail (`rename_collection` Storage-Level Rename Cascade — SPEC v1.5 contract；唯一合法 metadata 写入路径)
 - Section 6.5 (Rename Collection — PUT /api/collections/{name}, Request/Response)
-- F001 Determine (AC-F001-04 — rename cascade with file)
+- F001 Determine (AC-F001-04 — rename cascade + metadata; AC-F001-06 — rename failure atomicity)
 - Section 9.2 (Error codes — COLLECTION_NOT_FOUND, COLLECTION_ALREADY_EXISTS, RENAME_FAILED)
 
 **Dependencies:**
-- T0103 (VectorStore.rename_collection)
-- T0108 (VectorStore.list_chunks + get_chunks_by_file — for metadata update)
+- T0103 (VectorStore.rename_collection — base collection rename capability；本 Task 依据 SPEC v1.5 contract 在 VectorStore 模块内部完成 metadata cascade)
 - T0404 (name validation)
 - Phase 6 (keyword index — invalidation call, may be via shared cache reference)
 
@@ -1223,30 +1274,41 @@ No Task is complete until all Completion Conditions are met.
 - `PUT /api/collections/{name}`
 - Validate new_name (reuse validation)
 - Check old_name exists, new_name doesn't exist
-- **Rename cascade** (with rollback on any step failure):
-  1. Rename ChromaDB collection
+- **Complete `VectorStore.rename_collection` to the SPEC v1.5 contract**（实现位于 `backend/app/core/vector_store.py` 内部，属 VectorStore 自身职责）:
+  - Chroma Collection 重命名 + persisted chunk metadata 级联（`collection_name` → new_name；`source_file` → `uploads/{new_name}/{file_name}`）
+  - 保持 `chunk_id`/`file_id`/`chunk_index`/`file_name`/content/embeddings 不变；不重新 ingest
+- **Rename cascade orchestration** (with rollback on any step failure):
+  1. Invoke `VectorStore.rename_collection(old_name, new_name)`（collection rename + metadata cascade）
   2. Rename uploads directory `old_name` → `new_name`
-  3. Update all chunk metadata: `collection_name` and `source_file` paths
-  4. Invalidate keyword index cache for this collection
-- On any step failure → rollback completed steps, return 500 `RENAME_FAILED`
+  3. Invalidate keyword index cache for this collection
+  4. Verify metadata cascade（只读校验可经 `list_chunks` / `get_chunks_by_file`，仅用于验证，不作写入路径）
+- On any step failure → rollback completed steps (compensation per F001 observable atomicity), return 500 `RENAME_FAILED`
 - chunk_id and file_id MUST NOT change
 - All persistent operations succeed before return 200
 
 **Out of Scope:**
 - Do NOT change any UUID (chunk_id or file_id)
+- Do NOT access `_collection` or any Chroma private API from the API/Service layer — metadata 级联必须封装在 VectorStore.rename_collection 内部（AC-F008-03）
+- Do NOT implement metadata update by reading `list_chunks`/`get_chunks_by_file` then writing outside VectorStore
+- Do NOT re-ingest chunks or regenerate embeddings
+- Do NOT change chunk content or any metadata field other than `collection_name` / `source_file`
 - This task may need to coordinate with T0602 for keyword index invalidation — define a shared invalidation interface
 
 **Expected Files / Areas:**
 - `backend/app/api/collections.py`
+- `backend/app/core/vector_store.py`（完成 rename_collection 的 SPEC v1.5 storage-level cascade contract）
 
 **Acceptance / Verification:**
-- AC-F001-04: rename "old-kb" (with file "doc.pdf") → "new-kb" → collection renamed, uploads dir renamed, file retrievable
-- chunk_id unchanged after rename
-- source_file paths updated: `uploads/old-kb/...` → `uploads/new-kb/...`
+- AC-F001-04: rename "old-kb" (with file "doc.pdf") → "new-kb" → collection renamed, uploads dir renamed, chunk count unchanged, file retrievable
+- AC-F001-06: rename failure → observable state fully old_name, no partial/mixed state
+- chunk_id/file_id/chunk_index/file_name unchanged after rename
+- All chunk metadata: `collection_name` = "new-kb", `source_file` = `uploads/new-kb/doc.pdf`
+- metadata cascade performed inside VectorStore.rename_collection（API/Service 层无 `_collection` 访问 — AC-F008-03）
 - Rollback: if part fails, observable state is fully old_name
 
 **Completion Conditions:**
-- All 8 rename steps implemented
+- VectorStore.rename_collection 满足 SPEC v1.5 storage-level rename cascade contract
+- All rename orchestration steps implemented
 - Atomicity verified (no mixed state on failure)
 - UUID immutability preserved
 
@@ -2808,6 +2870,7 @@ No Task is complete until all Completion Conditions are met.
 | AC-F001-03 | T0404 | Phase 4 |
 | AC-F001-04 | T0402 | Phase 4 |
 | AC-F001-05 | T0403 | Phase 4 |
+| AC-F001-06 | T0402 | Phase 4 |
 | AC-F002-01 | T0502 | Phase 5 |
 | AC-F002-02 | T0501 | Phase 5 |
 | AC-F002-03 | T0502 | Phase 5 |
@@ -2868,7 +2931,7 @@ No Task is complete until all Completion Conditions are met.
 
 | Acceptance Criterion | Primary Task | Phase |
 |----------------------|-------------|-------|
-| AC-F001-01 through AC-F001-05 | T0401–T0403 | Phase 4 |
+| AC-F001-01 through AC-F001-06 | T0401–T0403 | Phase 4 |
 | AC-F002-01 through AC-F002-06 | T0501–T0502 | Phase 5 |
 | AC-F002-07 | T0502 | Phase 5 |
 | AC-F002-08 | T0503 | Phase 5 |
@@ -2919,6 +2982,12 @@ No Task is complete until all Completion Conditions are met.
 | F015 Source Citation | T0801 |
 | F016 File Management | T0901, T0902, T0903 |
 | F017 Frontend | T1001, T1002, T1101, T1102, T1103, T1104, T1105 |
+
+### API Contract Coverage (Section 6 endpoints without Feature AC)
+
+| Endpoint | SPEC | Owner Task |
+|----------|------|------------|
+| `GET /api/health` | Section 6.2 | T0006 |
 
 ---
 
@@ -2997,6 +3066,7 @@ No v1 implementation Tasks exist for any of these items.
 
 - [x] Every F001-F017 has at least one implementation Task
 - [x] Every mandatory AC (Section 5 + Section 12) has a Task owner
+- [x] Every frozen Section 6 API endpoint has an implementation Task owner (GET /api/health → T0006)
 - [x] No active Task implements Out-of-Scope functionality (Section 2.5)
 - [x] No Task changes frozen API contracts (Section 6)
 - [x] No circular dependencies in Task dependency graph
@@ -3007,7 +3077,7 @@ No v1 implementation Tasks exist for any of these items.
 - [x] File deletion/rollback behaviors have verification coverage (T0503, T1203)
 - [x] Security/path traversal behavior has verification coverage (T0501, T1203)
 - [x] All Tasks initially have Status = TODO
-- [x] SPEC.md is FROZEN (v1.4, Blocking Questions = 0)
+- [x] SPEC.md is FROZEN (v1.5, Blocking Questions = 0)
 - [x] No Task requires modifying SPEC behavior
 - [x] Deferred items listed in Section 22, no active Tasks for them
 
@@ -3015,6 +3085,6 @@ No v1 implementation Tasks exist for any of these items.
 
 > **Document End**
 >
-> **Generated from**: SPEC.md v1.4 (FROZEN, 2026-08-11)
-> **Task Count**: 54 implementation Tasks across 13 phases
+> **Generated from**: SPEC.md v1.5 (FROZEN, updated 2026-08-15)
+> **Task Count**: 55 implementation Tasks across 13 phases
 > **Status**: READY FOR IMPLEMENTATION

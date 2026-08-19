@@ -26,11 +26,12 @@
 | 第 7 节 T0003 Config | 🟢 必看 | 理解 Python 如何管理配置（对比 Node.js process.env） |
 | 第 8 节 T0004 Error | 🟢 必看 | 理解 Backend 错误如何变成 HTTP Response |
 | 第 9 节 T0005 Schema | 🟢 必看 | 理解 Pydantic 是什么——它不是你熟悉的 TypeScript interface |
-| 第 10 节 请求路径 | 🟡 建议理解 | 整合前 9 节，追踪一次完整请求 |
-| 第 11–13 节 | 🟡 建议理解 | 对照表、目录结构、阅读路线——以后可以当速查手册 |
-| 第 14 节 10 件事 | 🟢 必看 | Phase 0 的最低要求 |
-| 第 16 节 FAQ | 🟡 建议理解 | 以前端视角回答常见困惑 |
-| 第 21 节 进阶阅读 | 🔵 以后再看 | 等 Python 更熟悉后回来读 |
+| 第 10 节 T0006 Health | 🟢 必看 | 项目第一个真实 endpoint——从 URL 到 JSON 的最短路径 |
+| 第 11 节 请求路径 | 🟡 建议理解 | 整合前 10 节，追踪一次完整请求 |
+| 第 12–14 节 | 🟡 建议理解 | 对照表、目录结构、阅读路线——以后可以当速查手册 |
+| 第 15 节 10 件事 | 🟢 必看 | Phase 0 的最低要求 |
+| 第 17 节 FAQ | 🟡 建议理解 | 以前端视角回答常见困惑 |
+| 第 22 节 进阶阅读 | 🔵 以后再看 | 等 Python 更熟悉后回来读 |
 
 ### 三种学习深度标记
 
@@ -135,7 +136,7 @@ Phase 0 把"地基"打好，后面 12 个 Phase 才可能在上面盖楼。
 
 ---
 
-## 3. Phase 0 的 5 个 Tasks
+## 3. Phase 0 的 6 个 Tasks
 
 ### T0001 — Backend Application Skeleton
 
@@ -166,6 +167,14 @@ Phase 0 把"地基"打好，后面 12 个 Phase 才可能在上面盖楼。
 - **做什么**：定义 16 个 Request/Response 的 Pydantic 模型
 - **为什么需要**：API 的数据契约——前端知道该发什么、该收什么
 - **你应该学到**：Pydantic 不只是 TypeScript interface，它是 runtime 可验证的类型系统
+
+### T0006 — Health Check API
+
+- **做什么**：注册 `GET /api/health`，返回 `{"status": "ok"}`
+- **为什么需要**：SPEC Section 6.2 定义的基本可用性探测——让外部调用方（包括将来的前端）确认后端在运行
+- **你应该学到**：第一个真实 endpoint 长什么样、`/api` 前缀 + 路由路径如何拼装、为什么 health 不检查数据库/LLM
+
+> T0006 是 Phase 0 Gate Review 之后补充的规划任务（解决"health endpoint 没有 Task owner"的覆盖缺口），2026-08-18 实现完成。
 
 ---
 
@@ -564,17 +573,26 @@ FastAPI:
   app.include_router(router, prefix='/api')
 ```
 
-当前 [api/router.py](../../backend/app/api/router.py) 只有 10 行，实际业务路由都还是注释：
+当前 [api/router.py](../../backend/app/api/router.py) 已经注册了第一个真实路由（T0006 的 health check），其余业务路由还是注释：
 
 ```python
 from fastapi import APIRouter
 
 api_router = APIRouter()
 
+
+@api_router.get("/health")
+def health_check() -> dict:
+    """Basic availability probe (SPEC Section 6.2)."""
+    return {"status": "ok"}
+
+
 # Sub-routers will be included here in future tasks:
 # from app.api.collections import router as collections_router
 # ...
 ```
+
+`health_check` 这个函数就是第 10 节要详细讲的第一个 endpoint。
 
 ### 🟢 Uvicorn — 你启动后端时真正发生了什么
 
@@ -1066,9 +1084,100 @@ interface UploadResponse {
 
 ---
 
-## 10. 从前端请求到 FastAPI 的完整路径
+## 10. T0006 — Health Check API
 
-> 整合 T0001–T0005，追踪一次（未来的）完整请求。
+> 这是整个项目第一个**真实可访问**的 endpoint。前面的章节都在讲"骨架"，从这一节开始，骨架上长出了第一块肉。
+
+### 10.1 它是什么，为什么第一个实现它
+
+SPEC Section 6.2 定义了一个极简契约：
+
+```text
+GET /api/health  →  200  {"status": "ok"}
+```
+
+**为什么需要它**：SPEC NFR Section 11.5 说 v1 不集成 APM/监控系统，health endpoint 就是"基本可用性探测"——外部调用方（浏览器、运维脚本、将来的前端）发一个 GET 就能知道后端活着。
+
+**为什么它最应该第一个实现**：它不依赖任何东西。不碰 ChromaDB、不加载 embedding 模型、不调用 DeepSeek。对于学习来说，它是"从 URL 到 JSON"的最短完整路径。
+
+### 10.2 逐行读真实代码
+
+新增的 [backend/app/api/router.py](../../backend/app/api/router.py)：
+
+```python
+@api_router.get("/health")
+def health_check() -> dict:
+    """Basic availability probe (SPEC Section 6.2)."""
+    return {"status": "ok"}
+```
+
+逐行解释：
+
+| 代码 | 解释 | 前端类比 |
+|------|------|---------|
+| `@api_router.get("/health")` | decorator：给 `api_router` 注册一条 GET 路由。第 4.8 节说过，先理解成"给函数加标签" | `router.get('/health', handler)`（Express） |
+| `def health_check() -> dict` | 普通函数（不是 `async def`）。因为它内部没有任何 `await`，同步函数就够了，FastAPI 会把它丢进线程池 | 普通 handler，不需要 async |
+| `return {"status": "ok"}` | 返回一个 Python dict。FastAPI 自动序列化成 JSON，并设置 `Content-Type: application/json`（SPEC Section 6.1 要求） | `res.json({status: 'ok'})` |
+
+**注意 return 的 dict 和浏览器收到的 JSON 之间的关系**：你 return 的是 Python dict，浏览器收到的是 JSON 字符串。中间"Python 对象 → JSON 字符串"的转换由 FastAPI 完成，不需要你手动 `json.dumps()`。这正是 FastAPI 和 Express 的关键区别之一——Express 里你得自己调 `res.json()`。
+
+### 10.3 `/api/health` 这个完整路径是怎么拼出来的
+
+两个部分：
+
+1. `router.py` 里注册的是 `/health`
+2. `main.py` 里 `app.include_router(api_router, prefix="/api")` 给所有路由加上前缀
+
+所以完整路径 = `/api` + `/health` = `/api/health`。
+
+这也是为什么 T0001 时代（router 全空时）访问 `/api/health` 会 404——FastAPI 找不到匹配的路由（T0006 实现后就不会了）。
+
+### 10.4 为什么它只返回 `{"status": "ok"}`，不检查别的
+
+你可能觉得"健康检查"应该顺便检查 ChromaDB 连不连得上、DeepSeek 有没有 API Key。但 SPEC 冻结的契约就是 `{"status": "ok"}`，T0006 的 Out of Scope 明确禁止：
+
+- ChromaDB connectivity check
+- embedding model loading check
+- DeepSeek / Qwen API check
+- filesystem diagnostics
+
+**原因**：这是 **availability probe（可用性探测）**，不是 **readiness probe（就绪探测）**。它回答的问题是"进程还活着吗"，不是"所有依赖都健康吗"。后者的复杂度（超时、错误分类、部分健康状态）属于 SPEC 明确排除的监控/APM 范畴。
+
+**工程启示**：Frozen SPEC 已经把 contract 定死了，实现者的任务是把 contract 精确落地，而不是"顺手增强"。加一个 `"version"` 字段看似无害，但会破坏"Response body 精确符合 SPEC"的验收标准。
+
+### 10.5 如何验证它
+
+实现后如何确认？两种方式：
+
+```bash
+# 方式一：curl（需要先启动后端：cd backend && uvicorn app.main:app --port 8000）
+curl http://localhost:8000/api/health
+```
+
+```python
+# 方式二：TestClient（FastAPI 自带的测试客户端，不开真实端口）
+from fastapi.testclient import TestClient
+from app.main import app
+
+c = TestClient(app)
+r = c.get("/api/health")
+assert r.status_code == 200
+assert r.json() == {"status": "ok"}
+```
+
+TestClient 类比前端测试里的 supertest——不用真开端口，直接在进程内发请求。
+
+### 10.6 从 T0006 学到的规划教训
+
+T0006 是 Phase 0 Gate Review **之后**才补进 TASKS.md 的。原因：SPEC 定义了 `GET /api/health`，但 TASKS.md 里没有任何 Task 负责实现它——T0001 的验收里甚至写着"expected 404 is acceptable at this stage"。
+
+这暴露了一个规划原则：**SPEC 里每个 API contract 都必须有且只有一个 Task owner**。文档先行（SPEC）→ 任务分解（TASKS）→ 代码实现（backend）这条链上，任何一环漏掉，契约就落不了地。
+
+---
+
+## 11. 从前端请求到 FastAPI 的完整路径
+
+> 整合 T0001–T0006，追踪一次（未来的）完整请求。
 
 ```text
 1. 用户在浏览器输入问题，点击发送
@@ -1120,7 +1229,7 @@ interface UploadResponse {
 
 ---
 
-## 11. Python 与 TypeScript 对照表
+## 12. Python 与 TypeScript 对照表
 
 > 只收录 Phase 0 真实出现的内容。
 
@@ -1150,7 +1259,7 @@ interface UploadResponse {
 
 ---
 
-## 12. 项目目录：用前端工程思维理解
+## 13. 项目目录：用前端工程思维理解
 
 ```text
 backend/app/
@@ -1186,7 +1295,7 @@ Python 要求：一个目录要被 `import`（如 `from app.core import config`�
 
 ---
 
-## 13. Phase 0 关键代码阅读路线
+## 14. Phase 0 关键代码阅读路线
 
 > 不要一次读所有文件。按这个顺序来。
 
@@ -1205,11 +1314,11 @@ Python 要求：一个目录要被 `import`（如 `from app.core import config`�
 
 **能回答这些就算看懂**："整个后端的入口是什么？CORS 在哪配置？`/api` 前缀在哪定义？"
 
-#### 2. [backend/app/api/router.py](../../backend/app/api/router.py) — 10 行
+#### 2. [backend/app/api/router.py](../../backend/app/api/router.py) — 17 行
 
-**第一遍只看**：`api_router = APIRouter()` 这一行 + 注释中的未来 import。
+**第一遍只看**：`api_router = APIRouter()` + `@api_router.get("/health")` 这个真实路由 + 注释中的未来 import。
 
-**能回答这些就算看懂**："目前有什么 API？未来 API 会怎么添加？"
+**能回答这些就算看懂**："目前唯一真实的 API 是哪个？它的完整路径是什么？未来 API 会怎么添加？"
 
 #### 3. [backend/app/core/config.py](../../backend/app/core/config.py) — 111 行
 
@@ -1249,7 +1358,7 @@ Python 要求：一个目录要被 `import`（如 `from app.core import config`�
 
 ---
 
-## 14. 我现在只需要掌握的 10 件事
+## 15. 我现在只需要掌握的 10 件事
 
 1. **`self` ≈ `this`**，但 Python 要求你显式写在方法参数列表的第一个位置
 
@@ -1273,7 +1382,7 @@ Python 要求：一个目录要被 `import`（如 `from app.core import config`�
 
 ---
 
-## 15. 现在可以暂时不懂的内容
+## 16. 现在可以暂时不懂的内容
 
 > 以下内容不影响你理解 Phase 0 的核心。以后遇到实际需求再回来学。
 
@@ -1289,7 +1398,7 @@ Python 要求：一个目录要被 `import`（如 `from app.core import config`�
 
 ---
 
-## 16. 常见问题：以前端开发者视角回答
+## 17. 常见问题：以前端开发者视角回答
 
 ### Q1: 为什么 Python 文件里到处有 `__init__.py`？它是干什么的？
 
@@ -1365,7 +1474,7 @@ if (!response.ok) {
 
 ---
 
-## 17. Debug：用我已有经验迁移
+## 18. Debug：用我已有经验迁移
 
 ### ModuleNotFoundError ←→ Module not found
 
@@ -1412,7 +1521,7 @@ ModuleNotFoundError: No module named 'app.core.config'  ← 这里崩了
 
 ---
 
-## 18. 5 道基础自测题
+## 19. 6 道基础自测题
 
 **Q1**：`backend/app/core/config.py` 最后两行是什么？为什么 `settings = Settings()` 要放在模块级别而不是函数内部？
 
@@ -1434,9 +1543,11 @@ from backend.app.main import app
 
 **Q5**：前端的 error parser 应该怎么写？读完 `errors.py` 后，用 TypeScript 写出一个通用的错误处理函数签名。
 
+**Q6**：`GET /api/health` 的完整路径是哪两部分拼出来的？浏览器收到的 JSON 是哪个环节从 Python dict 序列化出来的？为什么 T0006 明确禁止在 health 里检查 ChromaDB / DeepSeek？
+
 ---
 
-## 19. 3 个小练习
+## 20. 4 个小练习
 
 ### 练习 1：手工翻译
 
@@ -1467,9 +1578,16 @@ class QueryRequest(BaseModel):
 - `__init__` 是什么？
 - Pydantic 和 TypeScript interface 有什么区别？
 
+### 练习 4：动手摸第一个 endpoint
+
+1. 启动后端（`cd backend && uvicorn app.main:app --port 8000`），用浏览器或 curl 访问 `http://localhost:8000/api/health`
+2. 观察响应的 `Content-Type` 响应头是什么
+3. 再访问 `http://localhost:8000/health`（少了 `/api`），观察 404 长什么样——它和第 8 节讲的统一错误格式有什么关系？
+4. （可选）临时把 `router.py` 里的返回值改成 `{"status": "ok", "foo": 1}`，重启后再访问一次，确认 FastAPI 自动序列化任意 dict——然后把代码改回来
+
 ---
 
-## 20. Phase 0 快速复习卡
+## 21. Phase 0 快速复习卡
 
 ### 一句话总结
 
@@ -1517,11 +1635,11 @@ Phase 0 搭建了 DX-RAG 的项目骨架——后端 FastAPI 能启动、前端 
 
 ---
 
-## 21. 🔵 进阶阅读
+## 22. 🔵 进阶阅读
 
 > 以下内容来自原学习文档中的高级章节。**当前第一遍学习可以跳过。** 等你 Python/后端能力提升后，可以回来阅读。
 
-### 21.1 FastAPI Lifespan 的完整机制
+### 22.1 FastAPI Lifespan 的完整机制
 
 `@asynccontextmanager` 装饰的 `lifespan` 函数是一个 async context manager。FastAPI 在启动时进入 `yield` 之前的代码，关闭时执行 `yield` 之后的代码。这种模式替代了旧版 FastAPI 的 `@app.on_event("startup")` / `@app.on_event("shutdown")` 装饰器。
 
@@ -1529,17 +1647,17 @@ Phase 0 搭建了 DX-RAG 的项目骨架——后端 FastAPI 能启动、前端 
 
 Phase 0 中 lifespan 是空的，但后续 Phase 如果需要初始化 ChromaDB 连接或加载模型，代码会加在 `yield` 之前。
 
-### 21.2 CORS 的安全考虑
+### 22.2 CORS 的安全考虑
 
 Phase 0 使用 `allow_origins=["*"]` 是因为 v1 的部署假设是本地/可信内网环境。生产环境中，应该通过 `CORS_ORIGINS` 配置项限制为具体的域名。
 
 SPEC Section 8.1 定义了 `CORS_ORIGINS` 参数（List[str]），但 main.py 中没有使用它——这是 T0003 和 T0001 之间的已知不对称（config 提供了参数，但 main.py 没有消费它）。
 
-### 21.3 Python Module 搜索路径
+### 22.3 Python Module 搜索路径
 
 当 Python 执行 `from app.core.config import settings` 时，它会沿着 `sys.path` 搜索 `app` package。默认情况下，`sys.path` 包含当前工作目录。这就是为什么需要在 `backend/` 目录下运行 `uvicorn app.main:app`——如果从项目根目录运行，Python 可能找不到 `app` module。
 
-### 21.4 配置管理的设计权衡
+### 22.4 配置管理的设计权衡
 
 为什么使用 Pydantic BaseSettings 而不是更简单的 `os.getenv()`：
 
@@ -1551,13 +1669,13 @@ SPEC Section 8.1 定义了 `CORS_ORIGINS` 参数（List[str]），但 main.py �
 
 DX-RAG 选择 BaseSettings 是因为 22 个参数分散在后端几乎所有模块中，需要一个"统一真相来源"。
 
-### 21.5 Error Model 的 Pydantic 序列化
+### 22.5 Error Model 的 Pydantic 序列化
 
 `ErrorResponse` 和 `ErrorDetail` 都继承自 `BaseModel`。`model_dump()` 方法将它们转换为 Python dict，然后 `JSONResponse` 将其序列化为 JSON。
 
 设计上 T0004 将 Error model 放在 `errors.py` 中，而不是 `schemas.py` 中，因为 error handling 是基础设施而非 API contract。但在整个应用中，只有一处定义了 ErrorResponse 的结构。
 
-### 21.6 v1 没有 Universal Success Response Wrapper
+### 22.6 v1 没有 Universal Success Response Wrapper
 
 SPEC Section 7.7 明确规定 v1 不得引入统一的成功响应包裹器（如 `{"data": ..., "success": true}`）。每个 API endpoint 的 Response 格式是独立的，由各自的 Pydantic model 定义。这是为了防止过度抽象——当项目很小（v1 只有十几个 endpoint）时，统一的 wrapper 增加的复杂度大于它带来的收益。
 
@@ -1571,7 +1689,7 @@ SPEC Section 7.7 明确规定 v1 不得引入统一的成功响应包裹器（�
 |---|------|------|---------------|
 | 1 | `main.py:31` vs `config.py:31` | 配置中定义了 `CORS_ORIGINS: List[str]`，但 `main.py` 硬编码了 `allow_origins=["*"]` | 后续 Task 应该让 main.py 消费 config 中的 CORS_ORIGINS |
 | 2 | `schemas.py` | 定义了 `ChunkRecord`/`SearchResult` 的引用，但实际定义在 T0101 的 `vector_store.py` 中 | 需要确认这些类型是应该统一到 schemas.py，还是分属不同层 |
-| 3 | `router.py` | 当前完全是空的 APIRouter，所有子路由都是注释 | Phase 4 开始会逐步取消注释并加入真正的 router |
+| 3 | `router.py` | T0006 已注册 `GET /api/health`，其余子路由仍是注释 | Phase 4 开始会逐步取消注释并加入真正的 router |
 | 4 | `services/` | 空目录，Phase 0 没有创建任何 service 代码 | Phase 3 开始才会在此目录添加业务逻辑 |
 
 ---
