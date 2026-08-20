@@ -1153,6 +1153,18 @@ pydantic-settings>=2.0.0
 
 **能回答这些就算看懂**："`@abstractmethod` 是干什么的？T0101 的 11 个方法为什么一个都没实现？T0102 当时为什么有 8 个方法要写成 `raise NotImplementedError` 占位、而不是干脆不写？现在 11 个方法全部真实实现了吗？`search()` 为什么返回 `similarity_score` 而不是距离？"
 
+### 6. [backend/app/services/embedding.py](../../backend/app/services/embedding.py) — Embedding 模型懒加载单例 + 向量生成（77 行，T0201/T0202）
+
+**第一遍看**：
+- 文件头部 docstring（1–16 行）—— SPEC F007 的浓缩契约（加载策略 + 生成契约 + 错误契约）
+- 模块级缓存变量（27–28 行）—— `_model: Optional["SentenceTransformer"] = None`，单例地基
+- `get_model()`（31–55 行）—— T0201 全部逻辑，注意 `global _model`、函数内 import、`raise ... from exc` 三处新语法
+- `encode_chunks()`（58–77 行）—— T0202 新增：`if not chunks` 真值判断 + 一行链式调用 `.encode(...).tolist()`（numpy 知识见 19.2）
+
+**暂时跳过**：无——77 行没有冗余内容。
+
+**能回答这些就算看懂**："`if TYPE_CHECKING:` 里的 import 什么时候执行？为什么顶部不直接 import sentence_transformers？删掉 `global _model` 会怎样？模型加载失败后第二次调用会发生什么？`encode_chunks` 为什么需要 `.tolist()`？`if not chunks` 在 JS 里照抄会有什么 bug？"
+
 ---
 
 ## 14. 当前阶段只需要掌握的内容
@@ -1173,6 +1185,12 @@ pydantic-settings>=2.0.0
 - [ ] `range(len(x))` 索引循环 ≈ 经典三段式 for 循环
 - [ ] `lambda` + `sort(key=..., reverse=True)`（按字段排序，reverse=True 降序）
 - [ ] `@staticmethod`（类里的静态方法，没有 self）
+- [ ] `if not 容器` 真值判断（空 list/dict/str 是假值；⚠️ JS 里 `[]` 是真值）
+- [ ] `global` 关键字（函数内给模块级变量赋值必须声明；读不需要）
+- [ ] `is None` 身份比较（判断空值用 `is`，`==` 可被重写）
+- [ ] 函数内 import（延迟 import：首次调用才加载，重复执行零开销）
+- [ ] `if TYPE_CHECKING:` + 字符串类型标注（重依赖的"假 import"，运行时零成本）
+- [ ] `.tolist()`（numpy 数组 → Python 原生 list；numpy float32 ≠ Python float）
 
 ### 🟡 知道存在即可
 
@@ -1185,6 +1203,7 @@ pydantic-settings>=2.0.0
 - [ ] `Optional[X]` = `X | None`
 - [ ] 变量标注（`x: Type = value`）——局部变量也能写，运行时完全不检查
 - [ ] `dict.values()` + `list(...)`——`values()` 是"视图"不是列表，`list()` 转真列表
+- [ ] `raise X from exc`（异常链：翻译异常的同时保留根因，traceback 里两者都可见）
 
 ### 🔵 暂时完全不用学
 
@@ -1259,6 +1278,15 @@ pydantic-settings>=2.0.0
 | `list(...)` | 把可迭代对象转成列表 | `Array.from(...)` | T0107 |
 | dict 聚合计数器模式 | dict 当 Map：首见初始化 + 每条累加（key 天然去重） | `Map` + `reduce` | T0107 |
 | `@staticmethod` | 类里的静态方法：没有 `self`，不需要实例状态 | `static 方法名()` | T0108 |
+| `TYPE_CHECKING` | 永远为 False 的常量——放进 `if TYPE_CHECKING:` 的 import 运行时不会执行，只给类型检查器看 | `import type` | T0201 |
+| 字符串类型标注（`"TypeName"`） | 类型名写成字符串，运行时不解引用——不 import 也能标注 | `import type` 的另一半 | T0201 |
+| `global` | 函数内声明"我要给模块级变量赋值"——Python 默认写创建局部变量 | JS 无需声明（赋值自动沿作用域链外找） | T0201 |
+| 函数内 import（延迟 import） | import 写在函数体里，首次调用才执行；已导入的模块有全局缓存，不重复加载 | `await import()` | T0201 |
+| `raise X from exc` | 异常链：抛新异常时保留原异常为根因（traceback 里两者都可见） | `throw new Error(msg, { cause: e })` | T0201 |
+| `is` / `is None` | 身份比较：判断是不是同一个对象（None 是单例）；`==` 是值比较且可被重写 | `=== null` | T0201 |
+| 真值判断（`if not chunks:`） | 空容器（空 list/dict/str）是假值；`not` 转布尔取反 | `if (!arr.length)`（⚠️ JS 里 `[]` 是真值！） | T0202 |
+| numpy / `.tolist()` | numpy 是数值计算库；`model.encode()` 返回 numpy 数组，`.tolist()` 转 Python 原生 list | `Float32Array` → `Array.from()` / `[...f32]` | T0202 |
+| `List[List[float]]` | 嵌套类型标注：外层 = 条数，内层 = 每条的维度 | `number[][]` | T0202（vector_store.py 先出现） |
 
 ---
 
@@ -1288,6 +1316,15 @@ pydantic-settings>=2.0.0
 | dict 聚合计数器模式 | T0107 | ≈ Map + reduce；key 天然去重、首见初始化 + 累加 |
 | dict 按键取值 `d["key"]` | T0104 | 方括号是按键取值，不是数组下标；键不存在抛 KeyError（JS 返回 undefined） |
 | `@staticmethod` | T0108 | = static 方法：无 self、不碰实例状态；项目首个（`_to_chunk_records`） |
+| `try / except` | T0201 | 提前出现（原预计 Phase 3+）：`except Exception` 捕获一切常规异常 ≈ `catch (e)` |
+| `TYPE_CHECKING` + 字符串类型标注 | T0201 | ≈ `import type`：重依赖（sentence_transformers）运行时零成本 |
+| 函数内 import | T0201 | ≈ `await import()`：首次调用才真正加载重依赖；模块全局缓存保证只执行一次 |
+| `global` | T0201 | 函数内给模块级变量赋值必须声明；删掉不报错但单例静默失效 |
+| `raise ... from exc` | T0201 | ≈ `{ cause: e }`：翻译成 AppError 的同时保留底层根因 |
+| `is None` 身份比较 | T0201 | ≈ `=== null`：判断空值用 `is` 不用 `==`（`==` 可被重写） |
+| 真值判断 `if not chunks` | T0202 | ⚠️ JS 里 `[]` 是真值——Python 空容器是假值，照抄 `!chunks` 会出 bug |
+| numpy 数组 + `.tolist()` | T0202 | ≈ `Float32Array` → `Array.from()`：numpy float32 ≠ Python float，跨边界必须转 |
+| `List[List[float]]` 嵌套标注 | T0202 | ≈ `number[][]`：外层条数、内层维度（vector_store.py 先出现，T0202 成为生产者） |
 | 虚拟环境 / pip / requirements.txt | T0001 | 知道基本命令 |
 
 ### 正在建立理解（🟡）
@@ -1296,15 +1333,14 @@ pydantic-settings>=2.0.0
 |------|-------------------|
 | FastAPI Request → Response 完整生命周期 | T0102+ 的 endpoint 实现 |
 | Pydantic 的运行时验证如何被 FastAPI 触发 | T0401+ 的第一个 API endpoint |
-| `yield` / context manager | Phase 2/3 出现具体 startup 逻辑时 |
+| `yield` / context manager | Phase 3 出现具体 startup / 文件操作逻辑时（Phase 2 已完成，未用到） |
 | Python 的 import 搜索路径问题排查 | 首次遇到 `ModuleNotFoundError` 时 |
 
 ### 尚未遇到
 
 | 未来会出现的 Python 概念 | 预期出现的 Task |
 |------------------------|---------------|
-| `try / except` | Phase 3+ 文件处理异常 |
-| `with` 语句 (context manager) | Phase 2 模型加载 / 文件操作 |
+| `with` 语句 (context manager) | Phase 3 文件操作（T0201 未使用） |
 | Generator / `yield from` | 如项目用到需要大量数据处理 |
 | TypeVar / Generic | 如需泛型抽象 |
 | Dataclass | 如需轻量数据容器 |
@@ -1590,3 +1626,183 @@ ids = [meta["chunk_id"] for meta in metadatas]
 ---
 
 > **Phase 1 收官**：T0106–T0108 的知识已记录在上方（17.9–17.11）；17.12 为 Phase 1 Learning Review 补记（dict 按键取值）。本次 Review 还做了两处去重/修正：17.4 压缩为指向第 9 节"T0102 补充"的索引条目；修正第 2/12 节中"抽象方法体是 `...`"与真实代码不符的描述（真实代码为 docstring-only）。下一步学习 Phase 2（T0201/T0202 Embedding）——届时 `add_texts` 的 embeddings 参数将不再由调用方提供，而是 EmbeddingService 生成；预计将遇到模型加载相关的 Python 知识（如 `with` 语句、文件操作），届时更新此文档。
+
+---
+
+## 18. T0201 新增 Python 知识
+
+> 本节按 Task 顺序增量记录 embedding.py 中出现的 Python 知识（T0201，每次 Learning Pass 追加）。格式同第 17 节：Python 写法 → 怎么读 → TS 类比 → 重要差异 → DX-RAG 使用位置。完整讲解见 [phase-02-embedding.md](./phase-02-embedding.md) 第 3 节。
+
+### 18.1 `TYPE_CHECKING` + 字符串类型标注 —— 重依赖的"假 import"
+
+**Python 写法**（真实代码：[embedding.py:23-24](../../backend/app/services/embedding.py#L23-L24) + [embedding.py:28](../../backend/app/services/embedding.py#L28)）：
+
+```python
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
+
+_model: Optional["SentenceTransformer"] = None
+```
+
+**怎么读**：`TYPE_CHECKING` 是 Python 官方提供的常量，**永远为 False**——`if TYPE_CHECKING:` 里的 import 在运行时**不会执行**，只在 IDE / 类型检查器（mypy）分析时"假装执行"。第 27 行的 `"SentenceTransformer"` 用**字符串**写类型名，运行时同样不解引用这个类型，因此不需要真的 import 它。
+
+**TypeScript / Node.js 类比**：`import type { SentenceTransformer } from "sentence-transformers"`——TS 的 `import type` 编译后完全消失，只给类型系统看。两者语义几乎完全相同。
+
+**重要差异**：JS/TS 没有"import 要几秒钟"的顾虑（Node 的 require 会同步加载模块，但 JS 包普遍轻）；Python 里 `import sentence_transformers` 会连带加载 torch，可能耗时数秒甚至更久——所以 Python 生态里有"能不用顶部 import 就不用"的讲究，JS 生态里这种顾虑弱得多。
+
+**DX-RAG 中在哪里使用**：`embedding.py` 全文。效果 = 任何代码 `from app.services.embedding import get_model` 都轻量无副作用；环境没装 sentence_transformers 时，import 本模块也不会崩（真正的 import 推迟到 get_model 首次调用，见 18.2）。
+
+### 18.2 函数内 import —— 延迟 import
+
+**Python 写法**（真实代码：[embedding.py:49-50](../../backend/app/services/embedding.py#L49-L50)）：
+
+```python
+def get_model() -> "SentenceTransformer":
+    global _model
+    if _model is None:
+        try:
+            from sentence_transformers import SentenceTransformer
+
+            _model = SentenceTransformer(settings.EMBED_MODEL)
+```
+
+**怎么读**：import 语句写在**函数体里**而不是文件顶部——Python 的 import 可以出现在任何位置，首次执行到这一行时才真正加载该模块。已加载的模块会被 `sys.modules` 全局缓存，**重复执行这行 import 几乎零开销**（不会重新加载）。
+
+**TypeScript / Node.js 类比**：`const { SentenceTransformer } = await import("sentence-transformers")`——动态 import，把加载推迟到真正需要的时候。Node 里 `require()` 也有模块缓存（`require.cache`），重复 require 不重复执行，与 `sys.modules` 对应。
+
+**重要差异**：Python 的普通 import 是**语句**（不是表达式），不能 `x = import ...`；TS 的动态 import 是**表达式**（返回 Promise），可以赋给变量、传给函数。
+
+**DX-RAG 中在哪里使用**：`get_model()` 内——与 18.1 是同一策略的两个层次（模块 import 时零成本 + 首次调用时才加载）。Phase 1 的 `vector_store.py` 顶部直接 `import chromadb`，因为 chromadb 相对轻且 Phase 1 所有方法都用它；embedding 的依赖重且可能不被调用，所以用延迟策略。
+
+### 18.3 `global` 关键字 —— 赋值默认是局部的
+
+**Python 写法**（真实代码：[embedding.py:47-48](../../backend/app/services/embedding.py#L47-L48)）：
+
+```python
+_model: Optional["SentenceTransformer"] = None  # 模块级（第 28 行）
+
+def get_model() -> "SentenceTransformer":
+    global _model
+    if _model is None:
+        ...
+        _model = SentenceTransformer(settings.EMBED_MODEL)
+    return _model
+```
+
+**怎么读**：Python 作用域规则是"**读自动向外找，写默认局部**"——函数里给名字**赋值**，默认创建同名局部变量，除非声明 `global`。`global _model` 声明"下面的 `_model = ...` 作用于模块级那个变量"。
+
+**TypeScript / Node.js 类比**：JS 不需要任何声明——函数内 `model = ...` 会自动沿作用域链找到外层变量赋值（除非用 `let`/`const` 遮蔽）。这正是 Python 与 JS 的一个经典差异点。
+
+**重要差异**（必背）：
+
+- **删掉 `global _model` 不会报错**——只会静默创建局部变量：模块级 `_model` 永远是 None，**每次调用都重新加载模型**，单例静默失效（这正是 T0201 自测题第 4 题的答案）。
+- **读取不需要 `global`**：`return _model` 读的是模块级变量（读自动向外找）。只有赋值才需要声明。
+
+**DX-RAG 中在哪里使用**：`embedding.py` 的 `get_model()`——模块级单例模式的赋值关键。本项目第二次出现模块级单例（第一次是 `config.py` 的 `settings = Settings()`），但 config 的赋值发生在模块顶层（不需要 global），embedding 的赋值发生在函数内（必须 global）——对照这两处就能记住规则。
+
+### 18.4 `raise ... from exc` —— 异常链
+
+**Python 写法**（真实代码：[embedding.py:53-54](../../backend/app/services/embedding.py#L53-L54)）：
+
+```python
+        except Exception as exc:
+            raise AppError("EMBEDDING_MODEL_ERROR") from exc
+```
+
+**怎么读**：`except Exception as exc` 捕获一切常规异常（`Exception` 是所有内置异常的父类，≈ JS 的 `catch (e)` 不加过滤）；`raise AppError(...) from exc` 抛出新异常，同时把 `exc` 设为新异常的 `__cause__`（根因）——traceback 里两个异常都完整可见。
+
+**TypeScript / Node.js 类比**：`throw new AppError("EMBEDDING_MODEL_ERROR", { cause: e })`（ES2022 的 `cause` 选项）——语义几乎相同：对外抛语义化错误，对内保留底层根因。
+
+**重要差异**：
+
+- Python 的 `from exc` 是**语法**，JS 的 `{ cause: e }` 是**构造参数**；Python 任何 `raise` 都可以加 `from`，JS 只有手动传 cause。
+- 不写 `from exc` 也不报错：Python 会隐式建立异常链，但 traceback 显示为"在处理异常时又发生异常"（`During handling of the above exception...`），可读性差——**规范写法是显式 `from`**。
+- 还有一个少见变体 `raise X from None`：显式**切断**异常链（"根因无关紧要，别显示"）。T0201 未使用。
+
+**DX-RAG 中在哪里使用**：`get_model()` 的加载失败翻译——底层库的任意异常（路径不存在 / 文件损坏 / OOM / 下载失败）统一翻译为 `AppError("EMBEDDING_MODEL_ERROR")`（HTTP 500），根因经 `from exc` 保留在服务端 traceback 中（对外响应 details 为空，不泄露内部细节）。Phase 1 的 `rename_collection` 也 raise AppError 但没有底层异常可链（是主动校验），所以 T0201 是项目里 `from exc` 的首秀。
+
+---
+
+### 18.5 `is None` —— 身份比较
+
+**Python 写法**（真实代码：[embedding.py:48](../../backend/app/services/embedding.py#L48)）：
+
+```python
+    if _model is None:
+```
+
+**怎么读**：`is` 做**身份比较**——判断左右两边是不是**同一个对象**；`==` 做**值比较**——判断两边**相等**。`None` 是 Python 里唯一的 NoneType 实例（单例），所以 `x is None` 是判断"是空"的官方推荐写法。
+
+**TypeScript / Node.js 类比**：`value === null`。JS 里 `===` 对原始值/对象引用做同一性比较，`null` 同样只有一个实例——语义几乎相同；JS 的 `== null` 则会连带匹配 `undefined`（宽松相等），与 Python 的 `== None` 不同（Python `==` 不宽松）。
+
+**重要差异**：Python 的 `==` 可以被类**重写**（`__eq__` 方法）——某些对象可能"等于 None 却不 is None"（罕见但存在）；`is` 永远不能被重写。所以判断空值用 `is None` 而不是 `== None` 是社区共识。
+
+**DX-RAG 中在哪里使用**：`get_model()` 的单例开关——"缓存是否还是空的"用身份判断最干净。Phase 1 的代码没有用到 `is None`（判断用过 `if count > 0`、`if fid not in files`），T0201 是首次出现。
+
+---
+
+> **T0201 收官**：18.1–18.5 为 T0201 新增知识（TYPE_CHECKING、函数内 import、global、raise from、is None）。`try / except` 提前在 T0201 出现（第 16 节"尚未遇到"已移除）。预计 T0202 将出现 numpy 数组 `.tolist()`、`List[List[float]]` 嵌套类型标注等——届时更新此文档。
+
+---
+
+## 19. T0202 新增 Python 知识
+
+> 本节记录 encode_chunks 中出现的 Python 知识（T0202）。格式同第 17/18 节。完整讲解见 [phase-02-embedding.md](./phase-02-embedding.md) 第 13–14 节。
+
+### 19.1 真值判断 `if not chunks:` —— 空容器是假值
+
+**Python 写法**（真实代码：[embedding.py:75-76](../../backend/app/services/embedding.py#L75-L76)）：
+
+```python
+    if not chunks:
+        return []
+```
+
+**怎么读**：`not x` 先把 x 转成布尔再取反。Python 的**真值规则**：空容器（空 list / dict / str / set / tuple）、`None`、`0`、`False` 都是**假值（falsy）**；其余是真值。所以 `if not chunks:` = "如果列表为空"。
+
+**TypeScript / Node.js 类比**：`if (!arr.length) return [];`。⚠️ **关键差异**：JS 里空数组 `[]` 是 **truthy**——`if (!chunks)` 对空数组永远不进分支（bug！）。JS 必须显式查 `.length`，Python 直接 `not 容器`。这是两者最经典的真值差异之一。
+
+**重要差异**（必背）：Python 的假值集合 = `None` / `False` / `0` / 空容器 / 空字符串；JS 的 falsy 集合 = `null` / `undefined` / `false` / `0` / `NaN` / `""`——**JS 的空数组和空对象都是 truthy**。
+
+**DX-RAG 中在哪里使用**：`encode_chunks` 的空输入短路——"0 个 chunk 进，0 个向量出"，数据管道哲学（上游可能产出 0 段，这是正常数据流不是异常）。Phase 1 的判断都写显式比较（`if count > 0`、`if fid not in files`），T0202 是项目里第一次用真值判断。
+
+### 19.2 numpy 数组 + `.tolist()` —— 数值类型转原生 list
+
+**Python 写法**（真实代码：[embedding.py:77](../../backend/app/services/embedding.py#L77)）：
+
+```python
+    return get_model().encode(chunks, normalize_embeddings=True).tolist()
+```
+
+**怎么读**：`model.encode(...)` 返回 **numpy 数组（ndarray）**——numpy 是 Python 数据科学的基础库（多维数组 + 高效数值计算，sentence-transformers 底层就是它）。`.tolist()` 是 numpy 数组的方法，把多维数组**递归转换**成 Python 原生 list（numpy float32 标量 → Python float）。链式调用 `a().b().c()` 在 Python 和 JS 里语法相同：每一步返回值上继续调方法。
+
+**TypeScript / Node.js 类比**：`Array.from(f32Array)` 或 `[...f32Array]`——把 `Float32Array` 转成 `number[]`。numpy 之于 Python 数值计算 ≈ 类型化数组/张量之于 JS（不完美类比，方向正确）。
+
+**重要差异**：
+
+- **numpy.float32 ≠ Python float**：numpy 数组里的标量是 C 层对象的包装，不是 Python 内置 float——JSON 序列化、Pydantic 校验、ChromaDB 存储都会拒绝或出错。
+- Python 没有类型系统替你在边界挡这些——靠**契约纪律**：`VectorStore.add_texts` 的签名写死 `List[List[float]]`，生产者必须自己转换成对的类型。
+
+**DX-RAG 中在哪里使用**：`encode_chunks` 的返回转换——384 维向量必须以 `List[List[float]]`（纯 Python float）交给 Phase 1 的 `add_texts` / `search`。类型翻译在 embedding 模块边界内完成，numpy 不泄漏到模块外（与 Phase 1 的 distance→similarity 边界翻译同一哲学）。
+
+### 19.3 `List[List[float]]` —— 嵌套类型标注
+
+**Python 写法**（真实代码：[embedding.py:58](../../backend/app/services/embedding.py#L58)）：
+
+```python
+def encode_chunks(chunks: List[str]) -> List[List[float]]:
+```
+
+**怎么读**：`List[X]` 在 Phase 0 学过（≈ `X[]`）。嵌套就是**套娃**：`List[List[float]]` = "list，其中每个元素又是 list，最内层是 float"——外层长度 = 条数（chunk 数），内层长度 = 每条的长度（384 维）。Python 的类型标注运行时同样不检查（Phase 0 学过），这里纯粹是契约文档。
+
+**TypeScript / Node.js 类比**：`number[][]`——完全对应。TS 还能写得更细（如固定长度的 tuple），Python 类型系统做不到，但语义上够用。
+
+**重要差异**：无本质差异。唯一提醒：Python 的 `List` 来自 `typing` 模块（`from typing import List`——[embedding.py:18](../../backend/app/services/embedding.py#L18) 恰好是 T0202 新增的 import），Python 3.9+ 也能用小写 `list[list[float]]`（内置泛型），本项目用 `typing.List` 保持与 Phase 0 一致。
+
+**DX-RAG 中在哪里使用**：`encode_chunks` 的返回类型。**第一次出现其实在 Phase 1**——`vector_store.py` 的 `add_texts(embeddings: List[List[float]])` 和 `search(query_vector: List[float])` 早就写下了这个形状；T0202 是它的**生产者**——契约在前、实现在后，又一次应验。
+
+---
+
+> **T0202 收官**：19.1–19.3 为 T0202 新增知识（真值判断、numpy/.tolist()、嵌套类型标注）。Phase 2 的 Python 知识到此闭环：T0201 管"怎么加载"（18.1–18.5），T0202 管"怎么生产"（19.1–19.3）。`with` 语句仍未出现（原预计 Phase 2 模型加载，实际未用）——继续留在"尚未遇到"，Phase 3 文件操作时再记录。

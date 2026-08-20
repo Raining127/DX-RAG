@@ -70,16 +70,20 @@ Task Coding（任务编码）
 
 ### Phase 2 — Embedding
 
-**状态**: ⬜ NOT STARTED
+**状态**: 🟡 IN PROGRESS（Learning Pass + Learning Review completed；Gate Review 无书面记录）
 
-**Tasks**: T0201–T0202
+**Tasks**: T0201 ✅ | T0202 ✅
 
-**未来主要学习主题**:
+**学习重点**:
 
-- Lazy Singleton 设计模式在 Python 中的实现
-- Sentence Transformers 模型加载与缓存
-- Embedding 向量生成（384 维 L2 归一化）
-- 为什么模型不在服务启动时加载
+- Lazy Singleton 设计模式在 Python 中的实现（T0201 ✅）
+- Sentence Transformers 模型加载与缓存（T0201 ✅）
+- 为什么模型不在服务启动时加载（T0201 ✅）
+- TYPE_CHECKING / 函数内 import / `global` / `raise from` / `is None`（T0201 Python 新知识）
+- Embedding 向量生成：`encode_chunks` + numpy `.tolist()` + 真值判断（T0202 ✅）
+- 契约兑现：`add_texts` / `search` 的向量参数第一次有真实来源（T0202 ✅）
+
+**学习文档**: [phase-02-embedding.md](./phase-02-embedding.md)（Phase 2 全章）
 
 ---
 

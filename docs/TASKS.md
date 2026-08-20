@@ -724,7 +724,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0201 — Embedding Model Loader (Lazy Singleton)
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement lazy-loading singleton for the bge-small-zh-v1.5 Sentence Transformer model.
 
@@ -768,7 +768,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0202 — Embedding Generation
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement the `encode()` function that converts text chunks to 384-dimensional L2-normalized vectors.
 
