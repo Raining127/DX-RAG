@@ -89,20 +89,21 @@ Task Coding（任务编码）
 
 ### Phase 3 — Document Processing Pipeline
 
-**状态**: ⬜ NOT STARTED
+**状态**: 🟡 IN PROGRESS（T0301 + T0302 + T0303 + T0304 + T0305 + T0306 + T0307 + T0308 Learning Pass completed）
 
-**Tasks**: T0301–T0308
+**Tasks**: T0301 ✅ | T0302 ✅ | T0303 ✅ | T0304 ✅ | T0305 ✅ | T0306 ✅ | T0307 ✅ | T0308 ✅
 
-**未来主要学习主题**:
+**未来主要学习主题**（仅根据 TASKS.md 列出，具体内容以实际实现为准）:
 
-- 多格式文档解析（TXT/MD/PDF/DOCX/XLSX）
-- 编码 fallback 策略（UTF-8 → UTF-16 → GBK）
-- 逐页 PDF 处理 + Qwen-VL OCR fallback
-- 文本清洗管道
-- Markdown 标题切分 + 递归字符切分
-- UUID-based chunk_id / file_id 设计
-- 完整 Ingest Pipeline 编排
-- FAILED rollback 原子性保证
+- 多格式文档解析（文本类 TXT/MD/CSV/JSON/LOG ✅ T0301；DOCX 段落+表格 ✅ T0302；XLSX 多 sheet ✅ T0303；PDF 逐页解析 + Qwen-VL OCR fallback ✅ T0304/T0305）
+- 编码 fallback 策略（UTF-8 → UTF-16 → GBK）✅（T0301）
+- 文本清洗管道 ✅（T0306）
+- Markdown 标题切分 + 递归字符切分 ✅（T0307）
+- UUID-based chunk_id / file_id 设计 ✅（T0307）
+- 完整 Ingest Pipeline 编排 ✅（T0308）
+- FAILED rollback 原子性保证 ✅（T0308）
+
+**学习文档**: [phase-03-document-processing.md](./phase-03-document-processing.md)（T0301 + T0302 + T0303 + T0304 + T0305 + T0306 + T0307 + T0308 章）
 
 ---
 

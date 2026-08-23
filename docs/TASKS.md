@@ -810,7 +810,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0301 — Text File Parser (txt, md, csv, json, log)
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement parser for text-based file formats with multi-encoding fallback (UTF-8 → UTF-16 → GBK).
 
@@ -852,7 +852,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0302 — DOCX Parser
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement DOCX parser extracting paragraphs and table cell content as plain text.
 
@@ -895,7 +895,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0303 — Excel Parser
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement Excel parser for `.xlsx`, `.xlsm`, `.xltx`, `.xltm` formats using openpyxl.
 
@@ -937,7 +937,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0304 — PDF Native Text Extraction (PyMuPDF)
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement per-page PDF native text extraction using PyMuPDF, as the primary path before OCR fallback.
 
@@ -988,7 +988,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0305 — Qwen-VL OCR Fallback for Image PDF Pages
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement Qwen-VL-Plus OCR fallback for PDF pages with no native text, including per-page retry and failure tolerance.
 
@@ -1044,7 +1044,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0306 — Text Cleaning
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement the text cleaning pipeline: per-line strip, empty line removal, whitespace normalization.
 
@@ -1086,7 +1086,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0307 — Text Chunking & ID Generation
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement the chunking pipeline (Markdown header splitting + recursive character splitting) and UUID-based chunk_id/file_id generation.
 
@@ -1144,7 +1144,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0308 — Ingest Service — Pipeline Orchestration
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Wire the complete ingestion pipeline (parse → clean → chunk → embed → store) with FAILED rollback and SUCCESS_WITH_WARNINGS support.
 
