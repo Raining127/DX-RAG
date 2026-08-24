@@ -89,7 +89,7 @@ Task Coding（任务编码）
 
 ### Phase 3 — Document Processing Pipeline
 
-**状态**: 🟡 IN PROGRESS（T0301 + T0302 + T0303 + T0304 + T0305 + T0306 + T0307 + T0308 Learning Pass completed）
+**状态**: 🟡 IN PROGRESS（T0301–T0308 Learning Pass + Learning Review completed；Gate Review 无书面记录）
 
 **Tasks**: T0301 ✅ | T0302 ✅ | T0303 ✅ | T0304 ✅ | T0305 ✅ | T0306 ✅ | T0307 ✅ | T0308 ✅
 
@@ -243,6 +243,51 @@ Task Coding（任务编码）
 - E2E 验证方法论
 - Acceptance Criteria 审计
 - 跨 Feature 集成测试
+
+---
+
+## 增强学习文档（项目地图 / 工程评审 / 面试 / 模板）
+
+> 以下文档于 2026-08-23 新增，与逐 Phase 学习笔记互补：
+> Phase 笔记回答"每一章怎么学"，这些文档回答"整个项目怎么看、怎么讲、怎么复盘"。
+
+### 项目地图
+
+**文档**: [project-map/dx-rag-project-map.md](./project-map/dx-rag-project-map.md)
+
+- 第 1 节：项目背景（为什么需要 RAG、业务问题、目标用户、为什么普通搜索不够）
+- 第 2 节：系统整体架构（五层架构图 + 文档摄取流程 + 用户查询流程标注）
+- 第 3 节：数据生命周期（上传侧与查询侧两条完整流水线 + 身份规则）
+- 第 4 节：Phase 地图（13 个 Phase 各自的 解决什么问题/输入/输出/为什么存在 + 依赖全景）
+
+> **状态说明**：本 README 各 Phase 的状态行可能滞后于实际开发进度——**Task 状态一律以 `docs/TASKS.md` 为准**（CLAUDE.md 规定 TASKS.md 是权威来源）。
+
+### Engineering Review（工程评审）
+
+**目录**: [engineering-review/](./engineering-review/)
+
+每个已完成的 Phase 一份独立的工程决策复盘，统一六节结构：
+Phase 定位 / 为什么需要这个模块 / 核心设计决策（Decision-Context-Problem-Chosen Solution-Why-Trade-off-Future Improvement）/ 架构影响 / 工程问题分析（可维护性/扩展性/数据一致性/错误处理/性能/安全）/ 规模扩大分析（10x/100x/1000x，均标记 Future / Not implemented in v1）。
+
+- [phase-00-engineering-review.md](./engineering-review/phase-00-engineering-review.md) — Project Bootstrap（配置/错误体系/数据模型）
+- [phase-01-engineering-review.md](./engineering-review/phase-01-engineering-review.md) — VectorStore Foundation（ABC 抽象/距离语义边界/反规范化）
+- [phase-02-engineering-review.md](./engineering-review/phase-02-engineering-review.md) — Embedding（Lazy Singleton/L2 归一化/离线部署）
+- [phase-03-engineering-review.md](./engineering-review/phase-03-engineering-review.md) — Document Processing Pipeline（编码级联/OCR 分级/三态回滚）
+
+### 面试指南
+
+**文档**: [interview-notes/dx-rag-interview-guide.md](./interview-notes/dx-rag-interview-guide.md)
+
+- 第一部分：3 分钟项目介绍（背景/架构/我的工作/挑战/解决方案，含诚实话术）
+- 第二部分：14 个技术亮点（每个含一句话概括 + 展开点 + 代码位置）
+- 第三部分：34 道高频面试题（项目理解/架构设计/RAG/工程问题四类，每题含 面试官问题/优秀回答/进一步追问/回答方向）
+- 附录：面试前自查清单
+
+### Phase 学习模板（Phase 4-12 用）
+
+**文档**: [templates/phase-learning-template.md](./templates/phase-learning-template.md)
+
+后续 Phase 学习笔记的 11 节标准结构：Phase 学习 / Phase 目标 / 项目位置 / Task 学习 / 代码理解 / 数据流 / 架构设计 / Engineering Review / Technical Decision / Interview Notes / Future Improvement。
 
 ---
 
