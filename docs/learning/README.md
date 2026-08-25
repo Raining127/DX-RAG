@@ -109,16 +109,26 @@ Task Coding（任务编码）
 
 ### Phase 4 — Knowledge Base Management API
 
-**状态**: ⬜ NOT STARTED
+**状态**: 🟡 IN PROGRESS（编码全部完成：T0401–T0404 Learning Pass + Engineering Review + Phase Learning Review completed；剩余流程环节：Phase Gate Review）
 
-**Tasks**: T0401–T0404
+**Tasks**: T0401 ✅ | T0404 ✅ | T0402 ✅ | T0403 ✅
 
-**未来主要学习主题**:
+**学习重点**:
 
-- FastAPI Router 注册与 API Contract 实现
-- Collection name validation（正则表达式）
-- Rename 级联操作与原子性
-- Cascade Delete
+- FastAPI Router 注册与 API Contract 实现 ✅（T0401）
+- Collection name validation（正则表达式 + v1.6 naming-compatibility patch）✅（T0401）
+- Validation before side effects 原则 ✅（T0401）
+- SPEC_CONFLICT 处理流程（BLOCKED → 报告 → 产品决策 → SPEC patch）✅（T0401）
+- file_count 派生聚合（消费 Phase 1 `get_files`）✅（T0401）
+- Collection name validation 边界用例正式验收（canonical regex 8 用例 + `re.fullmatch`）✅（T0404）
+- Rename 级联操作与原子性 ✅（T0402：7 步级联 + 两层补偿 + keyword index seam）
+- Cascade Delete ✅（T0403：Chroma-first 顺序 + 不可逆 + 防御纵深）
+
+**学习文档**（三层架构，各司其职——2026-08-24 文档重构）：
+
+- 📖 **Technical Learning**: [phase-04-knowledge-base-management.md](./phase-04-knowledge-base-management.md)（T0401–T0404 教材：三层视角 / 逐行精读 / 链路追踪 / Validation Before Side Effects / T0404 边界用例矩阵 / T0402 Rename 级联与补偿 / T0403 Delete 级联 / 自测练习 / Quick Review）
+- 🔍 **Engineering Review**: [engineering-review/phase-04-engineering-review.md](./engineering-review/phase-04-engineering-review.md)（T0401–T0404 工程复盘：SPEC_CONFLICT 全案 / ADR-01~08 / 一致性缺口 / Failure Modes / T0402/T0403 增量评审 7.9 / 规模分析）
+- 🎤 **Interview Preparation**: [interview-notes/dx-rag-interview-guide.md](./interview-notes/dx-rag-interview-guide.md)（Phase 4 深度章：30 秒 / 1-2 分钟 / SPEC_CONFLICT STAR / 18 高频追问 + 8 工程追问；T0404 为普通 Task，按 cadence 只记 Interview Candidates 于教材第 8 节；T0402/T0403 同为 Task 级——Interview Candidates 于教材第 9.9/10.7 节；Phase Learning Review（2026-08-25）已完成话术 consolidation：新增 P4Q13–P4Q18 + EP4-8、修正 EP4-3、更新 3 分钟介绍与亮点 15）
 
 ---
 
@@ -273,21 +283,23 @@ Phase 定位 / 为什么需要这个模块 / 核心设计决策（Decision-Conte
 - [phase-01-engineering-review.md](./engineering-review/phase-01-engineering-review.md) — VectorStore Foundation（ABC 抽象/距离语义边界/反规范化）
 - [phase-02-engineering-review.md](./engineering-review/phase-02-engineering-review.md) — Embedding（Lazy Singleton/L2 归一化/离线部署）
 - [phase-03-engineering-review.md](./engineering-review/phase-03-engineering-review.md) — Document Processing Pipeline（编码级联/OCR 分级/三态回滚）
+- [phase-04-engineering-review.md](./engineering-review/phase-04-engineering-review.md) — Knowledge Base Management（T0401：SPEC_CONFLICT 真实案例 / ADR-01~05 / Create 双副作用一致性缺口）
 
 ### 面试指南
 
 **文档**: [interview-notes/dx-rag-interview-guide.md](./interview-notes/dx-rag-interview-guide.md)
 
 - 第一部分：3 分钟项目介绍（背景/架构/我的工作/挑战/解决方案，含诚实话术）
-- 第二部分：14 个技术亮点（每个含一句话概括 + 展开点 + 代码位置）
+- 第二部分：15 个技术亮点（每个含一句话概括 + 展开点 + 代码位置）
 - 第三部分：34 道高频面试题（项目理解/架构设计/RAG/工程问题四类，每题含 面试官问题/优秀回答/进一步追问/回答方向）
+- Phase 4 深度章（T0401–T0404 已实现）：30 秒回答 / 1-2 分钟深入 / SPEC_CONFLICT STAR / 18 道高频追问 + 8 道工程深问
 - 附录：面试前自查清单
 
 ### Phase 学习模板（Phase 4-12 用）
 
 **文档**: [templates/phase-learning-template.md](./templates/phase-learning-template.md)
 
-后续 Phase 学习笔记的 11 节标准结构：Phase 学习 / Phase 目标 / 项目位置 / Task 学习 / 代码理解 / 数据流 / 架构设计 / Engineering Review / Technical Decision / Interview Notes / Future Improvement。
+后续 Phase 学习笔记的 11 节标准结构（Phase 学习 / Phase 目标 / 项目位置 / Task 学习 / 代码理解 / 数据流 / 架构设计 / Engineering Review / Technical Decision / Interview Notes / Future Improvement），并强制"三层文档架构"边界（Learning / Engineering Review / Interview 各归其位，禁止再混写成巨型文件；每个 Task 的 Learning 只回答 Code / Project / Learning Understanding 三类问题）。
 
 ---
 

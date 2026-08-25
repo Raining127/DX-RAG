@@ -1206,7 +1206,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0401 — POST /api/collections (Create) + GET /api/collections (List)
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement collection creation and listing endpoints.
 
@@ -1253,7 +1253,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0402 — PUT /api/collections/{name} (Rename)
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement collection rename endpoint with full cascade (ChromaDB + uploads directory + chunk metadata + keyword index) and atomicity guarantee.
 
@@ -1316,7 +1316,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0403 — DELETE /api/collections/{name} (Cascade Delete)
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement collection deletion with cascade cleanup of ChromaDB, uploads directory, and keyword index.
 
@@ -1360,13 +1360,13 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0404 — Collection Name Validation
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement the canonical collection name validation regex shared by frontend and backend.
 
 **SPEC References:**
-- F001 Detail (Canonical regex: `^[A-Za-z0-9][A-Za-z0-9_\-一-鿿]{1,48}[A-Za-z0-9]$`)
-- F001 Detail (3-50 chars, letter/digit start/end, Chinese chars allowed)
+- F001 Detail (Canonical regex: `^[A-Za-z0-9][A-Za-z0-9_-]{1,48}[A-Za-z0-9]$`)
+- F001 Detail (3-50 chars, letter/digit start/end, middle: letters/digits/_/-; no Chinese chars)
 - F001 Determine (AC-F001-03 — too short name rejected)
 - F017 (Frontend must use equivalent validation)
 
@@ -1390,7 +1390,8 @@ No Task is complete until all Completion Conditions are met.
 - AC-F001-03: "ab" (2 chars) → rejected
 - "a" → rejected
 - "a-b" (3 chars, valid) → accepted
-- "测试-kb" (Chinese chars) → accepted
+- "测试-kb" (Chinese chars) → rejected
+- "a中b" (Chinese char in middle) → rejected
 - "-bad" (starts with hyphen) → rejected
 - "bad-" (ends with hyphen) → rejected
 - 51-char name → rejected

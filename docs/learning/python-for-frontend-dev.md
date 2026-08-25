@@ -656,6 +656,8 @@ async appErrorHandler(request: Request, exception: AppError) { ... }
 | `@abstractmethod` | vector_store.py | 标记方法为"子类必须实现" |
 | `@field_validator("CORS_ORIGINS", mode="before")` | config.py:71 | 在字段赋值前运行自定义验证逻辑 |
 | `@classmethod` | config.py:72 | 标记方法为类方法（第一个参数是 `cls` 而不是 `self`） |
+| `@router.post("/collections", response_model=..., status_code=201)` | collections.py:90 | 把函数注册为 POST 路由，参数是路由配置（见 26.2） |
+| `@router.get("/collections", response_model=...)` | collections.py:104 | 把函数注册为 GET 路由（状态码默认 200） |
 
 ### `async def` — 异步函数
 
@@ -1187,6 +1189,24 @@ pydantic-settings>=2.0.0
 
 ---
 
+### 8. [backend/app/api/collections.py](../../backend/app/api/collections.py) — 第一个业务 API 文件（81 行，T0401）+ [backend/app/api/router.py](../../backend/app/api/router.py) 的路由注册
+
+**建议读完 vector_store.py 再读**。项目第一个承载产品功能的 API 文件（此前 api/ 下只有 router.py 的 /health 探针）。新增语法见第 26 节。
+
+**第一遍看**：
+- 文件头 docstring（1–20 行）—— SPEC F001 五步流的浓缩契约 + T0401 范围声明
+- `_COLLECTION_NAME_PATTERN`（39–43 行）—— 模块级正则常量（26.3）
+- `validate_collection_name()`（77–88 行）—— 校验函数：不合法就 raise，通过就返回 None（异常式校验）
+- `create_collection()`（59–70 行）—— POST 端点：装饰器三参数（26.2）→ 校验 → 每请求新建 store（26.5）→ 查重 → 创建 → mkdir（26.4）→ 返回
+- `list_collections()`（73–81 行）—— GET 端点：一行列表推导算出所有 file_count（23.3 的复用）
+- router.py（1–19 行）—— `include_router` 挂载（26.1）
+
+**暂时跳过**：无——81 行没有冗余内容。
+
+**能回答这些就算看懂**："完整路径 `/api/collections` 是怎么拼出来的（main.py 前缀 + 装饰器路径）？`body: CollectionCreate` 这一行为什么能自动解析 JSON？校验函数为什么返回 None 而不是 bool？`status_code=201` 为什么写在装饰器上而不是 return 里？`store = ChromaVectorStore()` 为什么写在函数体里而不是模块顶部（对照 embedding.py 的模块级单例）？`file_count=len(store.get_files(name))` 里 len 的是什么东西？"
+
+---
+
 ## 14. 当前阶段只需要掌握的内容
 
 ### 🟢 现在必须能看懂
@@ -1452,6 +1472,13 @@ pydantic-settings>=2.0.0
 | 模块级状态 + 访问器函数 | T0305 | 模块级 list + get/clear = "穷人版单例"；⚠️ 状态归谁清看注释（T0308 负责） |
 | `try/finally` | T0304 | finally 无论成败都执行——`doc.close()` 的保证；JS 同款 |
 | 虚拟环境 / pip / requirements.txt | T0001 | 知道基本命令 |
+| `Path.rename()` | T0402 | 文件/目录改名 ≈ `fs.renameSync`；⚠️ Windows 下目标已存在抛 FileExistsError（POSIX 直接覆盖）——rename 撞孤儿目录触发补偿的底层原语 |
+| `{**dict, key: value}` 字典展开 | T0402 | ≈ `{...obj, key: value}`：浅复制 + 覆盖——rename 级联"保留 8 字段、改 2 字段"的写法 |
+| `logger.exception()` | T0402/T0403 | 只在 except 块内用：记日志 + 自动附 traceback ≈ `console.error(e)` 自带 stack——补偿失败与残余状态日志的载体 |
+| `shutil.rmtree()` | T0403 | 递归删除目录树 ≈ `fs.rmSync(path, { recursive: true })`；幂等靠前置 exists 判断 |
+| `Path.resolve()` + `.parent` | T0403 | 相对路径/符号链接解析为绝对路径 ≈ `path.resolve()` + `path.dirname()`——防御性路径校验 |
+| `Path.exists()` | T0403 | ≈ `fs.existsSync()`；"删除缺席目录 = no-op"的前置判断 |
+| `except AppError: raise` | T0403 | 显式透传业务异常——防止被宽 `except Exception` 吞掉后伪装成 INTERNAL_ERROR |
 
 ### 正在建立理解（🟡）
 
@@ -2858,3 +2885,245 @@ def _fail(cls, ...):                 # 另一个函数体开头
 ---
 
 > **T0308 收官**：25.1–25.8 为 T0308 新增知识。这一轮**没有全新语法机制**（f-string 是兑现而非新概念）——真正的升级是**组织方式**：类当命名空间（25.1）、身份在管道最上游发放（25.2/25.3/25.6）、失败用返回值表达、rollback 幂等（25.7）、惯例延伸（25.8）。Phase 3 的 Python 教学到此闭环：从 T0301 的 bytes/str 到 T0308 的管道编排，一个前端开发者现在能完整读懂 686 行的 ingest.py。下一步 Phase 4（Knowledge Base API）回到 FastAPI 层，Python 新知识将转向路由与 Pydantic。
+
+---
+
+## 26. T0401 新增 Python 知识
+
+### 26.1 `APIRouter` + `include_router` —— Express Router 的 FastAPI 版
+
+**真实代码**：[router.py:5](../../backend/app/api/router.py#L5)、[router.py:14](../../backend/app/api/router.py#L14)、[collections.py:68](../../backend/app/api/collections.py#L68)
+
+```python
+# collections.py:68
+router = APIRouter()
+
+# router.py:5,14
+api_router = APIRouter()
+api_router.include_router(collections_router)
+```
+
+**怎么读**：`APIRouter()` 造一个"路由分组容器"——它自己可以声明端点（`@router.post(...)`），然后被另一个 router `include_router` 挂载。最终 main.py 把 api_router 以 `/api` 前缀挂进 app，于是 `/api` + `/collections` = `/api/collections`。
+
+**TypeScript / Node.js 类比**：Express 的 `express.Router()` + `app.use("/api", router)`——概念几乎一一对应：分组、挂载、前缀三件套。**不完全等价**：Express 挂载的是回调链，FastAPI 挂载的是"声明 + 框架自动执行"，且 FastAPI 的 include_router 还能带 prefix/tags/dependencies 等配置。
+
+**为什么值得学**：这是项目第一个"子路由文件"——此前 router.py 只有一个 /health。**一个业务域一个 router 文件、集中挂载**，是 FastAPI 项目的标准组织方式；未来 upload.py / query.py / files.py 的子路由都会照此办理（router.py:16-19 的注释已经预留了位置）。
+
+**DX-RAG 中在哪里使用**：collections_router（collections.py:68）被 api_router 挂载（router.py:14），api_router 被 app 以 /api 前缀挂载（main.py:68）。
+
+### 26.2 路由装饰器带参数 —— decorator 的"配置"用法
+
+**真实代码**：[collections.py:90](../../backend/app/api/collections.py#L90)、[collections.py:104](../../backend/app/api/collections.py#L104)
+
+```python
+@router.post("/collections", response_model=CollectionResponse, status_code=201)
+def create_collection(body: CollectionCreate) -> CollectionResponse: ...
+
+@router.get("/collections", response_model=CollectionListResponse)
+def list_collections() -> CollectionListResponse: ...
+```
+
+**怎么读**：第 8 节学的 decorator 是"贴标签"（`@abstractmethod`、`@exception_handler`）；这里 decorator **带参数**——`@router.post(路径, 配置1, 配置2)` 的意思是"把这个函数注册为路由处理器，并给它这些配置"。三个参数分工：
+- `"/collections"` —— 路径
+- `response_model=CollectionResponse` —— 返回值要按这个模型校验 + 序列化（多出的字段会被**裁剪**，这是 FastAPI 的隐藏行为）
+- `status_code=201` —— 成功状态码（不写默认 200；SPEC 6.5 要求创建返回 201，所以必须显式写）
+
+**TypeScript / Node.js 类比**：Express 里这三件事分散在两个地方——`router.post("/collections", handler)` 管路径，handler 里 `res.status(201).json(serialize(shape, result))` 管状态码和序列化。FastAPI 把它们**收进装饰器参数 + 函数返回类型标注**，handler 函数体里只剩业务逻辑。代价：框架魔法多，"为什么返回 201/为什么响应被裁剪"不是读函数体能直接看出的——需要知道装饰器在干活（这也是 phase-04 第 19 节（19.3 Finding #3 / Pending #30）与 ER 7.4 的背景：框架默认行为同样值得警惕）。
+
+**为什么值得学**：装饰器的第二种用法——不是"标记"，而是"**注册 + 配置**"。`@router.post(...)` 执行时会真的把函数登记进路由表，函数从"普通函数"变成"框架资产"。⚠️ 注意装饰器的执行时机：import 这个模块时装饰器就执行了（注册路由），而不是请求进来时才执行——所以"路由在 import 时注册、在请求时调用"。
+
+**DX-RAG 中在哪里使用**：POST（90 行，显式 201）与 GET（104 行，默认 200）两个端点。GET 不写 status_code 是**故意的**——契约默认 200 就不写，只在偏离默认时显式声明（最小声明原则）。
+
+### 26.3 `re.compile` + `re.fullmatch` —— 项目第一个正则
+
+**真实代码**：[collections.py:74](../../backend/app/api/collections.py#L74)、[collections.py:86](../../backend/app/api/collections.py#L86)
+
+```python
+_COLLECTION_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,48}[A-Za-z0-9]$")
+
+if not _COLLECTION_NAME_PATTERN.fullmatch(name):
+    raise AppError("INVALID_COLLECTION_NAME")
+```
+
+**怎么读**：`re.compile(正则字符串)` 把正则预编译成 Pattern 对象（模块级常量，编译一次复用多次）；`fullmatch(name)` 要求**整个字符串**从第一个字符到最后一个字符全部匹配——不是"包含匹配"。
+
+**TypeScript / Node.js 类比**：JS 的 `/^...[^]*$/` + `.test()`。⚠️ 关键差异：JS 里 `regex.test("abc中b")` 默认是**部分匹配**（除非写 `^...$` 锚点），Python 的 `fullmatch` 是**天然全匹配**——Python 的 `re.search` 才对应 JS 的默认行为。项目用 `fullmatch` 是刻意选择："名字必须整个合法"，而不是"名字里只要有一段合法"。
+
+**为什么值得学**：这是项目第一个正则（此前 686 行 ingest.py 一次都没用过）——正则第一次出现就在"身份规则"的位置上：它是 SPEC F001 canonical regex 的 Python 实现，**前后端等价校验的前端 TS 版**（[FUTURE] T1101 的 `frontend/lib/validators.ts`）必须逐字符等价。⚠️ 前端的坑：TS 正则默认部分匹配，等价实现必须带 `^` 和 `$`（或测试时用 `match` 而非 `includes`）。
+
+**DX-RAG 中在哪里使用**：`validate_collection_name`（77–88 行）——名字不合格就 400。这个正则本身就是 SPEC v1.6 patch 的产物（中文命名的 SPEC_CONFLICT，见 phase-04 第 11 节）：它刻意**不含** `一-鿿`（中文）和 `.`（产品决策）。
+
+### 26.4 `Path.mkdir(parents=True, exist_ok=True)` —— 建目录
+
+**真实代码**：[collections.py:99-100](../../backend/app/api/collections.py#L99-L100)
+
+```python
+uploads_dir = Path(settings.UPLOAD_DIR) / name
+uploads_dir.mkdir(parents=True, exist_ok=True)
+```
+
+**怎么读**：`Path / "段"` 用 `/` 运算符拼路径（20.1 的 Path 知识）；`mkdir` 两个关键字参数：
+- `parents=True` —— 连中间目录一起建（uploads/ 本身不存在也会被建出来，第一次创建任何 KB 时免费生效）
+- `exist_ok=True` —— 目标目录已存在**不算错**（默认 False：已存在会抛 FileExistsError）
+
+**TypeScript / Node.js 类比**：`fs.mkdirSync("uploads/name", { recursive: true })`——`recursive` ≈ `parents`。但 Node 没有 `exist_ok`：目录已存在时 mkdirSync 会抛 EEXIST，得自己先 `fs.existsSync` 判断或 try/catch——Python 把这个选择收进了参数。
+
+**为什么值得学**：`exist_ok=True` 是幂等语义（"确保目录存在"而非"创建目录"），让"重复创建"从错误变成 no-op。⚠️ **它的隐藏代价**：把"目录已存在"静默当成功，会掩盖**孤儿目录**（目录在、但 ChromaDB 里没有对应 collection）——静默合并进旧目录。这是 phase-04 第 19 节（19.3 Finding #1/#2）+ ER 7.2/7.3 诚实记录的一致性缺口之一。**通用教训：幂等参数让调用变简单，也让"异常历史状态"变透明——用的时候要想清楚"已存在"到底意味着什么。**
+
+**DX-RAG 中在哪里使用**：POST 创建知识库的第 4 步——KB 数据模型 = ChromaDB collection + uploads 目录一体（SPEC F001），目录在 KB 出生时备好，Phase 5 上传直接往里放。
+
+### 26.5 每次请求新建 `store = ChromaVectorStore()` —— 三种实例化模式第一次对照
+
+**真实代码**：[collections.py:95](../../backend/app/api/collections.py#L95)、[collections.py:107](../../backend/app/api/collections.py#L107)
+
+```python
+def create_collection(body: CollectionCreate) -> CollectionResponse:
+    ...
+    store = ChromaVectorStore()          # 函数体内部新建
+    ...
+def list_collections() -> CollectionListResponse:
+    store = ChromaVectorStore()          # 每个端点各建各的
+```
+
+**怎么读**：每次请求进来，端点函数体里 `new` 一个 ChromaVectorStore（内部会 new 一个 `chromadb.PersistentClient`）。不是模块级单例、不是全局共享。
+
+**TypeScript / Node.js 类比**：handler 里 `const client = createDbClient()`——请求作用域的依赖实例。Node 生态常见做法也是每请求建 client 或从连接池借一个（池化是优化，语义仍是"每请求独立使用"）。
+
+**为什么值得学**：至此项目出现**三种实例化模式**，第一次可以并排对照：
+
+| 模式 | 例子 | 适用场景 | 原因 |
+|------|------|---------|------|
+| 每次操作新建 | Phase 1 的 ChromaVectorStore（调用方 new） | 轻量句柄/无状态资源 | PersistentClient 是磁盘持久化 DB 的轻量句柄；请求作用域实例天然无共享状态 |
+| 模块级懒加载单例 | Phase 2 的 embedding `get_model()` | 重量级资源 | 模型加载秒级，必须全局缓存且用不到不加载 |
+| 请求作用域局部变量 | T0401 的 `store = ChromaVectorStore()` | 业务端点依赖 | 同模式 1，只是出现位置在 API 层 |
+
+**怎么选**（工程判断）：问三个问题——① 创建贵不贵？贵 → 单例/缓存；② 有没有可变共享状态？有 → 每请求隔离；③ 生命周期谁来管？短命 → 局部变量，长命 → 模块级。ChromaVectorStore 创建便宜、无共享可变状态（状态在磁盘）→ 每请求新建，简单且线程安全。
+
+**DX-RAG 中在哪里使用**：POST（95 行）和 GET（107 行）各建各的 store——两个端点不共享实例，也没有这个必要。
+
+---
+
+> **T0401 收官**：26.1–26.5 为 T0401 新增知识。这一轮新知识的特征是**"框架层"**——APIRouter/路由装饰器/响应模型都来自 FastAPI 而不是 Python 本身（regex 和 mkdir 除外）。前端开发者到这里应该有一层新体感：**FastAPI 端点 = 声明式契约**（类型标注 + 装饰器参数就是契约），函数体只写业务。Phase 4 的完整学习（含 SPEC_CONFLICT 案例与工程评审）见 [phase-04-knowledge-base-management.md](./phase-04-knowledge-base-management.md)。
+
+## 27. T0402/T0403 新增 Python 知识
+
+### 27.1 `Path.rename()` —— 改名文件/目录（不带覆盖语义）
+
+**真实代码**：[collections.py:177](../../backend/app/api/collections.py#L177)
+
+```python
+old_dir.rename(new_dir)   # uploads/{old_name} → uploads/{new_name}
+```
+
+**怎么读**：把路径改成新名——文件、目录通吃。⚠️ **平台差异**：POSIX 下目标已存在会直接覆盖；**Windows 下抛 FileExistsError**。
+
+**TypeScript / Node.js 类比**：`fs.renameSync(old, new)`——几乎同构。
+
+**为什么值得学**：这是 rename 级联 7 步里的第 3 步（目录改名），也是**第一次"文件系统操作失败会触发业务补偿"**的场景：Windows 下撞上孤儿目录（目标名已被占）→ FileExistsError → 两层补偿启动 → 500 RENAME_FAILED。前端视角的体感是：后端代码里一个看似平凡的文件操作，在跨系统编排里是一个**可失败步骤**，需要补偿路径兜底（ER ADR-06）。
+
+**DX-RAG 中在哪里使用**：`_rename_uploads_dir`（正向）与 `_compensate_rename`（反向，目录先回）。
+
+### 27.2 `shutil.rmtree()` —— 递归删除目录树
+
+**真实代码**：[collections.py:321](../../backend/app/api/collections.py#L321)
+
+```python
+target = Path(settings.UPLOAD_DIR) / name
+if target.exists():
+    shutil.rmtree(target)
+```
+
+**怎么读**：`shutil` 是"shell 工具集"标准库（复制/移动/删除/归档）；`rmtree` 递归删除整个目录树（目录非空也能删）。**它不幂等**——目标不存在会抛错，所以幂等语义靠前置 `if target.exists()` 自己实现。
+
+**TypeScript / Node.js 类比**：`fs.rmSync(path, { recursive: true })`——`recursive: true` 就是 rmtree 的语义。Node 的 rmSync 有 `force` 参数可吞掉"不存在"错误；Python 选择让你自己判断。
+
+**为什么值得学**：delete 级联的关键语义藏在 `exists` 前置判断里——**"删除缺席目录 = no-op"**（删除的目标态就是"缺席"，已缺席即满足）。同一物理状态（目录不存在）在 rename 里是"真实不一致 → 失败 → 补偿"，在 delete 里是"已达成目标 → 跳过"——**语义跟着操作的目标态走，不跟着物理状态走**。
+
+**DX-RAG 中在哪里使用**：`_delete_uploads_dir`——delete 级联的第 2 步，排在 ChromaDB delete 之后（Chroma-first 顺序论证见 ER ADR-07：rmtree 失败时残余是孤儿目录，而不是"活 KB 缺文件"）。
+
+### 27.3 `Path.resolve()` + `.parent` —— 防御性路径校验
+
+**真实代码**：[collections.py:303-305](../../backend/app/api/collections.py#L303-L305)
+
+```python
+root = Path(settings.UPLOAD_DIR).resolve()
+target = (root / name).resolve()
+if target.parent != root:
+    raise RuntimeError(...)
+```
+
+**怎么读**：`resolve()` 把相对路径、`..` 段、符号链接全部展开成"真实绝对路径"；`.parent` 取父目录。两者配合可以精确回答一个问题：**这个路径解析完之后，还在不在我允许的根目录里？**
+
+**TypeScript / Node.js 类比**：`path.resolve()` + `path.dirname()`——思路相同。
+
+**为什么值得学**：这是**defense-in-depth**（纵深防御）的实例：正常路径上已经有 v1.6 regex（名字只能是 `[A-Za-z0-9_-]`，天然不含 `../`）+ 404 存在性检查两层防线，这一层防的是**被人为污染的 collection 名**（手工改过磁盘/数据库的极端场景）。防御性代码的价值不在"正常情况"，在"防线前几层都被击穿时仍不越界"。
+
+**DX-RAG 中在哪里使用**：`_assert_safe_uploads_target`——delete 级联的第 0 步（零副作用校验，失败抛 RuntimeError → 500 INTERNAL_ERROR，什么都没删）。
+
+### 27.4 `logger.exception()` —— 只在 except 块里用的日志
+
+**真实代码**：[collections.py:282-288](../../backend/app/api/collections.py#L282-L288)
+
+```python
+except Exception as exc:
+    logger.exception(
+        "delete collection %r failed mid-cascade (chroma_deleted=%s, uploads_dir_exists=%s)",
+        name, chroma_deleted, (Path(settings.UPLOAD_DIR) / name).exists(),
+    )
+    raise AppError("INTERNAL_ERROR") from exc
+```
+
+**怎么读**：`logger.exception()` 只能在 except 块内调用——它除了记日志，还会**自动附上当前异常的完整 traceback**（等价于 `logger.error(..., exc_info=True)`）。日志里的 `%r`/`%s` 是惰性占位符（参数化日志，不提前做字符串拼接）。
+
+**TypeScript / Node.js 类比**：`console.error(err)` 自动带 stack——但 Python 的 `logger.error` 默认不带，要用 `logger.exception` 才带。**这是 TS 开发者最容易漏的差异**：Python 里"报错日志带 stack"不是默认行为。
+
+**为什么值得学**：T0402/T0403 的补偿失败与残余状态全靠它兜底——**"log 不掩盖"**（补偿失败只记日志、不伪装成功；delete 中途失败把 `chroma_deleted`/`uploads_dir_exists` 两个 flag 写进日志，让残余状态**可枚举**）。没有事务的跨系统操作，"知道残成什么样"就是最诚实的恢复手段（ER ADR-07）。
+
+**DX-RAG 中在哪里使用**：`_compensate_rename` 两处补偿失败日志 + `delete_collection` 的残余状态日志。
+
+### 27.5 `{**dict, key: value}` 字典展开 —— 浅复制 + 覆盖
+
+**真实代码**：[vector_store.py:333-340](../../backend/app/core/vector_store.py#L333-L340)
+
+```python
+new_metadatas = [
+    {
+        **meta,
+        "collection_name": new_name,
+        "source_file": f"uploads/{new_name}/{meta['file_name']}",
+    }
+    for meta in old_metadatas
+]
+```
+
+**怎么读**：`{**meta, "k": v}` 先展开旧 dict 的全部键值，再用后面的键**覆盖**同名键——结果是"保留全部旧字段、只改指定字段"的新 dict。
+
+**TypeScript / Node.js 类比**：`{ ...obj, key: value }`——几乎逐字符对应。
+
+**为什么值得学**：rename 级联的元数据改写就靠它：chunk 的 metadata 有 9 个字段（chunk_id/file_id/file_name/collection_name/chunk_index/source_file/file_size/upload_time/ingestion_status），rename 只改其中 2 个（collection_name、source_file）——`**meta` 保证其余 7 个**逐字段原样保留**，杜绝"手写 9 个字段时漏 1 个"的错误。⚠️ 注意是**浅复制**：展开只复制一层，嵌套的可变值不会被深拷贝（本项目 metadata 的值全是标量，所以安全；若值是 list/dict 就要警惕共享引用）。
+
+**DX-RAG 中在哪里使用**：`rename_collection` 的级联源与补偿载荷同源——`col.get(include=["metadatas"])` 一次性快照（**快照即补偿载荷**，ER ADR-06），正向着新 metadata，失败时把 `old_metadatas` 原封不动写回。
+
+### 27.6 `except AppError: raise` —— 显式透传业务异常
+
+**真实代码**：[collections.py:279-280](../../backend/app/api/collections.py#L279-L280)
+
+```python
+except AppError:
+    raise
+except Exception as exc:
+    logger.exception(...)
+    raise AppError("INTERNAL_ERROR") from exc
+```
+
+**怎么读**：`except X: raise` 是"捕获了但原样再抛"——什么都不做，除了**阻止异常继续往下匹配**。关键在顺序：Python 的 except 从上到下匹配，宽 `except Exception` 会把 AppError 也一并捕获。先写一行 `except AppError: raise`，业务异常就原样穿透；只有非业务异常落入下面的 catch-all → 翻译成 INTERNAL_ERROR。
+
+**TypeScript / Node.js 类比**：`catch (e) { if (e instanceof AppError) throw e; ... }`——同一个模式，TS 写在 catch 块里，Python 写在独立 except 行。
+
+**为什么值得学**：delete 端点必须这样写——它的 404 检查抛的是 AppError（COLLECTION_NOT_FOUND），如果不显式透传，就会被 `except Exception` 吞掉并伪装成 500 INTERNAL_ERROR，**错误契约就被破坏了**。这是"catch-all 兜底"和"业务异常透传"共存的干净范式：先窄后宽。
+
+**DX-RAG 中在哪里使用**：`delete_collection` 的 try 块（rename 端点不用它——rename 的 try 里没有会抛 AppError 的步骤，4xx 全部前置）。
+
+---
+
+> **T0402/T0403 收官**：27.1–27.6 为 T0402/T0403 新增知识。这一轮新知识的特征是**"跨系统副作用的一致性工具"**——改名/删除/路径校验/异常透传/残余日志，全部围绕一个问题：**多个持久化系统之间没有事务时怎么办？** 前端开发者到这里应该有一层新体感：没有 ACID 时，一致性靠编排纪律（顺序 + flags）+ 补偿（快照 + 逆序）+ 诚实报告（残余可枚举），不靠框架魔法。完整学习见 [phase-04-knowledge-base-management.md](./phase-04-knowledge-base-management.md) 第 9/10 节与 [engineering-review/phase-04-engineering-review.md](./engineering-review/phase-04-engineering-review.md) ADR-06~08。

@@ -17,6 +17,7 @@ Distance → Similarity Semantic Boundary (F008):
     re-normalization needed
 """
 
+import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
@@ -25,6 +26,8 @@ from pydantic import BaseModel, Field
 
 from app.core.config import settings
 from app.core.errors import AppError
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -108,7 +111,12 @@ class VectorStore(ABC):
 
     @abstractmethod
     def rename_collection(self, old_name: str, new_name: str) -> None:
-        """Rename a ChromaDB collection.
+        """Rename a ChromaDB collection and cascade chunk metadata.
+
+        SPEC v1.5 contract: collection rename + persisted chunk metadata
+        cascade (``collection_name`` → new_name, ``source_file`` →
+        ``uploads/{new_name}/{file_name}``), atomic at the storage level —
+        on raise the observable Chroma state is the complete old state.
 
         Args:
             old_name: Current collection name.
@@ -282,23 +290,104 @@ class ChromaVectorStore(VectorStore):
         return [col.name for col in self._client.list_collections()]
 
     def rename_collection(self, old_name: str, new_name: str) -> None:
-        """Rename a ChromaDB collection (storage-layer operation only).
+        """Rename a ChromaDB collection with metadata cascade (SPEC v1.5 contract).
 
-        Uses ChromaDB's native rename (``Collection.modify(name=...)``).
-        Validates ``old_name`` exists first (SPEC F001 error table: rename
-        of non-existent KB → 404 COLLECTION_NOT_FOUND).
+        SPEC F008 Storage-Level Rename Cascade — the ONLY legal metadata
+        write path for KB Rename (F001), completed in one call:
 
-        Chunk metadata, uploads directory, and keyword index invalidation
-        are NOT handled here — the KB Rename endpoint owns that cascade
-        (→ T0402).
+        1. Rename the ChromaDB collection (native ``modify``)
+        2. Update every chunk's ``metadata.collection_name`` → new_name
+        3. Update every chunk's ``metadata.source_file`` to
+           ``uploads/{new_name}/{file_name}`` — computed from the
+           chunk's ``file_name`` identity, never a fuzzy string replace
+           (F008 v1.5)
+        4. ``chunk_id``/``file_id``/``file_name``/``chunk_index``/
+           ``file_size``/``upload_time``/``ingestion_status``, content
+           and embeddings stay untouched — no re-ingest, no UUID
+           regeneration
+
+        Atomicity boundary (F001): on return the collection AND all its
+        metadata are in the new state; on raise this method compensates
+        internally so the observable Chroma state is the complete old
+        state.  The uploads directory and keyword index are NOT handled
+        here — the KB Rename endpoint owns that cascade (T0402).
 
         Args:
             old_name: Current collection name.
             new_name: New collection name.
+
+        Raises:
+            AppError: COLLECTION_NOT_FOUND if old_name does not exist.
+            Exception: re-raised after internal compensation if the
+                rename or metadata cascade fails.
         """
         if old_name not in self.list_collections():
             raise AppError("COLLECTION_NOT_FOUND")
-        self._client.get_collection(old_name).modify(name=new_name)
+
+        # Snapshot the complete metadata state before touching anything —
+        # it is both the cascade source and the compensation payload.
+        col = self._client.get_collection(old_name)
+        got = col.get(include=["metadatas"])
+        ids = got["ids"]
+        old_metadatas = got["metadatas"]
+        new_metadatas = [
+            {
+                **meta,
+                "collection_name": new_name,
+                "source_file": f"uploads/{new_name}/{meta['file_name']}",
+            }
+            for meta in old_metadatas
+        ]
+
+        renamed = False
+        try:
+            col.modify(name=new_name)
+            renamed = True
+            if ids:
+                self._client.get_collection(new_name).update(
+                    ids=ids, metadatas=new_metadatas
+                )
+        except Exception as exc:
+            self._restore_rename(old_name, new_name, renamed, ids, old_metadatas)
+            raise
+
+    def _restore_rename(
+        self,
+        old_name: str,
+        new_name: str,
+        renamed: bool,
+        ids: List[str],
+        old_metadatas: List[Dict[str, Any]],
+    ) -> None:
+        """Compensate a failed rename back to the complete old state (F001).
+
+        Best-effort reverse of the two forward steps, in reverse order:
+        restore every chunk's original metadata first (full dict — safe
+        under both merge and replace update semantics), then rename the
+        collection back to ``old_name`` if the forward rename applied.
+        A double failure (forward + compensation) is logged, not masked.
+        """
+        if ids:
+            target = new_name if renamed else old_name
+            try:
+                self._client.get_collection(target).update(
+                    ids=ids, metadatas=old_metadatas
+                )
+            except Exception:
+                logger.exception(
+                    "rename compensation: metadata restore failed (%s → %s)",
+                    old_name,
+                    new_name,
+                )
+        if renamed:
+            try:
+                self._client.get_collection(new_name).modify(name=old_name)
+            except Exception:
+                logger.exception(
+                    "rename compensation: collection rename-back failed (%s → %s)",
+                    new_name,
+                    old_name,
+                )
 
     # --- Data Operations ---
 

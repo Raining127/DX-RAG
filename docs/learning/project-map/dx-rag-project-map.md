@@ -3,10 +3,10 @@
 > 从项目整体角度理解 DX-RAG：它是什么、为什么存在、每一层做什么、13 个 Phase 如何拼成完整系统。
 > 不深入代码细节——代码级的逐行精读请阅读对应的 `phase-XX-*.md` 学习笔记，工程决策分析请阅读 `engineering-review/`。
 
-**当前状态快照**（以 `docs/TASKS.md` 为准，2026-08-23）：
-- SPEC.md v1.5 **FROZEN**，Blocking Questions = 0
-- Phase 0–3 ✅ DONE（工程地基 + 向量存储 + 嵌入 + 文档管道）
-- Phase 4–12 ⬜ TODO（API 层、检索、RAG、前端尚未实现）
+**当前状态快照**（以 `docs/TASKS.md` 为准，2026-08-25）：
+- SPEC.md v1.6 **FROZEN**，Blocking Questions = 0
+- Phase 0–4 ✅ DONE（工程地基 + 向量存储 + 嵌入 + 文档管道 + 知识库管理 API）
+- Phase 5–12 ⬜ TODO（上传、检索、RAG、前端尚未实现）
 
 ---
 
@@ -81,7 +81,7 @@ RAG（Retrieval-Augmented Generation）正是针对这四点设计的：**检索
 │  API LAYER  (FastAPI, prefix=/api)                               │
 │                                                                  │
 │  /api/health       ← Phase 0 ✅ 已实现                            │
-│  /api/collections  ← Phase 4 ⬜                                  │
+│  /api/collections  ← Phase 4 ✅                                  │
 │  /api/upload       ← Phase 5 ⬜                                  │
 │  /api/query        ← Phase 8 ⬜                                  │
 │  /api/files        ← Phase 9 ⬜                                  │
@@ -285,7 +285,7 @@ Answer + Citation（answer 不含内联引用标记；sources 由后端从检索
 | 输出 | 存进 ChromaDB 的 chunks；三态结果（SUCCESS / SUCCESS_WITH_WARNINGS / FAILED+回滚） |
 | 为什么存在 | 知识库的"入口管道"。垃圾进垃圾出——解析质量和切分质量直接决定检索质量 |
 
-### Phase 4 — Knowledge Base Management API（知识库管理）⬜ TODO
+### Phase 4 — Knowledge Base Management API（知识库管理）✅ DONE
 
 | 维度 | 内容 |
 |------|------|
@@ -363,5 +363,5 @@ Phase 0 (地基) ──┬──→ Phase 1 (VectorStore) ──┬──→ Pha
 ```
 
 > **Readme 导航**：[docs/learning/README.md](../README.md)（Phase 学习地图）· [SPEC.md](../../SPEC.md)（产品规格）· [TASKS.md](../../TASKS.md)（任务状态）
-> **工程决策分析**：[engineering-review/](../engineering-review/)（Phase 0-3 的设计决策与规模分析）
+> **工程决策分析**：[engineering-review/](../engineering-review/)（Phase 0-4 的设计决策与规模分析）
 > **面试准备**：[interview-notes/](../interview-notes/)（3 分钟介绍 + 30+ 高频问题）

@@ -1,8 +1,100 @@
 # Phase 学习笔记模板（Phase 4-12 用）
 
-> 使用方法：每个 Phase 完成后，复制本模板到 `docs/learning/phase-XX-name.md`（保持与已有 phase-00 ~ phase-03 相同的命名风格），按 11 个部分逐节填写。
+> 使用方法：每个 Phase 完成后，复制本模板到 `docs/learning/phase-XX-name.md`（保持与已有 phase-00 ~ phase-03 相同的命名风格），按 11 个部分逐节填写。Phase 4 起的实际执行样本见 [phase-04-knowledge-base-management.md](../phase-04-knowledge-base-management.md)。
 > 写作纪律（与已有笔记一致）：
 > ① **基于真实代码**——每个结论都能指到文件与行号；② **区分三层事实**——SPEC 要求（契约）/ 当前实现（代码）/ 通用工程知识（经验），三者不混写；③ **诚实标注**——未实现的能力标 `Future / Not implemented in v1`，AC 未验证就写 DEFERRED，不虚构 PASS；④ **学习风格**——中文解释 + 英文技术术语 + TypeScript 类比 + 工程化思考；⑤ 深度标记：🟢 必会（面试高频）/ 🟡 了解原理即可 / 🔵 知道存在即可。
+
+---
+
+## 0. 三层文档架构（Phase 4 起强制执行——先读这一节）
+
+> 一份文档只承担一种职责。**禁止**再次把 Learning / Engineering / Interview 全塞进同一个巨型文件（2026-08-24 重构的决定，违反即退回"1500 行无人能读完"的老路）。
+
+| 职责 | 文件 | 回答的问题 |
+|------|------|-----------|
+| **Layer 1 · Technical Learning** | `phase-XX-name.md`（本模板） | 代码是什么、如何运行、数据怎么流、我第一次需要掌握什么 Python/FastAPI 知识 |
+| **Layer 2 · Engineering Review** | `engineering-review/phase-XX-engineering-review.md`（**每个 Phase 一份累计文件**，不按 Task 新建） | 作为工程师如何评价这个 Phase 的设计与实现（ADR / 一致性 / Failure Modes / Maintainability / Scalability / Known Gaps） |
+| **Layer 3 · Interview Preparation** | `interview-notes/dx-rag-interview-guide.md`（**项目级累计文档**，永远不按 Task/Phase 新建零散文件） | 面试时如何讲这个项目（30 秒 / 1-2 分钟 / STAR / 追问 / 回答边界） |
+
+**边界规则**：
+
+- Layer 1 对工程/面试内容只放**摘要 + 链接**，不展开。以下内容禁止在 Layer 1 全文展开：完整 ADR、企业级扩展方案、大规模容量分析、完整 failure taxonomy、STAR、30 道 interview questions。
+- Layer 2 在 Phase 内**增量更新**：T0402 完成后 Coverage 写 "T0401 + T0402"，Phase Gate Review 完成后才把 Status 从 IN PROGRESS 改为 COMPLETE（前提是实际流程支持该结论）。
+- Layer 3 写入时机遵守下文 **Interview Update Cadence**：Task 级只记候选素材（Interview Candidates）；Phase 完成后统一 consolidation 再生成完整答案；重大闭环工程事件（如 SPEC_CONFLICT）可即时增量进入。写入时**不复制整个 Learning 文档**，只把新面试资产（STAR、追问、边界话术）加进对应 Phase 深度章。
+- 三份文档互相 cross-link（Layer 1 ↔ Layer 2 ↔ Layer 3），不复制三遍完整内容。
+- 事实标记贯穿三层：[PROJECT FACT]（仓库可证）/ [ENGINEERING KNOWLEDGE]（通用工程知识）/ [FUTURE]（任何未实现能力，如 PostgreSQL/Milvus/分布式事务/UUID identity/display_name-storage_name，必须标记）。
+- **迁移纪律**：COPY → VERIFY → LINK → REMOVE DUPLICATE。先确认高价值内容已进入目标文件，再从原文件删除重复正文。
+
+---
+
+## Interview Update Cadence
+
+> 原则：**Task 记录，Phase 汇总。重大且已经形成完整闭环的工程事件，可以在 Task 完成后即时进入 Interview Guide。**
+
+### Default — Task Level
+
+每个 Task 的 Learning Pass 默认只记录：
+
+#### Interview Candidates
+
+- 值得讲的技术点
+- 值得讲的工程问题
+- Candidate Interview Questions
+- STAR Candidate（如果存在）
+
+这些只是候选素材。
+
+默认不要在每个普通 Task 完成后，为
+`dx-rag-interview-guide.md`
+生成大量完整面试答案。
+
+### Phase Level
+
+当整个 Phase 完成，并经过对应的：
+
+- Task Verification
+- Learning Pass
+- Phase Gate / Learning Review
+- Engineering Review
+
+之后，再统一：
+
+1. 筛选真正有面试价值的 Candidate；
+2. 删除 Task 之间重复的问题；
+3. 将零散技术点提升为 Phase / Project 级表达；
+4. 更新项目整体介绍和架构描述；
+5. 生成或完善完整面试回答；
+6. 更新 `dx-rag-interview-guide.md`。
+
+### Exception — Major Closed-loop Engineering Event
+
+如果某个 Task 出现已经形成完整闭环、并具有明显面试价值的真实工程事件，例如：
+
+- SPEC / implementation conflict；
+- production-like failure investigation；
+- architecture decision with meaningful trade-off；
+- rollback / consistency incident；
+- dependency incompatibility requiring formal decision；
+
+并且事件已经完成：
+
+```text
+Discovery
+→ Analysis
+→ Decision
+→ Resolution
+→ Verification
+```
+
+则允许在该 Task 完成后立即增量加入：
+
+`docs/learning/interview-notes/dx-rag-interview-guide.md`
+
+但必须基于真实已经发生的事实。
+
+不得提前编写未来 Phase 的面试故事。
+
+> **既有先例**：T0401 的 SPEC_CONFLICT（Discovery → Analysis → Decision → Resolution → Verification，最终 SPEC v1.6）符合本例外，已即时写入 Interview Guide Phase 4 深度章（STAR / 30 秒 / 1-2 分钟 / 高频追问 / Engineering Questions）。该内容**全部保留**，不得删除、回滚或迁回 Learning Document。
 
 ---
 
@@ -53,6 +145,11 @@
 ## 4. Task 学习（每个 Task 学了什么）
 
 > 按 TASKS.md 逐个 Task 过：目标 → 实现 → 学到的新知识。每个 Task 一节。
+> **每个 Task 的 Learning 只回答三类问题**（三层架构 0 节的落地规则）：
+> - **A. Code Understanding**：代码是什么？如何运行？数据怎么流？
+> - **B. Project Understanding**：为什么这里需要它？它连接哪个 Phase？
+> - **C. Learning Understanding**：我第一次需要掌握什么 Python / FastAPI 知识？
+> 三类之外的（完整 ADR、企业级扩展方案、大规模容量分析、完整 failure taxonomy、STAR、30 道 interview questions）→ 只给摘要 + 链接到 Layer 2 / Layer 3。
 
 ### Txxxx — <Task 名称>
 
@@ -63,6 +160,14 @@
   - <知识点 2>
 - **TS 类比**（如适用）: <用 TypeScript/前端概念类比，降低理解成本>
 - **验证**: <Task 验收结果，AC 编号 + PASS/DEFERRED，诚实记录>
+- **Interview Candidates**（可选，保持简短）:
+
+  > Candidate only — not yet promoted to the project Interview Guide. 完整 30 秒答案 / 1-2 分钟答案 / STAR 完整稿 / 10+ follow-up questions 属于项目级 Interview Guide，不在这里写（更新时机见 Interview Update Cadence）。
+
+  - **Technical Points**: <值得讲的技术点>
+  - **Engineering Questions**: <值得讲的工程问题>
+  - **Candidate Interview Questions**: <候选面试问题>
+  - **STAR Candidate**: <如果存在，一句话事件轮廓>
 
 ---
 
@@ -132,7 +237,7 @@
 
 ## 10. Interview Notes（面试速记）
 
-> 本 Phase 相关的面试问题与话术要点（同步更新 `interview-notes/dx-rag-interview-guide.md` 的对应题目）。
+> 本 Phase 相关的面试问题与话术要点。更新时机遵守 **Interview Update Cadence**：Task 学习时只记 Interview Candidates；本 Phase 完成后（Task Verification → Learning Pass → Phase Gate / Learning Review → Engineering Review）统一筛选、去重、提升为 Phase / Project 级表达，再更新 `interview-notes/dx-rag-interview-guide.md`（重大闭环工程事件例外，可即时增量进入）。
 
 - **高频问题**: <本 Phase 最可能被问的 2-3 个问题 + 一句话回答要点>
 - **亮点话术**: <本 Phase 值得主动展示的技术亮点（一句话）>
@@ -165,4 +270,6 @@
 - [ ] 所有未来能力都标了 `Future / Not implemented in v1`
 - [ ] AC 验证结果诚实（PASS 必须真的验过；未验写 DEFERRED）
 - [ ] TS 类比准确（不硬凑）
+- [ ] 三层边界遵守：完整 ADR / failure taxonomy / STAR / 容量分析不在本文档展开（摘要 + 链接即可）
+- [ ] Interview 写入时机符合 cadence：Task 级只记候选；Phase 完成统一 consolidation；重大闭环工程事件才即时进入 Interview Guide
 - [ ] 同步更新：README 索引、engineering-review 文档、interview-notes 指南

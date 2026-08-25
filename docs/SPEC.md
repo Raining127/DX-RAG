@@ -1,8 +1,8 @@
 # DX-RAG Development Specification (SPEC.md)
 
-> **版本**: v1.5
+> **版本**: v1.6
 > **状态**: **FROZEN**
-> **最后更新**: 2026-08-15
+> **最后更新**: 2026-08-24
 > **来源**: 基于《DX-RAG 项目说明书》及 Phase 1 Gap Analysis 决策结果整理，经 SPEC Freeze 修订
 > **定位**: Coding Agent 的唯一开发规格入口。所有实现判断以本文档为准。Blocking Open Questions = 0。
 
@@ -307,7 +307,7 @@ dx-rag/
 **数据模型**: 一个 Knowledge Base = 一个独立的 ChromaDB Collection + 一个独立的 `uploads/{collection_name}/` 目录。
 
 **创建**:
-1. 校验名称: 3-50 字符，以字母或数字开头和结尾，允许中间包含字母、数字、下划线、连字符、中文字符。**Canonical regex**: `^[A-Za-z0-9][A-Za-z0-9_\-一-鿿]{1,48}[A-Za-z0-9]$`。Frontend 和 Backend 必须使用等价校验规则（实现方式可以是 regex 或等效逻辑，但 observable behavior 必须一致）
+1. 校验名称: 3-50 字符，以字母或数字开头和结尾，允许中间包含字母、数字、下划线、连字符。**Canonical regex**: `^[A-Za-z0-9][A-Za-z0-9_-]{1,48}[A-Za-z0-9]$`。Frontend 和 Backend 必须使用等价校验规则（实现方式可以是 regex 或等效逻辑，但 observable behavior 必须一致）
 2. 校验名称不重复: 检查 ChromaDB 是否已存在同名 Collection
 3. 创建 ChromaDB Collection
 4. 创建 `uploads/{collection_name}/` 目录
@@ -2796,7 +2796,7 @@ Coding Agent 在完成一个 Feature / Task 时，必须满足以下条件：
 
 ### 14.1 Blocking Open Questions
 
-**None.** 所有 v1 blocking questions 已在 SPEC Freeze (v1.2 → v1.3 → v1.4 → v1.5) 中固化为正式 Specification。SPEC 状态：FROZEN。
+**None.** 所有 v1 blocking questions 已在 SPEC Freeze (v1.2 → v1.3 → v1.4 → v1.5 → v1.6) 中固化为正式 Specification。SPEC 状态：FROZEN。
 
 | Metric | Count |
 |--------|:-----:|
@@ -2820,6 +2820,7 @@ Coding Agent 在完成一个 Feature / Task 时，必须满足以下条件：
 > **v1.3 Patch**: 移除 ChunkRecord page_number、新增 MIN_RELEVANCE_SCORE 过滤、API Keys Optional、Embedding 纯懒加载、KB Rename atomicity、File Preview chunk-based、similarity→relevance_score 及其它一致性修复。无新增 Blocking Questions。
 > **v1.4 Patch**: 检索分数术语标准化（similarity_score/vector_score/keyword_score/final_score/relevance_score 分层边界固化）、Relevance Filter 排序与 AC-F011-02 修正、重试语义明确（初始请求 + 最多 2 次重试 = 3 次总尝试）、File API 身份统一为 file_id、File Preview chunk-based 语义澄清（含 overlap artifact 说明）、移除 UNSUPPORTED_PREVIEW_FORMAT、所有剩余 [PROPOSAL] 行为项固化为明确决策、KB 名称验证 canonical regex 固化、新增 File Preview AC 和 INVALID_FILE_NAME Security AC、配置文档措辞修正、API 错误契约按操作明确化。Blocking Open Questions 保持 0。
 > **v1.5 Patch**: Rename Metadata Contract Resolution — 澄清 `VectorStore.rename_collection` 语义，使 KB Rename 可在不暴露 Chroma private API、不新增 VectorStore public method 的前提下更新 persisted chunk 的 collection 引用（Chroma Collection 重命名 + chunk metadata 级联）。Blocking Open Questions 保持 0。
+> **v1.6 Patch**: KB Name Naming-Compatibility Resolution — F001 canonical regex 收紧为 `^[A-Za-z0-9][A-Za-z0-9_-]{1,48}[A-Za-z0-9]$`（移除中文字符允许；仍为 3-50 字符、字母/数字开头结尾），使 KB 名称与 ChromaDB Collection 名称存储约束一致。产品决策：v1 不引入 KB 名称→存储名称映射层，不因 ChromaDB 支持 `.` 而新增 `.` 支持。Blocking Open Questions 保持 0。
 
 ---
 
@@ -2861,8 +2862,8 @@ Coding Agent 在完成一个 Feature / Task 时，必须满足以下条件：
 
 > **Document End**
 >
-> **版本**: v1.5
+> **版本**: v1.6
 > **状态**: **FROZEN**
-> **最后更新**: 2026-08-15 (v1.5 Patch: Rename Metadata Contract Resolution — clarified VectorStore.rename_collection semantics so KB rename can update persisted chunk collection references without exposing Chroma private APIs or adding a new public VectorStore method)
-> **生成依据**: 《DX-RAG 项目说明书》v1.0 (2026年5月) + Phase 1 Gap Analysis + SPEC Freeze 13 项决策 (v1.2) + SPEC Freeze Patch 8 项修复 (v1.3) + SPEC Freeze Patch 14 项修复 (v1.4) + SPEC Freeze Patch Rename Metadata Contract Resolution (v1.5)
-> **下一步**: Blocking Open Questions = 0。SPEC 保持 FROZEN（v1.5）。
+> **最后更新**: 2026-08-24 (v1.6 Patch: KB Name Naming-Compatibility Resolution — F001 canonical regex 收紧为 `^[A-Za-z0-9][A-Za-z0-9_-]{1,48}[A-Za-z0-9]$`，移除中文字符允许，使 KB 名称与 ChromaDB Collection 名称存储约束一致；v1 不引入名称映射层，不新增 `.` 支持)
+> **生成依据**: 《DX-RAG 项目说明书》v1.0 (2026年5月) + Phase 1 Gap Analysis + SPEC Freeze 13 项决策 (v1.2) + SPEC Freeze Patch 8 项修复 (v1.3) + SPEC Freeze Patch 14 项修复 (v1.4) + SPEC Freeze Patch Rename Metadata Contract Resolution (v1.5) + SPEC Freeze Patch KB Name Naming-Compatibility Resolution (v1.6)
+> **下一步**: Blocking Open Questions = 0。SPEC 保持 FROZEN（v1.6）。
