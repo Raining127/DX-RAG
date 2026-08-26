@@ -134,17 +134,28 @@ Task Coding（任务编码）
 
 ### Phase 5 — File Upload API
 
-**状态**: ⬜ NOT STARTED
+**状态**: 🟡 IN PROGRESS（编码与验证全部完成：T0501–T0503 Learning Pass + Engineering Review + Phase Learning Review completed；Phase Gate Review：PHASE_5_FAIL（AC-F002-01）→ F-1/F-2 修复完成（2026-08-25）→ Re-review 待执行）
 
-**Tasks**: T0501–T0503
+**Tasks**: T0501 ✅ | T0502 ✅ | T0503 ✅
 
-**未来主要学习主题**:
+**学习重点**:
 
-- multipart/form-data 文件上传
-- 多层上传校验管道
-- Path traversal 安全防护
-- SUCCESS / SUCCESS_WITH_WARNINGS / FAILED 三态模型
-- FAILED rollback 验证
+- 六步上传校验管道（路径安全 → 扩展名 → 大小 → 空文件 → KB 存在 → 同名）✅（T0501）
+- `PureWindowsPath` 跨平台路径安全判定 + 拒绝而非改写 ✅（T0501）
+- 校验先于任何文件系统写入（AC-SEC-01 / SPEC 10.2）✅（T0501）
+- 查重走 `get_files` 派生聚合——FAILED 文件天然可重传 ✅（T0501）
+- multipart/form-data 文件上传 + POST /api/upload 端点 ✅（T0502）
+- 失败两条路径 × 两个清理责任方（FAILED 归 IngestService / 异常归端点）✅（T0502）
+- keyword index 只在 200 结果后失效——失败零副作用的推理链 ✅（T0502）
+- SUCCESS / SUCCESS_WITH_WARNINGS / FAILED 三态模型与回滚的端点级验证：15 场景矩阵 + 断言只走 public interface + 零业务代码修复 ✅（T0503）
+- 验证基础设施：子进程隔离 / 环境变量先于 import / 声明替代与 GUARD 分离 ✅（T0503）
+- VectorStore.add_texts 分批持久化 + 批次失败按 file_id 补偿删除（file-level all-or-nothing）✅（Phase 5 Gate 修复 F-1/F-2，V9/V10 升级 CHECK 复跑 PASS）
+
+**学习文档**（三层架构，各司其职）：
+
+- 📖 **Technical Learning**: [phase-05-file-upload.md](./phase-05-file-upload.md)（T0501–T0503 教材：六步校验 + 端点编排逐行精读 / 失败路径与清理责任 / 验证脚本精读 5.7 / 顺序重排记录 / 自测练习）
+- 🔍 **Engineering Review**: [engineering-review/phase-05-engineering-review.md](./engineering-review/phase-05-engineering-review.md)（T0501–T0503 工程复盘：ADR-01~11 / Pending #35–#38 / Known Gaps 1-6 / 规模分析）
+- 🎤 **Interview Preparation**: [interview-notes/dx-rag-interview-guide.md](./interview-notes/dx-rag-interview-guide.md)（按 cadence，T0501/T0502/T0503 均为普通 Task——Interview Candidates 于教材第 4/10 节；Phase 5 Learning Review（2026-08-26）已完成话术 consolidation：Phase 5 深度章 = 30 秒 + 1-2 分钟 + 验证驱动修复 STAR + 12 高频追问 + 4 工程深问，并更新 3 分钟介绍与亮点 16/17）
 
 ---
 
@@ -290,9 +301,10 @@ Phase 定位 / 为什么需要这个模块 / 核心设计决策（Decision-Conte
 **文档**: [interview-notes/dx-rag-interview-guide.md](./interview-notes/dx-rag-interview-guide.md)
 
 - 第一部分：3 分钟项目介绍（背景/架构/我的工作/挑战/解决方案，含诚实话术）
-- 第二部分：15 个技术亮点（每个含一句话概括 + 展开点 + 代码位置）
+- 第二部分：17 个技术亮点（每个含一句话概括 + 展开点 + 代码位置）
 - 第三部分：34 道高频面试题（项目理解/架构设计/RAG/工程问题四类，每题含 面试官问题/优秀回答/进一步追问/回答方向）
 - Phase 4 深度章（T0401–T0404 已实现）：30 秒回答 / 1-2 分钟深入 / SPEC_CONFLICT STAR / 18 道高频追问 + 8 道工程深问
+- Phase 5 深度章（T0501–T0503 已实现，含 Gate Review 修复中状态）：30 秒回答 / 1-2 分钟深入 / 验证驱动修复 STAR / 12 道高频追问 + 4 道工程深问
 - 附录：面试前自查清单
 
 ### Phase 学习模板（Phase 4-12 用）

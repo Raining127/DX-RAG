@@ -3,10 +3,10 @@
 > 从项目整体角度理解 DX-RAG：它是什么、为什么存在、每一层做什么、13 个 Phase 如何拼成完整系统。
 > 不深入代码细节——代码级的逐行精读请阅读对应的 `phase-XX-*.md` 学习笔记，工程决策分析请阅读 `engineering-review/`。
 
-**当前状态快照**（以 `docs/TASKS.md` 为准，2026-08-25）：
+**当前状态快照**（以 `docs/TASKS.md` 为准，2026-08-26）：
 - SPEC.md v1.6 **FROZEN**，Blocking Questions = 0
-- Phase 0–4 ✅ DONE（工程地基 + 向量存储 + 嵌入 + 文档管道 + 知识库管理 API）
-- Phase 5–12 ⬜ TODO（上传、检索、RAG、前端尚未实现）
+- Phase 0–5 ✅ DONE（工程地基 + 向量存储 + 嵌入 + 文档管道 + 知识库管理 API + 文件上传 API；Phase 5：Gate Review 裁定 PHASE_5_FAIL → F-1/F-2 修复完成 → Re-review 待执行；Learning Pass / ER / Learning Review 已完成）
+- Phase 6–12 ⬜ TODO（检索、RAG、前端尚未实现）
 
 ---
 
@@ -82,7 +82,7 @@ RAG（Retrieval-Augmented Generation）正是针对这四点设计的：**检索
 │                                                                  │
 │  /api/health       ← Phase 0 ✅ 已实现                            │
 │  /api/collections  ← Phase 4 ✅                                  │
-│  /api/upload       ← Phase 5 ⬜                                  │
+│  /api/upload       ← Phase 5 ✅                                  │
 │  /api/query        ← Phase 8 ⬜                                  │
 │  /api/files        ← Phase 9 ⬜                                  │
 │  统一错误格式 {error: {code, message, details}} ✅                 │
@@ -121,7 +121,7 @@ RAG（Retrieval-Augmented Generation）正是针对这四点设计的：**检索
 Frontend: 类型/大小前端校验 → multipart POST /api/upload
     │
     ▼
-API Layer: 扩展名白名单 → 大小 → 空文件 → 路径遍历 → KB 存在 → 同名检查
+API Layer: 路径安全 → 扩展名白名单 → 大小 → 空文件 → KB 存在 → 同名检查
     │   （任一失败 → 4xx，且不产生任何文件系统写入）
     ▼
 保存到 uploads/{collection_name}/{file_name}
@@ -197,7 +197,7 @@ Frontend: react-markdown 渲染答案 + 可折叠 sources 列表
 ```
 File（用户上传，≤50MB，扩展名白名单）
     ↓
-Validation（扩展名 → 大小 → 空文件 → 路径遍历 → KB 存在 → 同名；全部通过才写盘）
+Validation（路径安全 → 扩展名 → 大小 → 空文件 → KB 存在 → 同名；全部通过才写盘）
     ↓
 Save（uploads/{collection_name}/{file_name}）
     ↓
@@ -294,14 +294,14 @@ Answer + Citation（answer 不含内联引用标记；sources 由后端从检索
 | 输出 | ChromaDB collection + `uploads/{name}/` 目录的增删改查；重命名级联（collection + metadata + 目录 + keyword index）且保证原子性 |
 | 为什么存在 | 多租户隔离的最小单位：一个 KB = 一个 collection = 一个目录。也是第一个真正面向用户的 API |
 
-### Phase 5 — File Upload API（上传）⬜ TODO
+### Phase 5 — File Upload API（上传）✅ DONE（T0501–T0503；Gate Re-review 待执行）
 
 | 维度 | 内容 |
 |------|------|
 | 解决什么问题 | 把 Phase 3 的管道接到 HTTP 上，并保证"上传失败不留垃圾" |
 | 输入 | multipart 文件 + collection_name |
-| 输出 | UploadResponse（status/file_id/file_name/chunks/warnings）；FAILED 时全量回滚 |
-| 为什么存在 | 知识库内容的入口 API。六道校验（类型/大小/空/路径遍历/KB/同名）全部在写盘之前完成 |
+| 输出 | UploadResponse（status/file_id/file_name/chunks/warnings）；FAILED 时全量回滚（T0503 端点级验证：15 场景矩阵 + 零业务代码修复）；Gate 修复 F-1/F-2：add_texts 分批持久化 + 批次失败补偿删除（V9/V10 升级 CHECK 复跑 PASS） |
+| 为什么存在 | 知识库内容的入口 API。六道校验（路径安全/扩展名/大小/空/KB/同名）全部在写盘之前完成；回滚契约（SPEC F002 Upload Failure Atomicity）由验证脚本固化 |
 
 ### Phase 6-7 — Retrieval（关键词 + 向量 + 混合检索）⬜ TODO
 
@@ -363,5 +363,5 @@ Phase 0 (地基) ──┬──→ Phase 1 (VectorStore) ──┬──→ Pha
 ```
 
 > **Readme 导航**：[docs/learning/README.md](../README.md)（Phase 学习地图）· [SPEC.md](../../SPEC.md)（产品规格）· [TASKS.md](../../TASKS.md)（任务状态）
-> **工程决策分析**：[engineering-review/](../engineering-review/)（Phase 0-4 的设计决策与规模分析）
-> **面试准备**：[interview-notes/](../interview-notes/)（3 分钟介绍 + 30+ 高频问题）
+> **工程决策分析**：[engineering-review/](../engineering-review/)（Phase 0-5 的设计决策与规模分析）
+> **面试准备**：[interview-notes/](../interview-notes/)（3 分钟介绍 + 34 高频问题 + Phase 4/5 深度章）

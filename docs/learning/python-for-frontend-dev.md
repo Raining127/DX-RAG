@@ -1479,6 +1479,22 @@ pydantic-settings>=2.0.0
 | `Path.resolve()` + `.parent` | T0403 | 相对路径/符号链接解析为绝对路径 ≈ `path.resolve()` + `path.dirname()`——防御性路径校验 |
 | `Path.exists()` | T0403 | ≈ `fs.existsSync()`；"删除缺席目录 = no-op"的前置判断 |
 | `except AppError: raise` | T0403 | 显式透传业务异常——防止被宽 `except Exception` 吞掉后伪装成 INTERNAL_ERROR |
+| `PureWindowsPath` | T0501 | 跨平台的"Windows 路径视图"：Linux 上也让 `\` 算分隔符 ≈ `path.win32`——上传文件名安全判定的核心 |
+| `Path.name` / `.suffix` | T0501 | basename / 最后扩展名 ≈ `path.basename` / `path.extname`；⚠️ `.suffix` 只认最后一段（`archive.tar.gz` → `.gz`）、点开头不算（`.bashrc` → `""`） |
+| set 推导式 | T0501 | `{expr for x in iterable}` ≈ `new Set(arr.map(...))`——查重集合的构建 |
+| `or` 默认值惯用法 | T0501 | `a or b` 在 a 为 falsy（None/""/0）时取 b ≈ JS `\|\|`；⚠️ 与 `??` 不同——空字符串也会被替换 |
+| `UploadFile` + `File(...)` / `Form(...)` | T0502 | multipart 上传 ≈ multer；FastAPI 用参数声明替代中间件——函数签名就是"要什么"；`.file` 是 SpooledTemporaryFile（内存/磁盘自动切换） |
+| 同步 `def` 端点 + 线程池 | T0502 | FastAPI 把 sync def 丢线程池——CPU 密集（embedding）不阻塞事件循环；⚠️ 阻塞调用写 async def 反而劣化 |
+| `except Exception: 清理; raise` | T0502 | 裸 except 的合法用例：失败形态不可枚举、动作与形态无关；`raise` 不带参数保留原 traceback（对比 27.6 的 `except AppError: raise` 按类型透传） |
+| dict 查表 + 控制流穷举键 | T0502 | `_STATUS_MESSAGES[status]` 只有两个键也不 KeyError——FAILED 已提前 raise，穷举性由控制流保证（TS 对应：narrowing） |
+| `file.file.read()` 整读 | T0502 | 全量读成 bytes 再校验——内存有界（spool 滚盘）、带宽无界；"先读后校验"的 413 延迟代价 |
+| `subprocess.run` 子进程编排 | T0503 | ≈ `child_process.spawnSync`；`capture_output`/`text`/`encoding`/`errors`/`timeout` 参数；Windows 下进程结束 = OS 收文件句柄（ChromaDB 临时目录清理的前提） |
+| `tempfile.mkdtemp(prefix=...)` | T0503 | 一次性临时目录 ≈ `fs.mkdtemp`；配合 `shutil.rmtree(ignore_errors=True)` 用完清理 |
+| `@contextmanager` + `with` 语句 | T0503 | **预言兑现**：项目第一个 `with` 语句（`with patched(...):`）——contextmanager 把生成器函数变成"进入/退出"资源（JS 无直接对应物，近 TS 装饰器 + RAII） |
+| `yield`（生成器函数） | T0503 | **预言兑现**：`patched()` 是项目第一个生成器函数——yield 前 = with 进入，finally = with 退出；`yield from` 仍未见 |
+| 运行时 monkey-patch（`getattr`/`setattr`/`delattr`） | T0503 | 测试替身 ≈ `jest.spyOn`/`vi.mock`；patch 类要查 `__dict__`（`getattr` 会沿 MRO 找父类）；`object()` 哨兵 + `delattr` 恢复不留痕 |
+| `os.environ` 先于 import（Settings 单例陷阱） | T0503 | 单例在 import 时读环境变量定值——测试必须先设 env 再 import（"改晚了没生效"）；所有 `app.*` import 住进函数体 |
+| `TestClient(raise_server_exceptions=False)` | T0503 | 端点级测试 ≈ supertest；False = 观察全局 handler 的 500 响应而非让异常穿透进测试 |
 
 ### 正在建立理解（🟡）
 
@@ -1493,8 +1509,8 @@ pydantic-settings>=2.0.0
 
 | 未来会出现的 Python 概念 | 预期出现的 Task |
 |------------------------|---------------|
-| `with` 语句 (context manager) | T0304/T0305 用 `try/finally` 实现了等价效果（`doc.close()`）；仍未用 `with`——`fitz.open()` 支持 with 语法，实现选择了 try/finally（两者等价，项目第一次显式管理资源） |
-| Generator / `yield from` | 生成器表达式已出现（T0302 作 join 参数、T0303 带过滤条件）；`yield` 语句 / 生成器函数仍未出现（iter_rows 内部用，项目代码未写） |
+| ~~`with` 语句 (context manager)~~ | ✅ **预言兑现**：T0503 验证脚本的 `with patched(...)` 是项目第一个 `with` 语句（T0304/T0305 曾用 try/finally 实现等价效果；@contextmanager 是第三种写法——已移入"已经接触"） |
+| Generator / `yield from` | 生成器表达式 + 生成器函数（`patched()`）已出现；`yield from` 仍未出现 |
 | TypeVar / Generic | 如需泛型抽象 |
 | Dataclass | 如需轻量数据容器 |
 | ~~f-string（`f"{x}"` 字符串插值）~~ | ✅ **预言兑现**：T0308 的 `f"uploads/{collection_name}/{file_name}"` 是项目第一个 f-string（已移入"已经接触"） |
@@ -3127,3 +3143,289 @@ except Exception as exc:
 ---
 
 > **T0402/T0403 收官**：27.1–27.6 为 T0402/T0403 新增知识。这一轮新知识的特征是**"跨系统副作用的一致性工具"**——改名/删除/路径校验/异常透传/残余日志，全部围绕一个问题：**多个持久化系统之间没有事务时怎么办？** 前端开发者到这里应该有一层新体感：没有 ACID 时，一致性靠编排纪律（顺序 + flags）+ 补偿（快照 + 逆序）+ 诚实报告（残余可枚举），不靠框架魔法。完整学习见 [phase-04-knowledge-base-management.md](./phase-04-knowledge-base-management.md) 第 9/10 节与 [engineering-review/phase-04-engineering-review.md](./engineering-review/phase-04-engineering-review.md) ADR-06~08。
+
+---
+
+## 28. T0501 新增 Python 知识
+
+> 本节按 Task 顺序增量记录 upload.py 中出现的 Python 知识（T0501，每次 Learning Pass 追加）。
+
+### 28.1 `PureWindowsPath` —— 跨平台的 Windows 路径视图
+
+**Python 写法**（真实代码：[upload.py:83](../../backend/app/api/upload.py#L83)）：
+
+```python
+if PureWindowsPath(file_name).name != file_name:
+    raise AppError("INVALID_FILE_NAME")
+```
+
+**怎么读**：`PureWindowsPath` 是 pathlib 家族的一员——它**把字符串当作 Windows 路径来解析**，无论代码跑在什么操作系统上。`.name` 取出最后一段（basename）。`"a\\b.txt"` 在 Linux 上被 `Path` 当成"名字里带反斜杠的普通文件"（`.name` 还是 `"a\\b.txt"`），但被 `PureWindowsPath` 解析成 `a` 目录下的 `b.txt`（`.name == "b.txt"`）。
+
+**TypeScript / Node.js 类比**：Node 的 `path.win32` 模块——`path.win32.basename("a\\b.txt")` 在 mac/Linux 上也是 `"b.txt"`。两者存在的原因相同：**你要处理的字符串来自另一个世界（用户上传 / 远程系统），必须用目标世界的规则解析它**。
+
+**重要差异**：Node 的 `path` 是**方法集合**（`path.basename()` / `path.win32.basename()`）；Python 的 pathlib 是**对象**（`PureWindowsPath("...").name`）。纯计算版叫 `Pure...Path`（不碰文件系统），带 IO 的是 `Path`。
+
+**DX-RAG 中在哪里使用**：`validate_file_name` 的核心判定——上传文件名是用户发来的字符串，没有"宿主平台"可言；用 Windows 语义（最严）判定，保证反斜杠路径遍历在任何部署平台上都被挡住。设计论证见 [phase-05 ER](./engineering-review/phase-05-engineering-review.md) ADR-02。
+
+### 28.2 `.name` / `.suffix` —— pathlib 的属性
+
+**Python 写法**（真实代码：[upload.py:83](../../backend/app/api/upload.py#L83) / [upload.py:96](../../backend/app/api/upload.py#L96)）：
+
+```python
+PureWindowsPath("a/b.txt").name     # "b.txt"
+PureWindowsPath("archive.tar.gz").suffix  # ".gz"
+PureWindowsPath(".bashrc").suffix   # ""
+PureWindowsPath("doc.PDF").suffix.lower()  # ".pdf"
+```
+
+**怎么读**：`.name` = 最后一段（basename）；`.suffix` = **最后一段扩展名**（含点）。两个边角语义必须记住：① `archive.tar.gz` 的 suffix 是 `.gz` 不是 `.tar.gz`——"最后一段"；② 点开头的隐藏文件（`.bashrc`）suffix 是 `""`——点后面没有任何字符不算扩展名。
+
+**TypeScript / Node.js 类比**：`.name` ≈ `path.basename(p)`；`.suffix` ≈ `path.extname(p)`。JS 的 `path.extname(".bashrc")` 同样是 `""`，`path.extname("archive.tar.gz")` 同样是 `".gz"`——两个生态语义一致（都源自 POSIX basename 语义）。
+
+**DX-RAG 中在哪里使用**：`validate_file_name`（basename 等式判路径成分）+ `validate_extension`（suffix 白名单 + `.lower()` 兑现 SPEC 的"扩展名不区分大小写"）。
+
+### 28.3 set 推导式 —— 一行构建去重集合
+
+**Python 写法**（真实代码：[upload.py:149](../../backend/app/api/upload.py#L149)）：
+
+```python
+existing = {file["file_name"].lower() for file in store.get_files(collection)}
+```
+
+**怎么读**：和 list comprehension 同一个语法（手册 17.1），只是外层括号换成 `{}`——结果是 **set**（去重、无序）。这里把 KB 里每个文件的 `file_name` 取出来小写化，组成一个"已占用文件名"集合。
+
+**TypeScript / Node.js 类比**：
+
+```ts
+const existing = new Set(files.map(f => f.file_name.toLowerCase()));
+```
+
+JS 要 `map` 再包 `Set`；Python 一个语法搞定。两者后续用法一致：`file_name.lower() in existing` ≈ `existing.has(name.toLowerCase())`。
+
+**DX-RAG 中在哪里使用**：同名检查的"已占用名"集合——set 让成员检查 O(1)，六道校验里唯一会随 KB 规模变化的步骤。
+
+### 28.4 `or` 默认值惯用法 —— 比 JS 的 `||` 更常见，比 `??` 更激进
+
+**Python 写法**（真实代码：[upload.py:140](../../backend/app/api/upload.py#L140)）：
+
+```python
+collection = collection_name or settings.CHROMA_COLLECTION
+```
+
+**怎么读**：`a or b` 在 `a` 为 **falsy** 时返回 `b`，否则返回 `a`。Python 的 falsy：`None`、`""`、`0`、`[]`、`{}`、`False`。所以 `None` 和空字符串 `""` 都会落到默认值——正好覆盖 SPEC F002 步骤 4 的"collection_name 为空则用默认"。
+
+**TypeScript / Node.js 类比**：≈ `collectionName || settings.chromaCollection`——JS 的 `||` 也是 falsy 语义。⚠️ **别和 `??` 混**：`"" ?? "default"` 返回 `""`（空字符串不算 nullish），而 `"" or "default"` 返回 `"default"`。上传场景要的是后者——空字符串和没传一样处理。
+
+**DX-RAG 中在哪里使用**：`validate_upload` 的参数兜底。注意这个函数**返回**解析后的 collection 名——T0502 的端点用这个返回值拼接保存路径（upload.py:194），所以不能只兜底不返回（T0501 时写"要传给 T0502"，现已兑现）。
+
+---
+
+> **T0501 收官**：28.1–28.4 为 T0501 新增知识。这一轮新知识的主题是**"不可信输入的判定"**——PureWindowsPath 跨平台路径判定、suffix 白名单、去重集合、falsy 兜底，全部围绕一个问题：**用户发来的字符串不是数据，是不可信输入**。完整学习见 [phase-05-file-upload.md](./phase-05-file-upload.md) 第 5 节与 [engineering-review/phase-05-engineering-review.md](./engineering-review/phase-05-engineering-review.md) ADR-01~05。
+
+---
+
+## 29. T0502 新增 Python 知识
+
+> 本节按 Task 顺序增量记录 upload.py 端点部分（T0502）出现的 FastAPI / Python 知识。T0502 接线后 upload.py 行号整体后移——第 28 节的引用已同步更新（83/96/140/149）。
+
+### 29.1 `UploadFile` + `File(...)` / `Form(...)` —— FastAPI 的 multipart 上传
+
+**Python 写法**（真实代码：[upload.py:161-165](../../backend/app/api/upload.py#L161-L165)）：
+
+```python
+@router.post("/upload", response_model=UploadResponse)
+def upload_file(
+    file: UploadFile = File(...),
+    collection_name: Optional[str] = Form(default=None),
+) -> UploadResponse:
+```
+
+**怎么读**：`File(...)` 声明"这个参数来自 multipart 表单的文件部分"；`Form(default=None)` 声明"这个参数来自表单的普通字段，缺省 None"；`...`（Ellipsis）表示**必填**。FastAPI 在请求进来时自动解析 multipart body，把文件包装成 `UploadFile`（带 `.filename` 和 `.file`），把字段按类型注入参数。
+
+**TypeScript / Node.js 类比**：≈ Express 里的 multer 中间件 + 手写解析。multer 把文件放到 `req.file`，普通字段留在 `req.body`——FastAPI 用**参数声明**取代中间件配置：函数签名本身就是"这个端点要什么"，框架负责取。
+
+**重要差异**：`file.file` 是类文件对象（真实形态是 `SpooledTemporaryFile`——小文件在内存、超过阈值滚到临时磁盘文件），不是 bytes；`.read()` 之后才拿到 bytes。`file.filename` 类型上可以是 `None`（Starlette 的类型定义），所以代码里 `file.filename or ""` 兜底（upload.py:190，falsy 兜底与 28.4 同一惯用法）。
+
+**DX-RAG 中在哪里使用**：`upload_file` 的参数注入——这是项目第一个 multipart 端点（此前 collections 全是 JSON body）。
+
+### 29.2 同步 `def` 端点 —— FastAPI 的线程池约定
+
+**Python 写法**（真实代码：[upload.py:162](../../backend/app/api/upload.py#L162)）：
+
+```python
+def upload_file(...):   # 注意：不是 async def
+```
+
+**怎么读**：FastAPI 对**同步 `def` 端点**自动放进线程池执行（`run_in_threadpool`），对 `async def` 端点在事件循环里 await。上传管道里有 CPU 密集的阻塞调用（`encode_chunks` 跑 bge-small 嵌入模型，可能几十秒）——写成 `async def` 会让整个事件循环卡住，**所有**请求（连 /health）都等它；写成 sync `def`，它在线程池里慢慢跑，事件循环继续服务其他请求。
+
+**TypeScript / Node.js 类比**：Node 单线程，CPU 密集任务要丢给 `worker_threads`；FastAPI 的选择规则更简单——**"你的函数会不会阻塞？会就写 sync def"**。JS 开发者常见反直觉点：FastAPI 里 `async def` 不是"更现代更好"，写错了反而劣化（async def 里调 `time.sleep`/重计算 = 阻塞事件循环）。
+
+**DX-RAG 中在哪里使用**：`upload_file` 端点——设计论证在 [phase-05 ER](./engineering-review/phase-05-engineering-review.md) 5.5 节。
+
+### 29.3 `except Exception: 清理; raise` —— 裸 except 的合法用例
+
+**Python 写法**（真实代码：[upload.py:198-202](../../backend/app/api/upload.py#L198-L202)）：
+
+```python
+try:
+    result = IngestService.process(target, file_name, collection)
+except Exception:
+    _discard_saved_file(target)
+    raise
+```
+
+**怎么读**：`except Exception`（不指定类型）捕获一切常规异常；`raise`（不带参数）**原样重抛**当前异常——清理是"顺路"，主任务是让原始错误到达全局 handler。为什么这里可以裸 except：失败形态不可枚举（FILE_PARSE_ERROR / ENCRYPTED_PDF / OCR 错误 / embedding 错误……），而且**处理动作与失败形态无关**（无论什么错都删文件），所以不需要 `except AppError` 分流。`raise` 不带参数是关键——它保留原异常的 traceback，而不是创造一个没有来源的新异常。
+
+**TypeScript / Node.js 类比**：≈ `catch (e) { cleanup(); throw e; }`。JS 里没有"裸 except"的争议（catch 本来就是全收），但 Python 社区视 `except Exception` 为需要理由的写法——理由就是"处理动作与失败形态无关"。对比手册 27.6 的 `except AppError: raise`（按类型透传）与 25.7 的 `missing_ok` 幂等删除——这一套"失败处理工具箱"在 T0502 端点里全部登场。
+
+**DX-RAG 中在哪里使用**：端点的摄取段——设计论证（副作用归属：端点只删自己保存的文件）见 [phase-05 ER](./engineering-review/phase-05-engineering-review.md) ADR-06。
+
+### 29.4 dict 查表 + 控制流穷举键 —— `_STATUS_MESSAGES[status]` 为什么不会 KeyError
+
+**Python 写法**（真实代码：[upload.py:44-47](../../backend/app/api/upload.py#L44-L47) / [upload.py:211](../../backend/app/api/upload.py#L211)）：
+
+```python
+_STATUS_MESSAGES = {
+    "SUCCESS": "上传并入库成功",
+    "SUCCESS_WITH_WARNINGS": "上传并入库成功（部分页面 OCR 失败）",
+}
+
+message=_STATUS_MESSAGES[result["status"]],
+```
+
+**怎么读**：dict 查表把"状态 → 文案"变成数据；表里**只有两个键**，而 `result["status"]` 到这里只可能是这两个值——因为 FAILED 在 8 行之前（upload.py:204-205）已经 `raise`，控制流排除了第三种可能。键的穷举性由**控制流**保证，不是靠运气或防御代码。
+
+**TypeScript / Node.js 类比**：≈ TS 的窄化（narrowing）——`if (status === "FAILED") throw` 之后，status 的类型被窄化到两个值，`messages[status]` 就不需要 `?? fallback`。Python 没有静态类型检查替你保证这一点，穷举性靠代码路径的**人肉推演**（以及 Pydantic `Literal` 在响应模型上的兜底，schemas.py:98）。
+
+**DX-RAG 中在哪里使用**：响应段的文案查表——SPEC 6.3 示例 JSON 的 message 文案与这两个字符串一字不差。
+
+### 29.5 `file.file.read()` 整读 —— SpooledTemporaryFile 与"先读后校验"的代价
+
+**Python 写法**（真实代码：[upload.py:191](../../backend/app/api/upload.py#L191)）：
+
+```python
+content = file.file.read()
+```
+
+**怎么读**：把整个上传读成 bytes，然后 `validate_upload(file_name, content, ...)` 才检查大小。`UploadFile.file` 的真实形态是 `SpooledTemporaryFile`——小文件（默认 ≤1MB）驻内存，超出自动滚到临时磁盘文件——所以 50MB 上限下**内存有界**（由 spool 保护），但**带宽无界**：一个 500MB 的恶意上传也要全量收完才返回 413。
+
+**TypeScript / Node.js 类比**：≈ multer 配 `storage: multer.memoryStorage()` 后 `req.file.buffer`——同样整读。流式限制的对应物是 multer 的 `limits.fileSize`（在流上中止，不必收完）。Python 侧要同样效果需自己流式读 + 计数（v1 out of scope，见 [phase-05 教材](./phase-05-file-upload.md) 第 11 节）。
+
+**DX-RAG 中在哪里使用**：端点第一行——性能代价与取舍记录在 [phase-05 ER](./engineering-review/phase-05-engineering-review.md) 第 6 节。
+
+---
+
+> **T0502 收官**：29.1–29.5 为 T0502 新增知识。这一轮的主题是**"副作用的归属"**——multipart 参数注入（框架替你收）、sync def 线程池（阻塞归线程池）、裸 except + raise（清理归端点、错误归原样）、查表穷举（失败分支先排除）——与 T0501 的"不可信输入判定"合成完整的上传端点图景。完整学习见 [phase-05-file-upload.md](./phase-05-file-upload.md) 第 5.5/5.6 节与 [engineering-review/phase-05-engineering-review.md](./engineering-review/phase-05-engineering-review.md) ADR-06~08。
+
+---
+
+## 30. T0503 新增 Python 知识
+
+> 本节按 Task 顺序增量记录验证脚本 verify_t0503_rollback.py（T0503）出现的 Python / 测试知识。T0503 是验证 Task，知识偏"测试基础设施"——但它全是标准库 + 已装依赖，零新依赖。
+
+### 30.1 `subprocess.run` —— 自己起自己，跑完收句柄
+
+**Python 写法**（真实代码：[verify_t0503_rollback.py:540-545](../../backend/scripts/verify_t0503_rollback.py#L540-L545)）：
+
+```python
+completed = subprocess.run(
+    [sys.executable, str(Path(__file__).resolve()), "--probe-root", str(probe_root)],
+    capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=900,
+)
+```
+
+**怎么读**：用**当前解释器**再跑一次**同一个文件**，`--probe-root` 参数把它切换到"子进程模式"。父进程拿到 `CompletedProcess`（`.returncode` 退出码 / `.stdout` / `.stderr`）。`capture_output=True` 把子进程输出收进内存而不是直通控制台；`text=True + encoding + errors` 按 UTF-8 解码（`errors="replace"` 保证解码失败也不炸）；`timeout=900` 15 分钟兜底防挂死。
+
+**为什么要套壳**：ChromaDB 的 Rust 后端把 SQLite/segment **文件句柄持有到进程结束**——Windows 上进程内清不掉，父进程想 `rmtree` 临时目录只能等子进程退出（退出 = OS 收回全部句柄）。[ENGINEERING KNOWLEDGE] "资源句柄属于进程"是跨语言常识，但只有遇到"目录怎么都删不掉"时才会被真正学会。
+
+**TypeScript / Node.js 类比**：≈ `child_process.spawnSync(process.execPath, [__filename, ...args])`——同样可以"自己起自己"。但 Node 单进程事件循环不需要这个模式；它更多出现在**需要干净资源隔离**的测试脚手架里。
+
+### 30.2 `tempfile.mkdtemp(prefix=...)` —— 一次性临时目录
+
+**Python 写法**（真实代码：[verify_t0503_rollback.py:538](../../backend/scripts/verify_t0503_rollback.py#L538)）：
+
+```python
+probe_root = Path(tempfile.mkdtemp(prefix="t0503_"))
+```
+
+**怎么读**：在系统临时目录建一个**唯一**目录（`prefix` 让目录名可辨识），返回路径——同一台机器上并行跑多少份都不会撞名。用完 `shutil.rmtree(probe_root, ignore_errors=True)`（脚本 L571-575）删除；`ignore_errors=True` 是"清不掉也继续"，配合 10 次重试（句柄可能晚一点释放）。
+
+**TypeScript / Node.js 类比**：≈ `fs.mkdtempSync(path.join(os.tmpdir(), "t0503_"))` + `fs.rmSync(dir, { recursive: true, force: true })`——语义几乎一一对应。
+
+**DX-RAG 中在哪里使用**：整个验证矩阵的隔离底座——`UPLOAD_DIR`/`CHROMA_PERSIST_DIR` 都指向它下面，真实仓库的 `uploads/` 和 `chroma_db/` 永不被碰。
+
+### 30.3 `@contextmanager` + `with` —— 项目第一个 `with` 语句
+
+**Python 写法**（真实代码：[verify_t0503_rollback.py:114-127](../../backend/scripts/verify_t0503_rollback.py#L114-L127)）：
+
+```python
+@contextmanager
+def patched(target, attr, value):
+    ...
+    setattr(target, attr, value)
+    try:
+        yield
+    finally:
+        setattr(target, attr, original)   # 或 delattr 恢复
+
+with patched(IngestService, "_parse", _raise_encrypted):
+    response = post(kb, "locked.pdf", b"%PDF-1.4 fake")
+```
+
+**怎么读**：`contextlib.contextmanager` 把**生成器函数**变成 with 资源——`yield` 之前的代码是"进入"（patch 生效），`finally` 里是"退出"（恢复原值），退出**无论成败都执行**。这是项目第一个 `with` 语句、第一个生成器函数（§16 "尚未遇到"表两条预言同时兑现）。
+
+**TypeScript / Node.js 类比**：JS 没有 `with` 资源管理（`with` 是另一个被弃用的语法），最接近的心智模型是 **RAII**（C++ 析构）或 `jest.spyOn(...).mockRestore()` 的 `afterEach`——但 Python 版把"进入/退出"写在**一处**，测试里即写即用。
+
+**DX-RAG 中在哪里使用**：全部 9 个故障注入场景（V6–V12）的注入器——`with patched(...)` 块结束即恢复，场景之间零污染。
+
+### 30.4 运行时 monkey-patch —— 测试替身（`getattr` / `setattr` / `delattr`）
+
+**Python 写法**（真实代码：[verify_t0503_rollback.py:117-127](../../backend/scripts/verify_t0503_rollback.py#L117-L127)）：
+
+```python
+is_class = isinstance(target, type)
+missing = object()
+original = target.__dict__.get(attr, missing) if is_class else getattr(target, attr)
+setattr(target, attr, value)
+```
+
+**怎么读**：patch 分两步——**存原值**（恢复用）+ **设新值**。两个细节：① patch **类**（`IngestService._parse`）时查 `target.__dict__` 而不是 `getattr`——`getattr` 会沿继承链找父类，可能拿到父类方法，恢复时就错设到子类上；② `missing = object()` 哨兵——attr 原本不存在时 `__dict__.get` 返回哨兵而非报错，恢复时 `delattr` 删掉（而不是设个假值）。`delattr` 本身是"删除属性"——patch 不留痕。
+
+**TypeScript / Node.js 类比**：≈ `jest.spyOn(IngestService, "_parse").mockImplementation(...)` + `mockRestore()`。差异：JS 的模块系统（ESM 只读导出）让 monkey-patch 更难做，Python 的模块/类属性**运行时就是可写的字典**——测试替身是语言级能力，不需要框架。
+
+**DX-RAG 中在哪里使用**：V6–V12 注入解析异常/嵌入异常/Chroma 异常/半写/失效异常/清理异常——**被验证代码零改动**（不为可测性给产品代码加钩子）。
+
+### 30.5 `os.environ` 先于 import —— Settings 单例陷阱
+
+**Python 写法**（真实代码：[verify_t0503_rollback.py:80-83](../../backend/scripts/verify_t0503_rollback.py#L80-L83)）：
+
+```python
+import os
+os.environ["UPLOAD_DIR"] = str(tmp_root / "uploads")
+os.environ["CHROMA_PERSIST_DIR"] = str(tmp_root / "chroma")
+# 之后才有：from app.core.config import settings
+```
+
+**怎么读**：Settings 是 Pydantic BaseSettings 单例，`UPLOAD_DIR` 在 **import 那一刻**从环境变量读定——先 import 再改 env 无效（单例已经拿着旧值）。所以脚本把**所有** `app.*` import 都住进 `run_probe` 函数体内（模块顶层只有标准库），先设 env、后 import。[ENGINEERING KNOWLEDGE] 单例 + 环境变量 = "改晚了没生效，改早了污染别的测试"——解法只有两种：先设 env 再 import（本脚本），或把配置改成可注入参数（动产品代码）。
+
+**TypeScript / Node.js 类比**：Node 里 `process.env` 是**运行时动态读**的（每个模块读到的都是最新值），没有这个坑；最接近的对应物是"模块顶层 `const config = loadConfig()` 缓存"——JS 里同样要小心"缓存发生在 import 时"的问题。
+
+**DX-RAG 中在哪里使用**：临时目录重定向的实现前提——整个验证矩阵的"不污染真实数据"都建立在它上面。
+
+### 30.6 `TestClient(raise_server_exceptions=False)` —— 观察全局 handler 的响应
+
+**Python 写法**（真实代码：[verify_t0503_rollback.py:100](../../backend/scripts/verify_t0503_rollback.py#L100)）：
+
+```python
+client = TestClient(app, raise_server_exceptions=False)
+```
+
+**怎么读**：`TestClient`（fastapi.testclient，基于 httpx）**不真起服务器**——直接在进程内把请求喂给 app，返回真实 HTTP 响应对象。`raise_server_exceptions=False` 是关键的开关：默认 True 时端点抛出的异常会**穿透进测试代码**（方便调试）；False 时异常按生产路径走全局 handler，返回的是 **500 响应**——验证的对象是"错误经全局 handler 后的 HTTP 形态"，这正是契约的形态（SPEC 9.4 / 6.7）。
+
+**TypeScript / Node.js 类比**：≈ supertest（`supertest(app)` 直接测 Express app）——同样不起端口、同样是 HTTP 语义。JS 侧"不让异常穿透"通常靠 Express 的 error middleware 本身；`raise_server_exceptions` 相当于"要不要临时拆掉 error middleware"的开关。
+
+**DX-RAG 中在哪里使用**：V7/V8 断言 `500 EMBEDDING_MODEL_ERROR` / `500 INTERNAL_ERROR`——只有 False 才能让这两个断言成立（True 会直接炸在注入的异常上）。
+
+---
+
+> **T0503 收官**：30.1–30.6 为 T0503 新增知识。这一轮的主题是**"验证的隔离"**——子进程隔离（句柄归进程）、临时目录（数据归 throwaway）、with/patch（注入归块作用域）、env 先于 import（配置归初始化时机）、raise_server_exceptions=False（错误形态归全局 handler）——所有知识都指向同一个问题：**怎么在不改产品代码、不碰真实数据的前提下，把失败路径全部演练一遍**。完整学习见 [phase-05-file-upload.md](./phase-05-file-upload.md) 第 5.7 节与 [engineering-review/phase-05-engineering-review.md](./engineering-review/phase-05-engineering-review.md) ADR-09~11。

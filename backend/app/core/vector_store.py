@@ -241,6 +241,11 @@ class VectorStore(ABC):
 # ChromaVectorStore — ChromaDB implementation
 # ---------------------------------------------------------------------------
 
+# Fallback batch size for add_texts when the ChromaDB client does not
+# expose the public get_max_batch_size() API.  5461 is ChromaDB's
+# documented single-add limit (SQLite variable-count bound).
+_MAX_ADD_BATCH_SIZE_FALLBACK = 5461
+
 
 class ChromaVectorStore(VectorStore):
     """ChromaDB-backed VectorStore implementation.
@@ -408,6 +413,21 @@ class ChromaVectorStore(VectorStore):
         Per T0104 scope: chunk_ids and embeddings are provided by the
         caller; this method does NOT generate or validate them.
 
+        Batched persistence (Phase 5 Gate remediation F-1): ChromaDB
+        rejects a single ``add()`` call above its max batch size (5461 in
+        1.5.x), so the input is written in sequential batches bounded by
+        the client's public ``get_max_batch_size()``.  This is purely a
+        transport detail — there is no chunk-count limit on uploads.
+
+        All-or-nothing persistence (F002 Upload Failure Atomicity, F-2):
+        if a later batch fails after earlier batches were committed, the
+        already-persisted chunks are deleted again via
+        ``delete_by_file`` before the original error is re-raised — the
+        failure leaves zero chunks, exactly like a first-batch failure.
+        Deletion is scoped to the file_ids this call carries: the ingest
+        pipeline generates a fresh file_id per upload (SPEC 7.1), so no
+        chunk of another file or collection can match.
+
         Args:
             collection: Target collection name.
             chunks: List of chunk text strings.
@@ -418,13 +438,44 @@ class ChromaVectorStore(VectorStore):
             List of chunk_ids (UUID strings) in insertion order.
         """
         ids = [meta["chunk_id"] for meta in metadatas]
-        self._client.get_collection(collection).add(
-            ids=ids,
-            documents=chunks,
-            embeddings=embeddings,
-            metadatas=metadatas,
-        )
+        col = self._client.get_collection(collection)
+        get_max_batch = getattr(self._client, "get_max_batch_size", None)
+        batch_size = get_max_batch() if callable(get_max_batch) else _MAX_ADD_BATCH_SIZE_FALLBACK
+        try:
+            for start in range(0, len(ids), batch_size):
+                col.add(
+                    ids=ids[start : start + batch_size],
+                    documents=chunks[start : start + batch_size],
+                    embeddings=embeddings[start : start + batch_size],
+                    metadatas=metadatas[start : start + batch_size],
+                )
+        except Exception:
+            self._compensate_partial_add(collection, metadatas)
+            raise
         return ids
+
+    def _compensate_partial_add(
+        self, collection: str, metadatas: List[Dict[str, Any]]
+    ) -> None:
+        """Undo the batches a failed ``add_texts`` already committed (F-2).
+
+        Best-effort by design, like ``_restore_rename``: a cleanup
+        failure is logged, never raised, so the original persistence
+        error is re-raised unmasked.  Safe and idempotent — deletion is
+        file_id-scoped to this call's metadatas, other files and
+        collections are untouched, and ``delete_by_file`` is a no-op
+        when nothing was persisted (e.g. the first batch failed).
+        """
+        for file_id in {meta["file_id"] for meta in metadatas}:
+            try:
+                self.delete_by_file(collection, file_id)
+            except Exception:
+                logger.exception(
+                    "add_texts compensation: delete_by_file failed "
+                    "(%s, %s)",
+                    collection,
+                    file_id,
+                )
 
     def search(
         self,

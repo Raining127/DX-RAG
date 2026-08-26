@@ -1406,7 +1406,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0501 — File Name & Upload Validation
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement all pre-ingestion upload validations: file name path traversal check, extension whitelist, size limit, empty file detection, KB existence, and duplicate check.
 
@@ -1462,7 +1462,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0502 — POST /api/upload Endpoint
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement the full POST /api/upload endpoint that validates, saves the file, runs the ingestion pipeline, invalidates the keyword index, and returns the response.
 
@@ -1515,7 +1515,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0503 — Upload ROLLBACK Behavior Verification Task
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Verify the all-or-nothing FAILED upload semantics and ensure no partial data persists after ingestion failure.
 
