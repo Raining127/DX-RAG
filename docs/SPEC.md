@@ -1065,7 +1065,7 @@ embeddings = model.encode(chunks, normalize_embeddings=True).tolist()
 
 **Query 分词示例**:
 - `机器学习算法` → tokens: `机器`, `器学`, `学习`, `习算`, `算法`
-- `Python机器学习` → tokens: `python`, `机器`, `器学`, `学习`, `习算`, `算法`
+- `Python机器学习` → tokens: `python`, `机器`, `器学`, `学习`
 - `NLP 自然语言处理` → tokens: `nlp`, `自然`, `然语`, `语言`, `言处`, `处理`
 
 **倒排索引结构**:

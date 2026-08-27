@@ -1585,7 +1585,7 @@ No Task is complete until all Completion Conditions are met.
 - Step 4: return unique tokens (dedup within query)
 - Examples from SPEC must produce exact expected output:
   - `"机器学习算法"` → `["机器", "器学", "学习", "习算", "算法"]`
-  - `"Python机器学习"` → `["python", "机器", "器学", "学习", "习算", "算法"]`
+  - `"Python机器学习"` → `["python", "机器", "器学", "学习"]`
 
 **Out of Scope:**
 - Do NOT use jieba or other Chinese NLP libraries (v1 explicitly excludes)
