@@ -13,7 +13,7 @@ SPEC.md  >  TASKS.md  >  CLAUDE.md
 
 | Document | Role | Status |
 |----------|------|--------|
-| `docs/SPEC.md` | Product & technical specification | v1.4 FROZEN |
+| `docs/SPEC.md` | Product & technical specification | v1.6 FROZEN |
 | `docs/TASKS.md` | Implementation task plan | READY FOR IMPLEMENTATION |
 | `CLAUDE.md` | Agent operational contract | Active |
 
@@ -21,8 +21,8 @@ SPEC.md  >  TASKS.md  >  CLAUDE.md
 
 ## Current State
 
-- **SPEC:** v1.4 FROZEN, 0 Blocking Questions
-- **Tasks:** 54 implementation Tasks across 13 phases
+- **SPEC:** v1.6 FROZEN, 0 Blocking Questions
+- **Tasks:** 55 implementation Tasks across 13 phases
 - **Implementation status:** `docs/TASKS.md` is the authoritative source for all Task statuses
 - **Before starting any Task:** Read TASKS.md to determine the current state — do not rely on CLAUDE.md for which Tasks are DONE, TODO, or in-progress
 

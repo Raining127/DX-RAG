@@ -1,14 +1,14 @@
 # DX-RAG Implementation Tasks
 
-> **Generated from**: SPEC.md v1.5 (FROZEN)
-> **Generated on**: 2026-08-11 | **Updated**: 2026-08-15 (v1.5 Rename Metadata Contract Resolution), 2026-08-18 (T0006 Health API coverage correction)
+> **Generated from**: SPEC.md v1.6 (FROZEN)
+> **Generated on**: 2026-08-11 | **Updated**: 2026-08-15 (v1.5 Rename Metadata Contract Resolution), 2026-08-18 (T0006 Health API coverage correction), 2026-08-27 (v1.6 metadata synchronization)
 > **Status**: READY FOR IMPLEMENTATION
 
 ---
 
 ## 1. Purpose
 
-This document decomposes the frozen SPEC.md v1.5 into dependency-ordered, implementation-ready Tasks suitable for Coding Agents.
+This document decomposes the frozen SPEC.md v1.6 into dependency-ordered, implementation-ready Tasks suitable for Coding Agents.
 
 Each Task defines a single coherent implementation outcome with explicit scope boundaries, dependencies, and verification criteria.
 
@@ -3078,7 +3078,7 @@ No v1 implementation Tasks exist for any of these items.
 - [x] File deletion/rollback behaviors have verification coverage (T0503, T1203)
 - [x] Security/path traversal behavior has verification coverage (T0501, T1203)
 - [x] All Tasks initially have Status = TODO
-- [x] SPEC.md is FROZEN (v1.5, Blocking Questions = 0)
+- [x] SPEC.md is FROZEN (v1.6, Blocking Questions = 0)
 - [x] No Task requires modifying SPEC behavior
 - [x] Deferred items listed in Section 22, no active Tasks for them
 
@@ -3086,6 +3086,6 @@ No v1 implementation Tasks exist for any of these items.
 
 > **Document End**
 >
-> **Generated from**: SPEC.md v1.5 (FROZEN, updated 2026-08-15)
+> **Generated from**: SPEC.md v1.6 (FROZEN, updated 2026-08-24)
 > **Task Count**: 55 implementation Tasks across 13 phases
 > **Status**: READY FOR IMPLEMENTATION
