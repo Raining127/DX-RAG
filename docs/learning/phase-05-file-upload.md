@@ -66,7 +66,7 @@ Phase 4 起强制执行：一份文档只承担一种职责。
   - T0102 `list_collections()`：[vector_store.py:284](../../backend/app/core/vector_store.py#L284) —— KB 存在性检查
   - T0107 `get_files()`：[vector_store.py:491](../../backend/app/core/vector_store.py#L491) —— 同名检查的数据源
   - T0308 `IngestService.process()`：[ingest.py:562](../../backend/app/services/ingest.py#L562) —— 解析→清洗→切分→嵌入→存储；FAILED 时自带回滚（删文件 + delete_by_file）
-  - T0402 seam `invalidate_keyword_index()`：[keyword_index.py:25](../../backend/app/services/keyword_index.py#L25) —— 目前是文档化 no-op，真实 dirty-flag 行为属于 Phase 6 T0602
+  - T0402 seam `invalidate_keyword_index()`：[keyword_index.py:4-8](../../backend/app/services/keyword_index.py#L4) —— 当时是文档化 no-op，真实 dirty-flag 行为属于 Phase 6 T0602（**后续进展**：T0602 已于 2026-08-27 兑现——seam 委托 `KeywordRetriever.invalidate()`，调用位置零改动）
   - Phase 0 错误体系：6 个校验错误码 + `FILE_PARSE_ERROR`(422) 全部已在 [errors.py](../../backend/app/core/errors.py) 就位（零新增）
 - **下游消费者**: T0503（ROLLBACK 行为验证）——**已兑现**：`backend/scripts/verify_t0503_rollback.py`（586 行）以 TestClient 对端点做 15 场景实测，结果零业务代码修复（见第 4/5.7 节）；前端 Upload 组件（Phase 11）最终消费整个端点。
 - **验证脚本位置**: [backend/scripts/](../../backend/scripts/) 目录由 T0503 创立——项目第一份验证脚本（此前验证全靠代码审查，无 tests 目录）。
@@ -133,8 +133,8 @@ Phase 4 起强制执行：一份文档只承担一种职责。
 | AC-F002-07 部分 OCR 失败 → 200 SUCCESS_WITH_WARNINGS | `warnings` 来自 OCR 警告表（ingest.py:607-608 `status = "SUCCESS_WITH_WARNINGS" if warnings`）→ `_STATUS_MESSAGES` 有对应消息（upload.py:44-47）→ `UploadWarning` Literal 与两种 warning code 完全匹配（schemas.py:87）✓ | T0503 V14 ✓（F004 warning 通道注入 → 200 SWW + `{page_number:3, error_code:"OCR_PAGE_FAILED"}`） |
 | 响应 JSON = SPEC 6.3 格式 | `UploadResponse` 字段：status/message/file_id/file_name/chunks/collection_name/warnings（schemas.py:92-108）与 SPEC 6.3 Response Fields 表逐字段一致 ✓；message 文案与 SPEC 示例 JSON 一字不差（"上传并入库成功" / "上传并入库成功（部分页面 OCR 失败）"）✓ | —（格式可由 schema 验证，无需运行时） |
 | FAILED → 422 FILE_PARSE_ERROR | `result["status"] == "FAILED"` → `raise AppError("FILE_PARSE_ERROR")`（upload.py:204-205）；错误码 → 422 在 errors.py:56 ✓；SPEC 6.3 "FAILED 不是 HTTP 200" 注释兑现 ✓ | T0503 V3 ✓（AC-F002-08/09/10 归 T0503——见 T0503 Task 学习） |
-| Keyword index 失效 | 成功路径调用 `invalidate_keyword_index(collection)`（upload.py:207）✓——但 seam 本体是文档化 no-op（keyword_index.py:42-44） | 真实 dirty-flag 行为 DEFER T0602（T0503 V11 GUARD F-3 观察"提交后失效异常"形态） |
-| 依赖 T0602 | T0602 仍 TODO，但 T0502 依赖的是"共享失效接口"——Phase 4 T0402 已建 seam，接口契约满足 ✓；T0502 无 BLOCKED 依据 | — |
+| Keyword index 失效 | 成功路径调用 `invalidate_keyword_index(collection)`（upload.py:207）✓——但 seam 本体当时是文档化 no-op（keyword_index.py:42-44） | 真实 dirty-flag 行为 DEFER T0602（T0503 V11 GUARD F-3 观察"提交后失效异常"形态）。**后续进展**：T0602 已落地（2026-08-27）——seam 兑现为 in-memory dirty 标脏；V11 升级 CHECK 需脚本复跑，未在本 pass 执行 |
+| 依赖 T0602 | T0602 已于 2026-08-27 DONE——当时的判断被验证：T0502 依赖的是"共享失效接口"，Phase 4 T0402 已建 seam 且接口契约满足 ✓；T0602 只换 body、调用位置零改动，T0502 无 BLOCKED 依据成立 | — |
 
 - **发现**（诚实记录）:
   - **FAILED→422 时 warnings 被丢弃**：SPEC AC-F004-04（Phase 3 OCR 全页失败）的 Then 写明"API 返回 422 FILE_PARSE_ERROR，warnings 包含 3 条记录"——当前 `raise AppError("FILE_PARSE_ERROR")` 没带 `details`，`result["warnings"]` 在映射时丢失。项目已有先例（ingest.py:108 的 `details={"encoding_attempts"}`）。记为 ER Pending #37，Phase Gate Review 确认（跨 Phase 的 AC 口径问题，不擅自改代码）。
@@ -174,7 +174,7 @@ Phase 4 起强制执行：一份文档只承担一种职责。
 - **发现**（诚实记录）:
   - **执行证据与诚实边界**：脚本开发期确有执行痕迹——`backend/app/api/__pycache__` 时间戳（21:04/21:07）证明应用被 TestClient 导入执行过；脚本内的 stderr 过滤器（L568，滤掉 `it/s` / `onnx.tar.gz`）是**实测产物**（ChromaDB 默认嵌入模型的下载进度刷屏才催生了它）。但脚本最终版（22:17 定稿）的完整执行输出未见——T0503 DONE 为用户在 TASKS.md 的宣告，本表按"脚本覆盖 + 开发期执行痕迹 + 用户 DONE"记录，**不虚构最终版全量 PASS**。
   - **TASKS.md T0503 节的 AC-F002-10 摘要行与 SPEC 原文口径不一致**：TASKS.md 写"re-upload after FAILED → 200, not 409"，而 SPEC AC-F002-10 原文是"SUCCESS_WITH_WARNINGS 后重传 → 409"（FAILED 后重传其实是 AC-F002-09 第 4 条）。脚本按 **SPEC 原文**实现（V14 验 409），且 V4 顺带覆盖 TASKS.md 摘要行的读法——两读法都覆盖，无实际缺口；摘要行是文档口径问题，不需改代码。
-  - **四个 GUARD 发现全部"owner 化"**：F-1（合法大文件撞 Chroma max batch，owner T0104）、F-2（半写残留 + 同名重传锁定——即 ER Gap-4 的实证观察）、F-3（提交后失效异常——seam 今天是 no-op 不可能触发，owner T0602）、F-4（缺 file 部分的 422 信封是 FastAPI 默认 `{"detail": [...]}`，不是 SPEC 6.7 信封，owner 全局 handler）——验证任务找到的问题全是**别处的问题**，T0503 自己的验收对象（T0308/T0502 回滚）零缺陷。**后续进展**：F-1/F-2 已于 2026-08-25 Phase 5 Gate 修复（`add_texts` 分批持久化 + 批次失败按 file_id 补偿删除），V9/V10 由 GUARD 升级为 CHECK 并复跑 PASS——见 ER §0。
+  - **四个 GUARD 发现全部"owner 化"**：F-1（合法大文件撞 Chroma max batch，owner T0104）、F-2（半写残留 + 同名重传锁定——即 ER Gap-4 的实证观察）、F-3（提交后失效异常——seam 当时是 no-op 不可能触发，owner T0602）、F-4（缺 file 部分的 422 信封是 FastAPI 默认 `{"detail": [...]}`，不是 SPEC 6.7 信封，owner 全局 handler）——验证任务找到的问题全是**别处的问题**，T0503 自己的验收对象（T0308/T0502 回滚）零缺陷。**后续进展**：F-1/F-2 已于 2026-08-25 Phase 5 Gate 修复（`add_texts` 分批持久化 + 批次失败按 file_id 补偿删除），V9/V10 由 GUARD 升级为 CHECK 并复跑 PASS；F-3 的 owner T0602 已于 2026-08-27 落地（invalidate 兑现为 in-memory 标脏、无失败路径），V11 升级 CHECK 待脚本复跑——见 ER §0。
 - **Interview Candidates**（保持简短）:
 
   > Candidate only —— 话术 consolidation 已由 2026-08-26 Phase 5 Learning Review 完成（见 Interview Guide Phase 5 深度章）。
@@ -361,7 +361,7 @@ def upload_file(
     1. **FAILED 状态**（优雅失败，如全文解析后为空）：`IngestService._fail` 已经删掉 raw file + `delete_by_file` 清 ChromaDB（ingest.py:675-676）——端点**不再**删文件，只把 FAILED 映射成 `AppError("FILE_PARSE_ERROR")`（→422，errors.py:56）。不重复清理，责任单一。
     2. **异常**（如损坏 PDF 抛 FILE_PARSE_ERROR、加密 PDF 抛 ENCRYPTED_PDF）：`except Exception: _discard_saved_file(target); raise`——端点删掉自己保存的 raw file 后**原样重抛**。为什么这里只删文件不清 ChromaDB？因为异常发生在 ingest 中途，file_id 在 `IngestService.process` 内部生成、异常时对端点**不可见**——端点能清理的只有自己写入的东西。[ENGINEERING KNOWLEDGE] 这就是**"副作用归属"原则**：谁写入，谁负责回滚；外层只能清理自己产生的副作用，看不到的不能假装清理（残留风险见 ER Gap-4）。
   - 注意 FAILED 的 `raise` 在 `try` **外面**——FAILED 时文件已由 IngestService 删除，若误放 try 内会触发第二次删除（`missing_ok=True` 使其无害，但语义错了）。
-- **失效段（207）**：`invalidate_keyword_index(collection)` 只在**通过 FAILED 检查之后**执行——即只有 200 结果才失效。为什么失败路径不用失效？**失败的上传没有写入任何 chunk → 索引内容没变 → 索引天然正确**。这是"失败零副作用"推理链的第三环（第一环：校验零写；第二环：FAILED 回滚）。[PROJECT FACT] 当前 seam 本体是 no-op（keyword_index.py:42-44），真实 dirty-flag 行为 DEFER T0602——但调用位置已经按正确语义放好，T0602 落地时无需再动这里。
+- **失效段（207）**：`invalidate_keyword_index(collection)` 只在**通过 FAILED 检查之后**执行——即只有 200 结果才失效。为什么失败路径不用失效？**失败的上传没有写入任何 chunk → 索引内容没变 → 索引天然正确**。这是"失败零副作用"推理链的第三环（第一环：校验零写；第二环：FAILED 回滚）。[PROJECT FACT] 当前 seam 本体是 no-op（keyword_index.py:42-44），真实 dirty-flag 行为 DEFER T0602——但调用位置已经按正确语义放好，T0602 落地时无需再动这里。**后续进展（2026-08-27）**：T0602 已落地，调用位置确实零改动——这句预言兑现。
 - **响应段（209-217）**：`_STATUS_MESSAGES[result["status"]]`——dict 查表拿中文文案，两个键与 SPEC 6.3 的示例 JSON 一字不差。**为什么不会 KeyError？** 到这个位置 `result["status"]` 只可能是 SUCCESS / SUCCESS_WITH_WARNINGS（FAILED 已在 204 行 raise）——穷举性由**控制流**保证，不是运气。[ENGINEERING KNOWLEDGE] dict 查表 + 提前排除不可能分支，是"用控制流缩小类型"的常见姿势。
 - **性能点（诚实记录）**：`file.file.read()` 在**校验之前**整读——一个超限的上传也要全量收完才得到 413（Starlette 的 SpooledTemporaryFile 会把大文件滚到磁盘，内存有界但带宽无界）。SPEC 只要求"校验先于写入"，读入内存不在其列——单用户部署可接受，记录在 ER 第 6 节。
 

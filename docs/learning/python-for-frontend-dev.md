@@ -3429,3 +3429,55 @@ client = TestClient(app, raise_server_exceptions=False)
 ---
 
 > **T0503 收官**：30.1–30.6 为 T0503 新增知识。这一轮的主题是**"验证的隔离"**——子进程隔离（句柄归进程）、临时目录（数据归 throwaway）、with/patch（注入归块作用域）、env 先于 import（配置归初始化时机）、raise_server_exceptions=False（错误形态归全局 handler）——所有知识都指向同一个问题：**怎么在不改产品代码、不碰真实数据的前提下，把失败路径全部演练一遍**。完整学习见 [phase-05-file-upload.md](./phase-05-file-upload.md) 第 5.7 节与 [engineering-review/phase-05-engineering-review.md](./engineering-review/phase-05-engineering-review.md) ADR-09~11。
+
+---
+
+## 31. T0601 新增 Python 知识
+
+### 31.1 re.compile + finditer —— 可复用的逐匹配扫描
+
+模块级 re.compile() 类似 TypeScript 的模块级 RegExp 常量；finditer(text) 则类似带 global flag 的 matchAll()，逐个返回 Match，group() 取得实际文本。它比先替换字符串更适合本 Task，因为英文/数字与中文可以各自扫描，标点自然成为 segment 边界。
+
+### 31.2 字符串切片实现滑动窗口
+
+表达式 segment[index : index + 2] 是宽度为 2 的窗口。range(len(segment) - 1) 生成所有合法起点，所以长度 n 的字符串恰好产生 n - 1 个 bigram。TypeScript 对应 segment.slice(index, index + 2)。
+
+### 31.3 生成器交给 list.extend
+
+tokens.extend(segment[index : index + 2] for index in ...) 中的圆括号表达式是 generator expression：bigram 按需产生，再被 extend 逐个加入列表，不先创建第二个临时 list。TypeScript 可类比 for...of 中逐项 push。
+
+### 31.4 dict.fromkeys —— 去重且保持首次出现顺序
+
+Python 3.7+ 的 dict 保证 insertion order。dict.fromkeys(tokens) 把每个 token 变成 key，重复 key 不会新增，因此 list(dict.fromkeys(tokens)) 同时完成去重与稳定排序。TypeScript 的对应写法是 Array.from(new Set(tokens))。
+
+> **T0601 收官**：本轮语法的共同主题是“用标准库组合一个 deterministic pure function”。完整代码与契约边界见 [phase-06-keyword-retrieval.md](./phase-06-keyword-retrieval.md)。
+
+---
+
+## 32. T0602 新增 Python 知识
+
+### 32.1 class attribute 与 instance attribute
+
+KeywordRetriever 的 _indexes/_chunks/_dirty_collections 写在 class body，所有 instances 共享；vector_store 在 __init__ 里赋给 self，每个 instance 独有。TypeScript 类比是 static Map 与 constructor parameter property。测试必须在 setUp clear static state，否则场景会相互污染。
+
+### 32.2 @classmethod 与 cls
+
+invalidate() 用 @classmethod，所以无需 retriever instance 就能调用 KeywordRetriever.invalidate(collection)。cls 类似 TypeScript static method 里的 class 本身；它让 keyword_index.py seam 能操作 shared cache，而不需要持有搜索服务对象。
+
+### 32.3 dict.setdefault —— 获取或初始化 posting set
+
+inverted_index.setdefault(token, set()).add(chunk_id) 表示：token 不存在就先放入空 Set，再取出 Set 添加 id。TypeScript 对应先 get，若 undefined 则 new Set + set 回 Map。这里的 Set 同时防止同一 chunk_id 在同一 posting list 重复。
+
+### 32.4 dict.get(default) —— 无分支计数
+
+matched_tokens[chunk_id] = matched_tokens.get(chunk_id, 0) + 1 把“第一次命中从 0 开始”和“已有计数 +1”合为一行。index.get(token, set()) 则把不存在的 token 变成空迭代。TypeScript 常写 (map.get(key) ?? 0) + 1。
+
+### 32.5 lambda 作为 sort key
+
+results.sort(key=lambda result: result["keyword_score"], reverse=True) 不改变 result 内容，只告诉 sort 应比较哪个字段。TypeScript 类比 results.sort((a, b) => b.keyword_score - a.keyword_score)。
+
+### 32.6 Mock(spec=VectorStore)
+
+unittest.mock.Mock(spec=VectorStore) 创建遵守 VectorStore attribute shape 的 test double；调用不存在的方法会报错。它类似一个受 interface 约束的 typed mock，但 Python spec 主要在 runtime 防止 attribute 拼错，不等于 TypeScript compile-time structural typing。
+
+> **T0602 收官**：本轮语法主题是“shared state + dependency injection + collection operations”。完整 build/search/lifecycle 学习见 [phase-06-keyword-retrieval.md](./phase-06-keyword-retrieval.md)，工程风险见 [phase-06-engineering-review.md](./engineering-review/phase-06-engineering-review.md)。

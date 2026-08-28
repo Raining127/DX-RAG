@@ -1,8 +1,10 @@
 # Phase 学习笔记模板（Phase 4-12 用）
 
-> 使用方法：每个 Phase 完成后，复制本模板到 `docs/learning/phase-XX-name.md`（保持与已有 phase-00 ~ phase-03 相同的命名风格），按 11 个部分逐节填写。Phase 4 起的实际执行样本见 [phase-04-knowledge-base-management.md](../phase-04-knowledge-base-management.md)。
+> **先读**：[Phase Learning Pass Workflow](./phase-learning-pass-workflow.md)。本模板定义 Technical Learning 文档的 **11 节结构**；workflow 定义 Agent 怎样收集证据、建立教学深度、执行 Task Learning Pass / Phase Learning Review 与完成 quality check。两者必须一起使用。
+> 使用方法：Task 完成后可把本模板增量应用到当前 `docs/learning/phase-XX-name.md`；不要等到整个 Phase 结束才记录学习，也不要在 Task 级把整章写成 complete。Phase 全部 Tasks DONE 且 Gate 完成后，再做 Phase Learning Review / consolidation。Phase 5 的 [phase-05-file-upload.md](../phase-05-file-upload.md) 是 canonical depth/style precedent（不是业务内容或固定篇幅模板）。
 > 写作纪律（与已有笔记一致）：
-> ① **基于真实代码**——每个结论都能指到文件与行号；② **区分三层事实**——SPEC 要求（契约）/ 当前实现（代码）/ 通用工程知识（经验），三者不混写；③ **诚实标注**——未实现的能力标 `Future / Not implemented in v1`，AC 未验证就写 DEFERRED，不虚构 PASS；④ **学习风格**——中文解释 + 英文技术术语 + TypeScript 类比 + 工程化思考；⑤ 深度标记：🟢 必会（面试高频）/ 🟡 了解原理即可 / 🔵 知道存在即可。
+> ① **基于真实代码**——每个 project-specific / code-behavior 结论都能指到仓库证据（适用时带文件与行号）；② **区分三层事实**——SPEC 要求（契约）/ 当前实现（代码）/ 通用工程知识（经验），三者不混写；③ **诚实标注**——未实现的能力标 `Future / Not implemented in v1`，AC 未验证就写 DEFERRED，不虚构 PASS；④ **学习风格**——中文解释 + 英文技术术语 + TypeScript 类比 + 工程化思考；⑤ 深度标记：🟢 必会（面试高频）/ 🟡 了解原理即可 / 🔵 知道存在即可。
+> 默认读者：熟悉 JavaScript / TypeScript / React、有少量 Node.js 经验，但没有系统 Python/backend 基础的前端开发者。准确的类比用于降低迁移成本；不准确时直接解释 Python/backend 语义，不硬凑。
 
 ---
 
@@ -54,7 +56,8 @@
 
 - Task Verification
 - Learning Pass
-- Phase Gate / Learning Review
+- Phase Gate Review
+- Phase Learning Review
 - Engineering Review
 
 之后，再统一：
@@ -100,8 +103,8 @@ Discovery
 
 # Phase X — <Phase 名称>
 
-> **Phase 状态**: Txxxx–Txxxx 全部 DONE
-> **本文档状态**: Learning Pass + Learning Review 完成
+> **Phase 状态**: <Task-level：Txxxx DONE，剩余 Tasks / Gate 状态如实填写；Phase-level：全部 Tasks DONE + 实际 Gate verdict>
+> **本文档状态**: <Task-level：截至 Txxxx Learning Pass 完成，Phase Learning Review 待执行；Phase-level：Learning Pass + Phase Learning Review 完成>
 > **配套文档**: [工程评审](./engineering-review/phase-XX-engineering-review.md) · [面试指南](./interview-notes/dx-rag-interview-guide.md)
 
 ---
@@ -150,6 +153,7 @@ Discovery
 > - **B. Project Understanding**：为什么这里需要它？它连接哪个 Phase？
 > - **C. Learning Understanding**：我第一次需要掌握什么 Python / FastAPI 知识？
 > 三类之外的（完整 ADR、企业级扩展方案、大规模容量分析、完整 failure taxonomy、STAR、30 道 interview questions）→ 只给摘要 + 链接到 Layer 2 / Layer 3。
+> Task section 不能退化成 Goal / Files Changed / Short Summary / AC PASS。具体深度与证据要求见 [Learning Pass Workflow §7](./phase-learning-pass-workflow.md#7-从证据生成教学内容)。
 
 ### Txxxx — <Task 名称>
 
@@ -201,6 +205,7 @@ Discovery
 
 - **类型变化**: <数据在哪一步发生了本质变化（如 str → List[float]）>
 - **错误在哪一步被拦截**: <每个可能失败点的失败形态（异常/状态/静默）>
+- **Mental Model**: <读完后，学习者应该怎样在脑中概括这一 Phase；不要只复述流程图>
 
 ---
 
@@ -237,7 +242,7 @@ Discovery
 
 ## 10. Interview Notes（面试速记）
 
-> 本 Phase 相关的面试问题与话术要点。更新时机遵守 **Interview Update Cadence**：Task 学习时只记 Interview Candidates；本 Phase 完成后（Task Verification → Learning Pass → Phase Gate / Learning Review → Engineering Review）统一筛选、去重、提升为 Phase / Project 级表达，再更新 `interview-notes/dx-rag-interview-guide.md`（重大闭环工程事件例外，可即时增量进入）。
+> 本 Phase 相关的面试问题与话术要点。更新时机遵守 **Interview Update Cadence**：Task 学习时只记 Interview Candidates；本 Phase 完成后（Task Verification → Learning Pass → Phase Gate Review → Phase Learning Review → Engineering Review）统一筛选、去重、提升为 Phase / Project 级表达，再更新 `interview-notes/dx-rag-interview-guide.md`（重大闭环工程事件例外，可即时增量进入）。
 
 - **高频问题**: <本 Phase 最可能被问的 2-3 个问题 + 一句话回答要点>
 - **亮点话术**: <本 Phase 值得主动展示的技术亮点（一句话）>
@@ -255,7 +260,9 @@ Discovery
 
 ---
 
-## 自测题（可选，沿用已有笔记风格）
+## 自测题与动手练习
+
+> 存在有意义的学习内容时，本节是标准要求。混合 concept、code-reading、predict behavior、design reasoning 与 small hands-on exercise；测试真实 Phase 理解，不出术语 trivia。
 
 1. <本 Phase 核心概念的自测题>
 2. <设计决策类问题：为什么选 A 不选 B>
@@ -269,7 +276,11 @@ Discovery
 - [ ] SPEC 引用带条款号（F0XX / Section X.X）
 - [ ] 所有未来能力都标了 `Future / Not implemented in v1`
 - [ ] AC 验证结果诚实（PASS 必须真的验过；未验写 DEFERRED）
+- [ ] 测试不只报告数量：解释重要 assertion、observable behavior、mock/real boundary 与尚未验证内容
 - [ ] TS 类比准确（不硬凑）
+- [ ] 数据流覆盖 input / transformation / state-storage boundary / output / failure exit，并给出 Mental Model
+- [ ] 自测与练习能检验概念、代码阅读、行为预测和设计推理
 - [ ] 三层边界遵守：完整 ADR / failure taxonomy / STAR / 容量分析不在本文档展开（摘要 + 链接即可）
 - [ ] Interview 写入时机符合 cadence：Task 级只记候选；Phase 完成统一 consolidation；重大闭环工程事件才即时进入 Interview Guide
+- [ ] Task Learning Pass 未被误写成 Phase Learning Review；Phase consolidation 只在全部 Tasks DONE + Gate 完成后执行
 - [ ] 同步更新：README 索引、engineering-review 文档、interview-notes 指南

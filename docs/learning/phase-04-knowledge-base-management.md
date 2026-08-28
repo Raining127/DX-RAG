@@ -956,7 +956,9 @@ def invalidate_keyword_index(collection_name: str) -> None:
 
 契约四要素（写进 docstring）：单 collection 作用域 / 幂等 / 索引不存在即 no-op / 真实失效失败时 raise（由 rename 编排捕获 → 补偿 → RENAME_FAILED）。当前函数体是**文档化的 no-op**——没有索引可失效，`None` 返回即契约满足。T0602 会替换函数体为真实的 dirty-flag 失效。
 
-这就是第 1 节"依赖项排在自己后面"模式的**第二次发生**：T0404 是"函数先落地、验收后置"，keyword seam 是"**契约先落地、实现后置**"。两者共性：**先造出对方需要的接口形状**，让排在后面的 Task 只需填实现。真实 keyword-index 集成的验收 DEFER 至 T0602（ER PF-1 的答案）。
+> **后续进展（2026-08-27）**：T0602 已兑现此 seam——函数体替换为委托 `KeywordRetriever.invalidate()`（[qa.py:34-38](../../backend/app/services/qa.py#L34) 的 classmethod），upload/rename/delete 调用方**零改动**。契约四要素逐条核对：单 collection 作用域 ✓；幂等 ✓（`set.add` 天然幂等）；索引不存在即 no-op ✓（`if collection in cls._indexes` guard）；真失败 raise——in-memory 实现无失败路径，该要素保持防御性（裁决见 phase-06 ER §8）。
+
+这就是第 1 节"依赖项排在自己后面"模式的**第二次发生**：T0404 是"函数先落地、验收后置"，keyword seam 是"**契约先落地、实现后置**"。两者共性：**先造出对方需要的接口形状**，让排在后面的 Task 只需填实现。真实 keyword-index 集成的验收 DEFER 至 T0602（ER PF-1 的答案）——T0602 已于 2026-08-27 完成该验收（13/13 单测 + PHASE_6_PASS Gate，见 phase-06 ER §7/§10）。
 
 ### 9.8 TS 类比
 
@@ -1184,9 +1186,9 @@ T0401  Create / List KB
   │       （T0501 的 KB existence check 会查 VectorStore，依赖
   │        Phase 4 之后系统中真实存在 collection）
   │
-  ├── [FUTURE] Phase 6 Keyword Index —— T0602 替换 keyword_index.py
-  │       的 no-op 函数体为真实 dirty-flag 失效（第 9.7 节的 seam
-  │       契约；AC-F001-04 的 keyword-index 子句验证 DEFER 至此）
+  ├── ✅ Phase 6 Keyword Index —— T0602（2026-08-27）替换
+  │       keyword_index.py 的 no-op 函数体为真实 dirty-flag 失效
+  │       （第 9.7 节的 seam 契约已兑现；调用方零改动）
   │
   └── [FUTURE] Phase 10/11 Frontend —— KnowledgeBaseManager 组件
           调用 POST/GET/PUT/DELETE /api/collections（创建表单 +
@@ -1410,7 +1412,7 @@ TR-6. 防的是**手工污染存储**：外部直接改 ChromaDB 塞进带路径
 ├─────────────────────────────────────────────────────────┤
 │ Next         │ Phase Gate Review + Learning Review         │
 │ connection   │ Phase 5 Upload 依赖 KB 存在（Future）        │
-│              │ Phase 6 T0602 填 keyword seam 实现（Future） │
+│              │ Phase 6 T0602 填 seam 实现 ✅（2026-08-27）  │
 ├─────────────────────────────────────────────────────────┤
 │ 去哪深挖     │ 完整复盘 → engineering-review/               │
 │              │   phase-04-engineering-review.md            │

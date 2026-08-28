@@ -3,10 +3,10 @@
 > 从项目整体角度理解 DX-RAG：它是什么、为什么存在、每一层做什么、13 个 Phase 如何拼成完整系统。
 > 不深入代码细节——代码级的逐行精读请阅读对应的 `phase-XX-*.md` 学习笔记，工程决策分析请阅读 `engineering-review/`。
 
-**当前状态快照**（以 `docs/TASKS.md` 为准，2026-08-26）：
+**当前状态快照**（以 `docs/TASKS.md` 为准，2026-08-27）：
 - SPEC.md v1.6 **FROZEN**，Blocking Questions = 0
 - Phase 0–5 ✅ DONE（工程地基 + 向量存储 + 嵌入 + 文档管道 + 知识库管理 API + 文件上传 API；Phase 5：Gate Review 裁定 PHASE_5_FAIL → F-1/F-2 修复完成 → Re-review 待执行；Learning Pass / ER / Learning Review 已完成）
-- Phase 6–12 ⬜ TODO（检索、RAG、前端尚未实现）
+- Phase 6 ✅ COMPLETE（T0601–T0602 DONE；PHASE_6_PASS；Learning Review 完成，2026-08-27）；Phase 7–12 ⬜ TODO
 
 ---
 
@@ -93,7 +93,8 @@ RAG（Retrieval-Augmented Generation）正是针对这四点设计的：**检索
 │  SERVICE LAYER  (backend/app/services/)                          │
 │                                                                  │
 │  Ingest Service ✅  解析→清洗→切分→嵌入→存储（Phase 3）            │
-│  QA Service ⬜      Hybrid 检索→上下文→LLM→来源（Phase 6-8）       │
+│  Keyword Retriever ✅  倒排索引→关键词排序（Phase 6）             │
+│  QA Service ⬜         Hybrid→上下文→LLM→来源（Phase 7-8）          │
 │  Embedding ✅      bge-small-zh-v1.5 lazy singleton（Phase 2）   │
 │  VectorStore ✅    11 方法公共接口 + ChromaDB 实现（Phase 1）      │
 └──────────┬──────────────────┬──────────────────┬────────────────┘
@@ -303,7 +304,7 @@ Answer + Citation（answer 不含内联引用标记；sources 由后端从检索
 | 输出 | UploadResponse（status/file_id/file_name/chunks/warnings）；FAILED 时全量回滚（T0503 端点级验证：15 场景矩阵 + 零业务代码修复）；Gate 修复 F-1/F-2：add_texts 分批持久化 + 批次失败补偿删除（V9/V10 升级 CHECK 复跑 PASS） |
 | 为什么存在 | 知识库内容的入口 API。六道校验（路径安全/扩展名/大小/空/KB/同名）全部在写盘之前完成；回滚契约（SPEC F002 Upload Failure Atomicity）由验证脚本固化 |
 
-### Phase 6-7 — Retrieval（关键词 + 向量 + 混合检索）⬜ TODO
+### Phase 6-7 — Retrieval（关键词 + 向量 + 混合检索）✅ Phase 6 已完成；Phase 7 TODO
 
 | 维度 | 内容 |
 |------|------|
@@ -363,5 +364,5 @@ Phase 0 (地基) ──┬──→ Phase 1 (VectorStore) ──┬──→ Pha
 ```
 
 > **Readme 导航**：[docs/learning/README.md](../README.md)（Phase 学习地图）· [SPEC.md](../../SPEC.md)（产品规格）· [TASKS.md](../../TASKS.md)（任务状态）
-> **工程决策分析**：[engineering-review/](../engineering-review/)（Phase 0-5 的设计决策与规模分析）
-> **面试准备**：[interview-notes/](../interview-notes/)（3 分钟介绍 + 34 高频问题 + Phase 4/5 深度章）
+> **工程决策分析**：[engineering-review/](../engineering-review/)（Phase 0-6 的设计决策与规模分析）
+> **面试准备**：[interview-notes/](../interview-notes/)（3 分钟介绍 + 34 高频问题 + Phase 4/5/6 深度章）

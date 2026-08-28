@@ -1,7 +1,7 @@
 # DX-RAG 面试指南（项目介绍 + 技术亮点 + 高频面试题）
 
 > 本文档把 DX-RAG 项目转译成"面试语言"：如何用 3 分钟讲清楚项目、如何亮出技术亮点、如何应对高频追问。
-> **诚实原则**：所有内容基于真实代码与 SPEC/TASKS。项目当前实现到 Phase 0-5（基础工程 + 向量存储 + Embedding + 文档摄取管道 + 知识库管理 API + 文件上传 API——T0401–T0404、T0501–T0503 全部实现；Phase 5 Gate Review 裁定 PHASE_5_FAIL 后 F-1/F-2 已修复，Re-review 待执行）；Phase 6-12 是 SPEC 已冻结的设计与 TASKS 已排期的任务。**面试话术中注意区分"已实现"与"已设计"**——把设计讲成实现是面试大忌，本文档在关键处标注了诚实话术。
+> **诚实原则**：所有内容基于真实代码与 SPEC/TASKS。项目当前实现到 Phase 0-6（基础工程 + 向量存储 + Embedding + 文档摄取管道 + 知识库管理 API + 文件上传 API + Keyword Retrieval；Phase 6 已取得 PHASE_6_PASS 并完成 Learning Review；Phase 5 Gate Review 裁定 PHASE_5_FAIL 后 F-1/F-2 已修复，Re-review 待执行）；Phase 7-12 是 SPEC 已冻结的设计与 TASKS 已排期任务。**面试话术中注意区分"已实现"与"已设计"**——把设计讲成实现是面试大忌，本文档在关键处标注了诚实话术。
 
 ---
 
@@ -25,7 +25,7 @@
 
 **③ 我的工作（约 45 秒）**
 
-> "我独立完成了这个项目的完整周期：首先是产品设计——写了 2800 多行的 SPEC 规格文档，把 17 个功能模块的接口契约、数据模型、错误码目录、验收标准全部冻结下来；然后是分 13 个 Phase、54 个 Task 的工程实现，目前已完成 Phase 0 到 5 的全部 Task——包括配置管理、统一错误体系、VectorStore 抽象层、Embedding 服务、文档摄取管道、知识库管理 API（Create/List/Rename/Delete）、文件上传 API（六道校验 + 端点编排 + 回滚验证）；每个 Phase 有独立的 Gate Review 和学习复盘。这个过程中我重点解决了几个问题，下面挑三个讲。"
+> "我独立完成了这个项目的完整周期：首先是产品设计——写了 2800 多行的 SPEC 规格文档，把 17 个功能模块的接口契约、数据模型、错误码目录、验收标准全部冻结下来；然后是分 13 个 Phase、55 个 Task 的工程实现，目前已完成 Phase 0 到 6 的 Task——包括配置管理、统一错误体系、VectorStore 抽象层、Embedding 服务、文档摄取管道、知识库管理与上传 API，以及 mixed-language tokenizer、倒排索引、lazy/dirty 全量重建和 normalized keyword score；项目用 Gate Review 和学习复盘做阶段收口。这个过程中我重点解决了几个问题，下面挑三个讲。"
 
 **④ 技术挑战 + 解决方案（约 45 秒）**
 
@@ -35,7 +35,7 @@
 
 **⑤ 收尾（约 15 秒，可选）**
 
-> "项目还在继续，接下来的 Phase 是检索、问答和前端。如果你对某个模块的实现细节感兴趣，我可以展开讲摄取管道的三态回滚设计、上传接口的失败清理责任二分与 15 场景回滚验证、知识库重命名的两层补偿、删除的顺序设计，或者知识库 API 开发中的一次规格冲突处置。"
+> "项目还在继续，下一步是 Phase 7 的向量检索与 hybrid fusion，之后才是问答和前端。如果你对某个模块的实现细节感兴趣，我可以展开讲摄取管道的三态回滚、上传接口的失败清理与 15 场景验证、知识库重命名的两层补偿，或者 Phase 6 如何用同一 tokenizer 统一 indexing/query token space，再以 lazy + dirty lifecycle 管理内存倒排索引。"
 
 ### 话术设计要点（为什么这么讲）
 
@@ -51,13 +51,13 @@
 
 ---
 
-## 第二部分：技术亮点（17 个）
+## 第二部分：技术亮点（18 个）
 
 > 每个亮点一句话概括 + 为什么值得说 + 对应代码位置。面试时根据面试官背景挑 3-5 个展开。
 
 ### 亮点 1：SPEC 驱动的工程方法（过程亮点）
 
-**一句话**：先冻结 2800+ 行 SPEC（17 功能模块、API 契约、错误码目录、AC 验收标准），再按 13 Phase / 54 Task 逐阶段实现，每阶段 Gate Review。
+**一句话**：先冻结 2800+ 行 SPEC（17 功能模块、API 契约、错误码目录、AC 验收标准），再按 13 Phase / 55 Task 逐阶段实现，以 Gate Review 和 Learning Review 做阶段收口。
 
 **为什么值得说**：绝大多数个人项目是"边写边想"，你展示的是**工程过程本身的方法论**——对初级岗位，这是比技术栈更稀缺的素养。
 
@@ -179,13 +179,21 @@
 
 **展开点**：SPEC 声明回滚机制是 implementation detail → 断言锁行为不锁实现（Gate 修复后断言一行没改，只把场景标记从 GUARD 升为 CHECK）；基线对比断言（"无残留" = 和失败前一样，而非绝对为空）；修复位置 = 资源所有权（add_texts 自己补偿，file_id 不必跨层传回）。
 
+### 亮点 18：共享 normalization contract + 可重建倒排索引（检索亮点）
+
+**一句话**：document 与 query 复用同一个零依赖 mixed-language tokenizer（英文/数字 lowercase token + 中文 overlapping bigram），再把 `VectorStore.list_chunks()` materialize 成 per-collection 内存倒排索引；mutation 只标 dirty，下一次查询 full rebuild，keyword score 用 unique-query-token coverage 归一化到 [0,1]。
+
+**为什么值得说**：这不是“写了一个分词函数”，而是把 equality、lookup、lifecycle、ranking 四个契约连成一条 lexical retrieval 支路。共享函数避免 indexing/query drift；public interface 隔离 ChromaDB；normalized score 为 Phase 7 hybrid fusion 提供同向尺度。
+
+**展开点**：[qa.py](../../../backend/app/services/qa.py) 的 `tokenize()` / `KeywordRetriever`；[keyword_index.py](../../../backend/app/services/keyword_index.py) 的 shared invalidation seam；13 个 unit tests 覆盖 SPEC examples、lazy build、0.6 score、mixed-language match、top_k 与 dirty rebuild。诚实边界：tests 使用 Mock VectorStore，真实 upload → ChromaDB → query E2E 仍归 Phase 12。
+
 ---
 
 ## 第三部分：高频面试题（34 题）
 
 > 分类：项目理解（Q01-Q08）/ 架构设计（Q09-Q16）/ RAG（Q17-Q26）/ 工程问题（Q27-Q34）。
 > 每题四个部分：**面试官问题**（怎么问）/ **优秀回答**（怎么答）/ **进一步追问**（面试官大概率接着问什么）/ **回答方向**（追问怎么接）。
-> ⚠️ 标注 `[设计]` 的题目涉及 Phase 6-12：回答时用"设计上是……，实现排在 Phase X"的诚实话术。
+> ⚠️ 标注 `[设计]` 的题目主要涉及 Phase 7-12：回答时用"设计上是……，实现排在 Phase X"的诚实话术。Phase 6 keyword retrieval 已实现；涉及完整 hybrid pipeline 时仍只讲已冻结设计。
 
 ---
 
@@ -193,7 +201,7 @@
 
 **面试官**：先介绍一下你这个 RAG 项目吧。
 
-**优秀回答**：按第一部分的三段话术：背景（企业知识散落、关键词搜索字面匹配失效）→ 架构（五层 + 两条流水线）→ 我的工作（SPEC 冻结 + Phase 0-5 已实现）→ 挑战（三态回滚、分数语义边界）。
+**优秀回答**：按第一部分的三段话术：背景（企业知识散落、关键词搜索字面匹配失效）→ 架构（五层 + 两条流水线）→ 我的工作（SPEC 冻结 + Phase 0-6 已实现）→ 挑战（三态回滚、分数语义边界、共享 tokenizer 与索引生命周期）。
 
 **进一步追问**：这个项目是个人学习项目还是有真实用户？
 
@@ -289,11 +297,11 @@
 
 **面试官**：在白板上画一下架构，从用户提问到看到答案，数据经过了什么？
 
-**优秀回答**：五层架构图（Frontend → API → Service → AI/Data → Storage）。查询链路：① 前端 QA 面板发 POST /api/query（question + kb_name + history）；② API 层校验参数（Pydantic model）；③ 服务层三路并行——关键词检索（倒排索引 + bigram 分词，keyword_score）、向量检索（query 编码成 384 维向量 → ChromaDB HNSW 搜索 → distance 转 similarity_score）；④ 融合：`keyword*0.3 + vector*0.7` 按 chunk_id 去重合并；⑤ 排序 DESC → 过滤（MIN_RELEVANCE_SCORE=0.30）→ Top-K；⑥ 拼装上下文（chunk 内容 + 来源标注，MAX_CONTEXT_CHARS 截断）；⑦ DeepSeek 生成（System Prompt 约束只用提供的文档）；⑧ 响应含 answer + sources（chunk_id/file_name/score，**来源由程序组装，不是 LLM 生成**）。
+**优秀回答**：五层架构图（Frontend → API → Service → AI/Data → Storage）。查询链路：① 前端 QA 面板发 POST /api/query（question + kb_name + history）；② API 层校验参数（Pydantic model）；③ 服务层规划为两路检索——关键词检索（倒排索引 + bigram 分词，keyword_score）与向量检索（query 编码成 384 维向量 → ChromaDB HNSW 搜索 → distance 转 similarity_score）；④ 融合：`keyword*0.3 + vector*0.7` 按 chunk_id 去重合并；⑤ 排序 DESC → 过滤（MIN_RELEVANCE_SCORE=0.30）→ Top-K；⑥ 拼装上下文（chunk 内容 + 来源标注，MAX_CONTEXT_CHARS 截断）；⑦ DeepSeek 生成（System Prompt 约束只用提供的文档）；⑧ 响应含 answer + sources（chunk_id/file_name/score，**来源由程序组装，不是 LLM 生成**）。其中 Phase 6 已实现关键词支路；向量支路、两路并发与后融合仍属于 Phase 7 设计。
 
 **进一步追问**：关键词检索和向量检索为什么并行而不是串行？
 
-**回答方向**：两路独立无依赖（一个查倒排索引，一个查向量库），串行是纯浪费延迟。设计上检索是"两路并发 + 后融合"的经典混合检索模式。[设计] Phase 6/7 实现。
+**回答方向**：两路独立无依赖（一个查倒排索引，一个查向量库），串行会浪费延迟。当前真实状态：Phase 6 keyword branch 已实现并通过 unit tests；vector branch、两路并发与后融合属于 Phase 7 设计，尚未实现。
 
 ---
 
@@ -405,7 +413,7 @@
 
 ---
 
-### Q19【RAG】[设计] 为什么不用 BM25、reranker、RRF？
+### Q19【RAG】【部分实现】为什么不用 BM25、reranker、RRF？
 
 **面试官**：业界的混合检索标配是 BM25 + RRF，你为什么不用？
 
@@ -497,7 +505,7 @@
 
 **进一步追问**：bigram 对英文文档怎么办？
 
-**回答方向**：中英混合处理：英文按空白/标点切 token（英文词法简单），中文走 bigram——分词函数是分语言的。诚实补充：v1 的关键词检索排在 Phase 6，设计如此，实现待 Phase 6。
+**回答方向**：当前 `tokenize()` 已实现两条 regex 通道：连续 `[a-zA-Z0-9]+` token 统一 lowercase，连续基本 CJK segment 生成 overlapping bigram；两侧再做最小长度过滤与 stable dedup。13 个 unit tests 中 6 个直接冻结 tokenizer contract。诚实边界：accented Latin 与扩展 CJK 不在当前 regex 覆盖内。
 
 ---
 
@@ -589,7 +597,7 @@
 
 **面试官**：项目有测试吗？怎么保证质量？
 
-**优秀回答**：三层验证：① **单元层**——每个模块的 Task 自带最小验证（如编码级联的 BOM/空文件/混合编码用例、OCR 重试的 mock、回滚的幂等验证——先跑最小相关验证再跑上层，CLAUDE.md 的测试原则）；② **契约层**——API 契约（SPEC Section 6）是权威，验证响应字段/状态码/错误码逐条对齐，不自己发明；③ **验收层**——SPEC 有 AC 验收标准（功能级，如 AC-F010-01 的语义召回案例），每个 Task 完成时逐条核对 AC 并报告（PASS / DEFERRED）。Phase 5 起有了第一份端点级验证脚本（T0503：15 场景回滚矩阵，Gate Review 据此判过 PHASE_5_FAIL——见 Phase 5 深度章）。诚实边界：v1 没有完整自动化测试套件和 CI——AC 是人工验证 + 脚本辅助；检索质量没有量化评估集（Q25 已答）。**流程价值**：Gate Review + 学习复盘让每个 Phase 有独立的质量关卡——这本身是"测试金字塔 + 流程关卡"在个人项目上的轻量落地。
+**优秀回答**：三层验证：① **单元层**——每个模块跑最小相关验证；Phase 6 已有 `unittest` suite，6 个 tokenizer tests + 7 个 KeywordRetriever tests 共 13/13 PASS，Mock(spec=VectorStore) 隔离真实存储边界；② **契约层**——API / service contract 对照 SPEC，验证字段、状态码、score 与 lifecycle，不自己发明；③ **验收层**——按 AC 报告 PASS / DEFERRED，Phase 5 的 15 场景端点脚本和 Phase 6 Gate 都明确记录 real、mock 与 E2E 边界。诚实边界：v1 没有覆盖全项目的统一 CI；Phase 6 的 unit tests 不等于真实 upload → ChromaDB → query E2E，检索质量也没有量化评估集。**流程价值**：Gate Review + Learning Review 让证据强度和教学结论都被单独校准。
 
 **进一步追问**：如果重来，你会先写测试还是先写实现？
 
@@ -745,7 +753,7 @@
 **P4Q15. 为什么 keyword index 要失效两次（old + new）？**
 
 - **面试官问题**：重命名跟关键词索引有什么关系？
-- **推荐回答**：old 名下的索引缓存属于旧身份，必须失效；new 名下可能有历史残留（同名 KB 曾存在又删除），也不能复用。当前 Phase 6 还没开始，这个失效是"契约先行"的 seam：T0402 先立接口形状（docstring 写明四要素——单 collection 作用域 / 幂等 / 索引不存在即 no-op / 真实失败 raise，由 rename 编排捕获 → 补偿），函数体是文档化 no-op，T0602 再填真实实现。这是"接口形状先于实现存在"的第二次实践——第一次是 T0304/T0305 的 OCR 回调契约。
+- **推荐回答**：old 名下的索引缓存属于旧身份，必须失效；new 名下可能有历史残留（同名 KB 曾存在又删除），也不能复用。这里有一条已经兑现的“契约先行”链：T0402 先立 `invalidate_keyword_index(collection_name)` 的接口形状，T0602 再把 body 接到 `KeywordRetriever.invalidate()`；rename 调用位置零改动。当前 in-memory 实现对 absent index 是 no-op，对已存在 index 加 dirty flag，下一次 search 全量重建。它没有真实失败分支，因此 rename 中“失效 raise → 补偿”的条款保持防御性但当前不可达。
 - **考察点**：依赖排期在自己后面时怎么办——先造出对方需要的接口形状，而不是等它。
 
 **P4Q16. delete 为什么先删 ChromaDB、后删目录？**
@@ -887,7 +895,7 @@
 **P5Q5. 为什么 keyword index 只在成功后失效？**
 
 - **面试官问题**：失败的上传为什么不失效关键词索引？
-- **推荐回答**：失效的语义是"索引内容已过期"。失败的上传零 chunk 写入 → 索引内容没变 → 索引天然正确 → 失效是多余操作。调用位置本身就是文档：它声明了"只有成功才改变索引内容"这个不变量。这条推理链的前提是"失败必零 chunk"——T0503 的验证顺带确认了这一点。当前这个失效调用是个 seam（契约先行的 no-op，Phase 4 建、Phase 6 填），但调用位置已按正确语义放好，Phase 6 落地时不用再动。
+- **推荐回答**：失效的语义是"索引内容已过期"。失败的上传零 chunk 写入 → 索引内容没变 → 索引天然正确 → 失效是多余操作。调用位置本身就是文档：它声明了"只有成功才改变索引内容"这个不变量。这条推理链的前提是"失败必零 chunk"——T0503 的验证顺带确认了这一点。Phase 6 已兑现 seam：成功上传仍调用同一个函数，函数现在把已有 cache 标 dirty，下一次 keyword search 从 `VectorStore.list_chunks()` full rebuild；上传端点无需改调用位置。
 - **考察点**：副作用的最小化 + "失败零副作用"推理链。
 - **继续追问**：如果未来出现"部分写入"的失败形态呢？
 - **回答边界**：推理链会断——这正是后来被 Gate Review 修复的 F-2：add_texts 批次中途失败会留半写 chunk。修复后 add_texts 自身按 file_id 补偿删除，file-level all-or-nothing 重新保证了"失败必零 chunk"。
@@ -922,7 +930,7 @@
 - **推荐回答**：因为那 4 个问题的 owner 不是 T0503。T0503 的验收对象是 T0308/T0502 的回滚行为——CHECK 场景判定这个对象；GUARD 探针模拟的是当前代码不可达的状态（Chroma 批次上限、半写、失效异常、清理异常），发现的问题分别属于 VectorStore 的批处理策略、Phase 6 的索引实现、全局 handler。验证任务越界修别人的代码、因别人的问题判自己 FAIL，都是错误的。所以 GUARD 只报告、不强制、不修复，owner 化交给 Gate Review 裁决。事实也验证了这个设计：4 个 GUARD 里 F-1 在 Gate Review 被裁定为 Phase 级 FAIL，修复落在正确的 owner，验证脚本只把场景标记从 GUARD 升级成 CHECK，断言一行没改。
 - **考察点**：任务边界意识——"发现的每个问题都有 owner，不是每个问题都归发现者修"。
 - **继续追问**：那 GUARD 发现会不会被无视？
-- **回答边界**：不会——Gate Review 是强制关卡，每个 GUARD 都要裁决。F-1/F-2 已修复，F-3 等 Phase 6 落地后升级，F-4 等全局 handler 裁决。
+- **回答边界**：不会——Gate Review 是强制关卡，每个 GUARD 都要裁决。F-1/F-2 已修复；F-3 的 owner Phase 6 已落地，当前 invalidation 只是 in-memory `set.add`，没有失败路径，因此原“真实失败 raise”条款保留为防御性 contract、当前不可达；F-4 仍等全局 handler 裁决。
 
 **P5Q10. F-1/F-2 是什么？Gate Review 判 FAIL 后怎么修的？**
 
@@ -974,6 +982,98 @@
 
 ---
 
+## Phase 6 深度章 — Keyword Retrieval（T0601–T0602 已实现 + Gate / Learning Review 完成）
+
+> 状态：T0601/T0602 均为 DONE；Phase Gate Review 于 2026-08-27 裁定 **PHASE_6_PASS**；Phase Learning Review 于 2026-08-27 完成。
+> 代码教材 → [phase-06-keyword-retrieval.md](../phase-06-keyword-retrieval.md)；工程复盘 → [phase-06-engineering-review.md](../engineering-review/phase-06-engineering-review.md)。
+> 诚实边界：Phase 6 的 tokenizer、in-memory inverted index、lazy/dirty lifecycle 与 keyword score 已实现并通过 unit tests；真实 upload → ChromaDB → query E2E、vector retrieval 与 hybrid fusion 仍属于后续 Phase / T1203 验收范围。
+
+### P6-1. 30 秒回答
+
+**面试官**：你实现的关键词检索是怎么工作的？
+
+**推荐回答（口语版）**：
+
+> Phase 6 先把 query 和 document content 变成同一种 token space：英文和数字用正则提取后统一 lowercase，连续中文用 overlapping character bigram，过滤单字符并稳定去重。然后用 `token → Set[chunk_id]` 的 inverted index 做候选查找，另存 `chunk_id → ChunkRecord` 供返回阶段 join。索引是按 collection 的内存 derived snapshot：第一次查询 lazy build，上传/重命名/删除通过 seam 把已有 cache 标成 dirty，下一次查询从 `VectorStore.list_chunks()` 全量重建。每个 chunk 的分数是它命中的 unique query tokens 除以 query unique tokens 数，最后按分数降序取 top-k。当前 13 个 unit tests 全部通过；真实 upload-to-query E2E 还留给 Phase 12。
+
+### P6-2. 1–2 分钟深入回答：从 normalization 到 ranked chunks
+
+**面试官**：详细讲讲这条关键词检索链路，以及为什么这样设计。
+
+**推荐回答**：
+
+> 我把 Phase 6 看成四个连续契约。第一是 **normalization**：`tokenize()` 是 pure function，英文/数字和中文各走一条规则，最后做最小长度过滤与 stable dedup。它的关键不是“切得漂亮”，而是 document indexing 和 query search 必须共享同一个函数，否则 token key 会 drift，检索永远匹配不上。第二是 **snapshot materialization**：`KeywordRetriever._build_index()` 只通过 `VectorStore.list_chunks()` 读取 source of truth，在本地构造两张表——轻量的 token posting set，以及按 chunk_id 保存完整 `ChunkRecord` 的 lookup 表；因此不需要复制每个 token 对应的完整内容，也不碰 ChromaDB private API。第三是 **lifecycle**：首次查询或 dirty 查询才 build；mutation path 只做 O(1) 的 dirty 标记，把全量成本推迟到真正需要读的时候。第四是 **ranking**：query token 逐个查 posting set，按 chunk_id 累加命中的 unique token 数，再除以 query token 总数得到 [0,1] 的 `keyword_score`，排序后切 `top_k`。这种方案严格兑现 F009，但也诚实保留边界：没有 BM25、TF-IDF、位置权重、增量索引、持久化 cache 或并发锁；当前 tests 使用 `Mock(spec=VectorStore)`，所以它证明的是 service logic 和 lifecycle，不是真实 ChromaDB E2E。
+
+### P6-3. 高频追问 8 题
+
+**P6Q1. 为什么 query 和 document 必须使用同一个 tokenizer？**
+
+- **推荐回答**：倒排索引的 key 是 token。document 用 bigram 建出 `{机器, 器学, 学习}`，query 若用 whitespace split 得到 `机器学习`，集合没有交集，检索会假阴性。复用同一个 pure function 是直接防止 indexing/query drift 的最小办法。
+- **考察点**：是否理解 normalization 是检索契约，不只是字符串工具。
+
+**P6Q2. 为什么中文用 bigram，不用 jieba？**
+
+- **推荐回答**：v1 SPEC 明确排除第三方中文分词库。bigram 零依赖、无词典生命周期、对未登录技术词更鲁棒；`机器学习` 的窗口 `{机器, 器学, 学习}` 即使边界理解不同也能保留部分重叠召回。代价是 token 和索引更多，匹配只表示字符片段重合，不表示语义理解。
+- **回答边界**：当前 regex 只覆盖基本 CJK 区；质量评估驱动的词典分词或 BM25 是 Future，不是当前实现。
+
+**P6Q3. `dict.fromkeys` 和 `set` 都能去重，为什么不用 set？**
+
+- **推荐回答**：这里需要两个性质：unique tokens 作为 score 分母，以及可预测的 first-seen order 作为 SPEC examples、测试和诊断的稳定输出。`dict.fromkeys` 同时保留唯一性和 insertion order；裸 `set` 不应被当作公开顺序契约。
+- **考察点**：能否区分“集合语义”和“对外 deterministic representation”。
+
+**P6Q4. 为什么 index 要 lazy build，invalidation 只标 dirty？**
+
+- **推荐回答**：build 要扫描 collection 全部 chunks。写路径只标 stale，可以让上传、rename、delete 保持轻量；没有后续查询的 collection 不需要付重建成本。下一个 search 发现 cold/dirty 状态后，再从 `list_chunks()` full rebuild。代价是第一次后续查询承担 latency，且 v1 不做 incremental update。
+- **考察点**：是否能讲清 deferred work 的收益与成本。
+
+**P6Q5. `keyword_score = 0.6` 具体是怎么来的？**
+
+- **推荐回答**：query `机器学习算法` 经 tokenizer 得到 5 个 unique tokens。若某 chunk 的 posting lookup 命中其中 3 个 token，`matched_count / len(query_tokens) = 3 / 5 = 0.6`。这是 binary token presence，不是 term frequency；同一个 token 在 chunk 里出现多次仍只贡献 1。
+- **考察点**：是否把分子、分母和 unique 语义说准确。
+
+**P6Q6. 为什么 `_indexes` / `_chunks` 是 class-level，而 `vector_store` 是 instance-level？**
+
+- **推荐回答**：`keyword_index.py` seam 只有 collection name，没有 retriever instance，所以 invalidation 要能触达所有 instance 共享的 cache；classmethod 可以直接标记 class-level state。具体 storage adapter 仍通过 constructor injection 放在 instance 上，测试可注入 `Mock(spec=VectorStore)`。代价是 cache namespace 只有 collection name：多 store/tenant 同名时可能碰撞，多进程也不会共享 invalidation。
+- **回答边界**：这不是分布式 cache，也没有 lock；这些是 Engineering Review 的已知边界。
+
+**P6Q7. 为什么要维护两张表？返回结果为什么不直接把 `ChunkRecord` 暴露出去？**
+
+- **推荐回答**：posting set 只保存 token 到 chunk_id，避免每个 token 重复存 content 和 metadata；`_chunks` 再按 id join 出返回需要的 `chunk_id/file_id/file_name/content/keyword_score`。内部 snapshot 可以比公开 result 丰富，但 F009 的 result shape 不能顺手扩展成 `collection_name`、`chunk_index` 或 metadata。
+- **考察点**：是否理解 normalized storage、public contract 与内部 representation 的区别。
+
+**P6Q8. 13 个 tests 证明了什么？没有证明什么？**
+
+- **推荐回答**：6 个 tokenizer tests 证明 SPEC examples、lowercase、单字符过滤、segment boundary 和 stable dedup；7 个 retriever tests 证明 lazy `list_chunks`、无命中、0.6 partial score、mixed-language match、排序/top_k、dirty rebuild 与 absent invalidation no-op。测试使用 Mock VectorStore，所以没有证明真实 ChromaDB compatibility，也没有发起真实 upload HTTP workflow；AC-F009-05 的 literal E2E 仍是 T1203 边界。
+- **考察点**：是否能把 test count 转译成 observable behavior 和 evidence boundary。
+
+### P6-4. Engineering Questions（4 道工程深问）
+
+**EP6-1. 为什么 v1 不做 BM25、TF-IDF、reranker 或 RRF？**
+
+- **推荐回答**：这是范围和可解释性的取舍，不是不了解这些算法。F009 只要求 binary unique-token coverage，v1 明确排除 BM25/TF-IDF/position-aware match；Phase 7 也需要先有清晰、同尺度的 keyword/vector inputs。先用零依赖 bigram + normalized score 验证主链路，待真实评估集证明质量瓶颈后，再评估 BM25、reranker 或 RRF；这些升级全部标为 Future。
+
+**EP6-2. local build 后依次发布两张表，算不算 atomic snapshot？**
+
+- **推荐回答**：它解决的是单线程构建异常，不是并发原子性。实现先在 local dict 完整 build，`list_chunks()` 或 tokenizer 中途失败时不会把 half-built state 发布，dirty 也不会清掉；成功后才依次赋给 `_indexes` 和 `_chunks`。但两个 class-dict assignment 之间没有 lock，concurrent search/invalidate 仍可能观察到跨版本状态，所以 Engineering Review 把 concurrency lock 和 multi-process coherence 列为 Known Gaps。
+- **考察点**：是否会把“避免半成品发布”夸大成 ACID transaction。
+
+**EP6-3. corpus 变成现在的 100 倍，最先需要重新设计什么？**
+
+- **推荐回答**：先用 benchmark 确认瓶颈。当前 full rebuild 大致随 corpus 总字符数线性增长，search 还要对 matched chunks 排序；100x 时首个 dirty query latency 和双 snapshot 峰值内存会先成为压力。演进顺序可以是 background rebuild、增量 index 或持久化/分布式 index，但它们都不是 v1 已实现能力；多 worker 还要先解决每进程 cache 不共享的问题。
+
+**EP6-4. 这条检索支路怎样安全接到 Phase 7？**
+
+- **推荐回答**：Phase 6 已冻结稳定的 result shape 和 [0,1]、越大越相关的 `keyword_score`，Phase 7 可以按 chunk_id 与 vector results merge，再执行 `0.3 * keyword_score + 0.7 * vector_score`。但当前仓库还没有 VectorRetriever、HybridRetriever、relevance filter 或 query endpoint；我会把“可供下游消费的 contract”与“下游已经实现”明确分开。
+- **考察点**：是否能讲清当前接口的 downstream readiness，而不提前认领 Future code。
+
+### P6-5. 本 Phase 的诚实边界
+
+- 已实现：mixed-language tokenizer、per-collection in-memory inverted index、lazy build、dirty/full rebuild、normalized keyword score、public-interface-only build、13 个 unit tests。
+- 已验证但有边界：AC-F009-01～04 的 unit behavior 与 AC-F009-05 的 seam/lifecycle unit path；测试使用 Mock VectorStore。
+- 尚未验证或未实现：真实 upload → ChromaDB → query E2E、vector retrieval、hybrid fusion、QA API、incremental/persistent index、multi-process coherence、concurrency lock、量化 retrieval-quality benchmark。
+
+---
+
 ## 附录：面试前的自查清单
 
 - [ ] 3 分钟介绍能脱稿讲顺（对着计时器练 3 遍）
@@ -988,5 +1088,9 @@
 - [ ] 能讲出 T0503 验证方法论三条：断言只走 public interface / 子进程隔离 / GUARD 与 CHECK 分离
 - [ ] 能讲出 Phase 5 Gate Review 的完整闭环：PHASE_5_FAIL → F-1/F-2 修复（分批持久化 + 补偿删除）→ GUARD 升级 CHECK → 复跑 PASS → Re-review 待执行（不夸大：Re-review 还没做）
 - [ ] 能主动说出 Phase 5 的诚实边界：Pending #35/#36/#37/#38 待裁决；T0503 执行证据口径（开发期执行痕迹 + 用户 DONE 宣告，不虚构全量 PASS）
+- [ ] 能用一句话解释 Phase 6：shared tokenizer contract → derived inverted-index snapshot → lazy/dirty rebuild → normalized coverage ranking
+- [ ] 能画出 `_indexes` / `_chunks` / `_dirty_collections` 三份状态，并说明 class-level cache 与 instance-level VectorStore 的边界
+- [ ] 能解释 13 个 Phase 6 unit tests 各自证明什么，以及为什么它们不等于真实 upload → ChromaDB → query E2E
+- [ ] 能区分 Phase 6 已实现的 keyword branch 与 Phase 7 尚未实现的 vector / hybrid fusion
 - [ ] 每个"已实现"的说法都能定位到代码文件；每个"已设计"的说法都标注 Phase 编号
 - [ ] 被问"为什么"时，答案里有"规模假设"（v1 是单机、万级文档、可信网络——决策都有前提）

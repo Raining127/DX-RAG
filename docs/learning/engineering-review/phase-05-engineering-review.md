@@ -104,7 +104,7 @@ Phase 5 是摄取流水线的 **HTTP 入口**：把 Phase 3 已建成的处理�
 - **Chosen Solution**: 失效只发生在内容真的变了的路径上。推理链：失败上传 → 零 chunk 写入 → 索引内容不变 → 索引天然正确 → 无需失效。这是"失败零副作用"推理链的第三环（前两环：校验零写、FAILED 回滚）。
 - **Why**: 失效调用位置本身就是文档——它声明了"只有成功才改变索引内容"这一不变量。T0602 落地真实 dirty-flag 后无需再改这个位置。
 - **Trade-off**: 依赖"失败必零 chunk"的推理——若未来出现"部分写入"的失败形态（如 add_texts 半写，见 Gap-4），此推理链断，索引可能滞后于半写数据。
-- **Future Improvement**: 无（T0602 只替换 seam 本体，不改调用位置）。
+- **Future Improvement**: 无（T0602 只替换 seam 本体，不改调用位置）。**已兑现（2026-08-27）**：T0602 把 seam 本体替换为 `KeywordRetriever.invalidate()` 委托（in-memory dirty 标脏），调用位置零改动。
 
 ### ADR-08: `collection_name` 不做独立路径校验 —— 传递保证
 
@@ -144,7 +144,7 @@ Phase 5 是摄取流水线的 **HTTP 入口**：把 Phase 3 已建成的处理�
 - **Chosen Solution**: 替代品的选择标准 = **失败分支等价**：空白 txt 与"所有页面无有效文本的 PDF"都在"清洗后文本为空 → `_fail`"处汇合，验证的是汇合点之后的全部行为；GUARD 与 CHECK 在输出层分离（`[GUARD]`/`[PASS]`/`[FAIL]` 标记 + 汇总只统计 CHECK），问题 owner 写进每一条 GUARD 明细。
 - **Why**: 验证任务的产出是**关于验收对象的结论**（回滚对不对），不是"环境装没装好"、不是"别的模块有没有毛病"——替代与 GUARD 两条规则共同保证结论不被无关因素污染。零业务代码修复的结果也由此可信：15 个场景里所有 FAIL 都是注入故障触发的，没有一个是产品代码缺陷。
 - **Trade-off**: 替代保真度靠论证而非实现——空白 txt 不验证"PDF 解析器对无文本页面的行为"（那是 Phase 3 的验收范围）；GUARD 靠人工阅读消化，没有机器强制。
-- **Future Improvement**: 环境补齐后（PyMuPDF 装上）可把 D-1 升级为字面 fixture；GUARD 项在 owner Task 落地后（T0104 批处理 / T0602 真实索引）可升级为 CHECK。**已部分兑现（2026-08-25）**：Phase 5 Gate 修复 F-1/F-2 后，V9（F-1）/V10（F-2）由 GUARD 升级为 CHECK；V11（F-3）/F-4 仍为 GUARD，owner 未变（T0602 / 全局 handler）。
+- **Future Improvement**: 环境补齐后（PyMuPDF 装上）可把 D-1 升级为字面 fixture；GUARD 项在 owner Task 落地后（T0104 批处理 / T0602 真实索引）可升级为 CHECK。**已部分兑现（2026-08-25）**：Phase 5 Gate 修复 F-1/F-2 后，V9（F-1）/V10（F-2）由 GUARD 升级为 CHECK；V11（F-3）/F-4 仍为 GUARD，owner 未变（T0602 / 全局 handler）。**F-3 owner T0602 已于 2026-08-27 落地**（invalidate 兑现为 in-memory 标脏、无失败路径，V11 观察的"提交后失效异常"形态在 in-memory 实现下不可达）；V11 升级 CHECK 仍待验证脚本复跑。
 
 ---
 

@@ -180,7 +180,7 @@ uploads/{name}/  ← T0401 的第二条腿（mkdir）
 - **Why**：编排代码一次写对——调用点、异常路径、错误映射全部现在就位，T0602 只需换 body、不改任何调用方；且 no-op 期间语义正确：Phase 6 前没有 index 可失效，"缺席 no-op"本身就是该契约规定的正确行为。对比方案"先不调、等 T0602 再插调用点"更稳——后者会在编排里丢步骤。
 - **Trade-off**：契约的正确性（invalidate 失败 → RENAME_FAILED 的映射是否合适）在 T0602 真实实现后才被验证（Pending #34）；失效语义在 T0602 前不生效（但此时无 index，语义空转无害）。
 - **Future Improvement**：T0602 用 dirty-flag 实现替换 body；契约本身（调用方视角）预计不变。
-- **Status**：Seam established（T0402）；implementation deferred to T0602。
+- **Status**：Seam established（T0402）；implementation deferred to T0602 → **已兑现（2026-08-27）**：T0602 替换函数体为委托 `KeywordRetriever.invalidate()`，调用方零改动。
 
 ---
 
@@ -504,7 +504,7 @@ Pending Questions（延续 Phase 3 的 #1–27 编号）：
 | #31 | v1 是否需要任何持久化测试基建以保护已完成 Task 的回归？ | T0401 Finding 4 | 待定（SPEC 无要求） |
 | #32 | F017 前后端等价校验（backend Python 已落地 / frontend TS 待 T1101）需要什么机制性防漂移（共享测试向量 / 契约测试）？ | T0404 增量评审（7.8） | 待 T1101 落地时决策 |
 | #33 | rename 双失败（forward + compensate）后的中间态残余是否需要一致性扫描/恢复任务？ | T0402 增量评审（7.9） | 待定（建议与 #31 一并考虑；v1 单机可接受） |
-| #34 | keyword seam 契约（invalidate 失败 → RENAME_FAILED 映射）在 T0602 真实实现后是否仍成立？ | T0402 增量评审（7.9）+ PF-1 | 待 T0602 验证 |
+| #34 | keyword seam 契约（invalidate 失败 → RENAME_FAILED 映射）在 T0602 真实实现后是否仍成立？ | T0402 增量评审（7.9）+ PF-1 | **已裁决（2026-08-27）**：T0602 的 invalidate 为 in-memory 标脏、无失败路径；第四要素保持防御性，RENAME_FAILED 映射不可达但无冲突（phase-06 ER §8） |
 
 ### 7.7 其它工程观察（可维护性 / 安全）
 

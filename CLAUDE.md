@@ -146,6 +146,22 @@ After completing a Task, report concisely:
 **To unblock:** ...
 ```
 
+## Phase Gate Review
+
+When asked to run a Phase Gate Review, first read and follow `docs/learning/templates/phase-gate-review-template.md`. Treat the review as **REVIEW-ONLY** unless the user explicitly authorizes otherwise: independently verify the Phase against SPEC, TASKS, implementation, tests, and complete repository state; treat existing review verdicts as context, not acceptance evidence; do not modify files, `docs/SPEC.md`, Task status, or future Task definitions, and do not start the next Phase. Return the verdict and report structure defined by the canonical Gate Review protocol.
+
+## Learning Pass
+
+When asked to run a Task or Phase Learning Pass:
+
+1. read and follow `docs/learning/templates/phase-learning-pass-workflow.md`;
+2. read `docs/learning/templates/phase-learning-template.md` for the Technical Learning document structure;
+3. inspect the relevant Tasks, referenced SPEC sections, actual implementation, tests/verification artifacts, and existing Phase learning document;
+4. follow the workflow's learner profile and Phase 5 depth/style precedent;
+5. update Technical Learning at the appropriate Task or Phase level;
+6. preserve Engineering Review, Interview, Phase Learning Review, and Gate boundaries;
+7. do not reduce the Learning Pass to a completion summary.
+
 ## Explicitly Out of Scope for v1
 
 | Category | Item |

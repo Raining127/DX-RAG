@@ -1563,7 +1563,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0601 — Query Tokenizer
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement the keyword tokenizer supporting Chinese overlapping character bigrams and English alphanumeric token extraction.
 
@@ -1612,7 +1612,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0602 — Inverted Index & Keyword Search
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement inverted index construction (lazy), invalidation, and keyword search with score normalization.
 
