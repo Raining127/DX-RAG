@@ -3,10 +3,10 @@
 > 从项目整体角度理解 DX-RAG：它是什么、为什么存在、每一层做什么、13 个 Phase 如何拼成完整系统。
 > 不深入代码细节——代码级的逐行精读请阅读对应的 `phase-XX-*.md` 学习笔记，工程决策分析请阅读 `engineering-review/`。
 
-**当前状态快照**（以 `docs/TASKS.md` 为准，2026-08-27）：
+**当前状态快照**（以 `docs/TASKS.md` 为准，2026-08-31）：
 - SPEC.md v1.6 **FROZEN**，Blocking Questions = 0
 - Phase 0–5 ✅ DONE（工程地基 + 向量存储 + 嵌入 + 文档管道 + 知识库管理 API + 文件上传 API；Phase 5：Gate Review 裁定 PHASE_5_FAIL → F-1/F-2 修复完成 → Re-review 待执行；Learning Pass / ER / Learning Review 已完成）
-- Phase 6 ✅ COMPLETE（T0601–T0602 DONE；PHASE_6_PASS；Learning Review 完成，2026-08-27）；Phase 7–12 ⬜ TODO
+- Phase 6 ✅ COMPLETE（T0601–T0602 DONE；PHASE_6_PASS；Learning Review 完成，2026-08-27）；Phase 7 🟡 IN PROGRESS（T0701–T0703 DONE；Phase Gate/Learning Review 待执行）；Phase 8–12 ⬜ TODO
 
 ---
 
@@ -39,14 +39,14 @@ v1 的部署假设是**本地/可信内网**（无认证体系），所以典型
 
 ### 1.4 为什么普通搜索无法满足需求？
 
-以一个真实 AC（AC-F010-01）为例：
+以 SPEC 的 AC-F010-01 目标行为为例（当前 T0701 的真实 semantic E2E 尚未验证）：
 
 - 知识库里有 chunk：`机器学习是人工智能的分支`
 - 用户提问：`AI 的子领域`
 
 **普通关键词搜索**：`AI 的子领域` 的字符和 `机器学习是人工智能的分支` 没有任何字面重合 → 命中 0 条。失败。
 
-**向量语义搜索**：Embedding 模型理解 `AI ≈ 人工智能`、`子领域 ≈ 分支` → 两个句子在 384 维向量空间里距离很近 → 命中。成功。
+**向量语义搜索（SPEC 目标行为）**：Embedding 模型应理解 `AI ≈ 人工智能`、`子领域 ≈ 分支` → 两个句子在 384 维向量空间里距离很近 → 命中。T0701 当前已实现 query embedding → `VectorStore.search()` → `vector_score` adapter，但真实 bge-small-zh-v1.5 + Chroma semantic match 仍 DEFERRED。
 
 普通搜索的局限可以归纳为：
 
@@ -94,7 +94,10 @@ RAG（Retrieval-Augmented Generation）正是针对这四点设计的：**检索
 │                                                                  │
 │  Ingest Service ✅  解析→清洗→切分→嵌入→存储（Phase 3）            │
 │  Keyword Retriever ✅  倒排索引→关键词排序（Phase 6）             │
-│  QA Service ⬜         Hybrid→上下文→LLM→来源（Phase 7-8）          │
+│  Vector Retriever ✅   query embedding→similarity（T0701）       │
+│  Hybrid Retriever ✅   chunk_id merge→fusion→filter（T0702）    │
+│  Retrieval facade ✅    retrieve() shared-store wiring（T0703）   │
+│  QA Service ⬜         context→LLM→来源（Phase 8）                │
 │  Embedding ✅      bge-small-zh-v1.5 lazy singleton（Phase 2）   │
 │  VectorStore ✅    11 方法公共接口 + ChromaDB 实现（Phase 1）      │
 └──────────┬──────────────────┬──────────────────┬────────────────┘
@@ -150,6 +153,8 @@ Invalidate keyword index（该 KB 的倒排索引标记 dirty，下次查询重�
 
 ### 2.3 用户查询流程（Query Flow）
 
+> 下图是 SPEC 目标查询流；截至当前 checkout，T0701–T0703 已完成的是 Service Layer 的 vector/hybrid slice 与 `retrieve()` facade，`/api/query`、Context Assembly 与 LLM 仍未实现。[PROJECT FACT]
+
 ```
 用户输入问题（选择 KB，携带对话历史）
     │
@@ -162,7 +167,8 @@ API Layer 校验 → QA Service
     ├─ KB 有 0 chunk → 409 COLLECTION_EMPTY（不检索、不调 LLM）
     │
     ▼
-Hybrid Retrieval（关键词 + 向量，各召回 top_k × 2）:
+Retrieval facade（T0703 Service Layer；创建共享 ChromaVectorStore，先检查 chunk count，再委托 T0702 Hybrid）:
+    Hybrid Retrieval（关键词 + 向量，向各 branch 传入 top_k × 2；当前 T0701 vector path 还会将其 ×2 传给 VectorStore）:
     KeywordRetriever: 倒排索引（lazy build）→ token 命中率 → keyword_score [0,1]
     VectorRetriever: 问题嵌入 → ChromaDB 检索 → similarity_score [0,1]
     │
@@ -304,13 +310,13 @@ Answer + Citation（answer 不含内联引用标记；sources 由后端从检索
 | 输出 | UploadResponse（status/file_id/file_name/chunks/warnings）；FAILED 时全量回滚（T0503 端点级验证：15 场景矩阵 + 零业务代码修复）；Gate 修复 F-1/F-2：add_texts 分批持久化 + 批次失败补偿删除（V9/V10 升级 CHECK 复跑 PASS） |
 | 为什么存在 | 知识库内容的入口 API。六道校验（路径安全/扩展名/大小/空/KB/同名）全部在写盘之前完成；回滚契约（SPEC F002 Upload Failure Atomicity）由验证脚本固化 |
 
-### Phase 6-7 — Retrieval（关键词 + 向量 + 混合检索）✅ Phase 6 已完成；Phase 7 TODO
+### Phase 6-7 — Retrieval（关键词 + 向量 + 混合检索）✅ Phase 6 已完成；🟡 Phase 7 进行中（T0701–T0703 已完成，Gate/Learning Review 待执行）
 
 | 维度 | 内容 |
 |------|------|
 | 解决什么问题 | 单一检索有盲区：关键词不懂语义，向量不懂精确术语/编号 |
 | 输入 | query + collection_name + top_k |
-| 输出 | 按 chunk_id 合并后的结果列表（final_score = 0.3×kw + 0.7×vec，Relevance Filter ≥ 0.30，Top-K） |
+| 输出 | T0701 输出 `{chunk_id, file_id, file_name, content, vector_score}`；T0702 输出 `{chunk_id, file_id, file_name, content, final_score, metadata}`，按 `chunk_id` 合并、以 `0.3×keyword + 0.7×vector` 融合、执行 Relevance Filter 与最终 Top-K；T0703 输出 module-level `retrieve(query, collection, top_k)`，空库返回 `[]`、缺失 collection 异常传播 |
 | 为什么存在 | 检索质量决定 RAG 答案质量的上限。关键词覆盖精确匹配（型号、代码、编号），向量覆盖语义匹配（同义词、改写） |
 
 ### Phase 8 — RAG & QA（问答）⬜ TODO
@@ -353,7 +359,7 @@ Answer + Citation（answer 不含内联引用标记；sources 由后端从检索
 
 ```
 Phase 0 (地基) ──┬──→ Phase 1 (VectorStore) ──┬──→ Phase 4 (KB API) ──→ Phase 5 (Upload API)
-                 │                            ├──→ Phase 6 (Keyword) ──→ Phase 7 (Hybrid) ──→ Phase 8 (QA)
+                 │                            ├──→ Phase 6 (Keyword) ──→ Phase 7 (T0701 Vector → T0702 Hybrid → T0703 facade) ──→ Phase 8 (QA)
                  ├──→ Phase 2 (Embedding) ────┴──→ Phase 3 (Ingest) ────→ Phase 5
                  │                                                            │
                  └──→ Phase 9 (File API) ←── Phase 1/5                        │
@@ -364,5 +370,5 @@ Phase 0 (地基) ──┬──→ Phase 1 (VectorStore) ──┬──→ Pha
 ```
 
 > **Readme 导航**：[docs/learning/README.md](../README.md)（Phase 学习地图）· [SPEC.md](../../SPEC.md)（产品规格）· [TASKS.md](../../TASKS.md)（任务状态）
-> **工程决策分析**：[engineering-review/](../engineering-review/)（Phase 0-6 的设计决策与规模分析）
-> **面试准备**：[interview-notes/](../interview-notes/)（3 分钟介绍 + 34 高频问题 + Phase 4/5/6 深度章）
+> **工程决策分析**：[engineering-review/](../engineering-review/)（Phase 0-6 的设计决策与规模分析 + Phase 7 T0701–T0703 增量评审）
+> **面试准备**：[interview-notes/](../interview-notes/)（3 分钟介绍 + 34 高频问题 + Phase 4/5/6 深度章；Phase 7 当前只保留 T0701–T0703 candidates）

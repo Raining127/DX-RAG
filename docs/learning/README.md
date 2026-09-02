@@ -236,17 +236,24 @@ Phase 只有取得标准化 `PHASE_X_PASS — READY_FOR_PHASE_Y` verdict 后，�
 
 ### Phase 7 — Vector & Hybrid Retrieval
 
-**状态**: ⬜ NOT STARTED
+**状态**: 🟡 IN PROGRESS（T0701、T0702、T0703 DONE；T0703 Task Learning Pass 完成 2026-08-31；Phase Gate Review + Phase Learning Review 待执行）
 
-**Tasks**: T0701–T0703
+**Tasks**: T0701 ✅ | T0702 ✅ | T0703 ✅
 
-**未来主要学习主题**:
+**当前学习产物**:
 
-- Vector Retrieval（语义检索）
-- Hybrid Retrieval（关键词 30% + 向量 70% 加权融合）
-- chunk_id-based merge & dedup
-- Relevance Filter（MIN_RELEVANCE_SCORE）
-- Top-K 截断
+- 📖 **Technical Learning**: [phase-07-vector-retrieval.md](./phase-07-vector-retrieval.md)（T0701–T0703 增量教材：query embedding adapter / score boundary / `chunk_id` merge / 0.3·0.7 fusion / relevance filter / shared-store facade / empty short-circuit / DI 与测试边界 / 自测练习）
+- 🔍 **Engineering Review**: [engineering-review/phase-07-engineering-review.md](./engineering-review/phase-07-engineering-review.md)（T0701–T0703 增量评审：ADR-01~15 / score、identity 与 composition ownership / failure boundary / 二次召回与 facade 成本 / metadata gap / scale 与 Known Gaps；Phase 7 尚未收口）
+- 🎤 **Interview Preparation**: T0701–T0703 当前只记录 Technical Learning 中的 Interview Candidates；待 Phase Gate 与 Phase Learning Review 完成后，再按 cadence 晋升到项目级完整回答
+
+**当前与未来主要学习主题**:
+
+- Vector Retrieval（语义检索，T0701 ✅）
+- query embedding → `VectorStore.search()` → `vector_score` 的契约边界（T0701 ✅）
+- Hybrid Retrieval（关键词 30% + 向量 70% 加权融合，T0702 ✅）
+- `chunk_id`-based merge & dedup（T0702 ✅）
+- Relevance Filter（`MIN_RELEVANCE_SCORE`，T0702 ✅）
+- Retrieval facade / unified module entry point（T0703 ✅；QA Service 与 HTTP endpoint 仍为 Future）
 
 ---
 
@@ -357,6 +364,7 @@ Phase 定位 / 为什么需要这个模块 / 核心设计决策（Decision-Conte
 - [phase-04-engineering-review.md](./engineering-review/phase-04-engineering-review.md) — Knowledge Base Management（T0401：SPEC_CONFLICT 真实案例 / ADR-01~05 / Create 双副作用一致性缺口）
 - [phase-05-engineering-review.md](./engineering-review/phase-05-engineering-review.md) — File Upload API（T0501–T0503：校验、端点编排、回滚验证）
 - [phase-06-engineering-review.md](./engineering-review/phase-06-engineering-review.md) — Keyword Retrieval（T0601–T0602 增量评审完成；含历史 PHASE_6_PASS Gate 记录）
+- [phase-07-engineering-review.md](./engineering-review/phase-07-engineering-review.md) — Vector & Hybrid Retrieval（T0701–T0703 增量评审；Phase 7 尚未收口）
 
 ### 面试指南
 
@@ -367,6 +375,7 @@ Phase 定位 / 为什么需要这个模块 / 核心设计决策（Decision-Conte
 - 第三部分：34 道高频面试题（项目理解/架构设计/RAG/工程问题四类，每题含 面试官问题/优秀回答/进一步追问/回答方向）
 - Phase 4 深度章（T0401–T0404 已实现）：30 秒回答 / 1-2 分钟深入 / SPEC_CONFLICT STAR / 18 道高频追问 + 8 道工程深问
 - Phase 5 深度章（T0501–T0503 已实现，含 Gate Review 修复中状态）：30 秒回答 / 1-2 分钟深入 / 验证驱动修复 STAR / 12 道高频追问 + 4 道工程深问
+- Phase 7 当前仅保留 T0701–T0703 Interview Candidates；完整 retrieval 话术待 Gate 与 Phase Learning Review 后 consolidation
 - 附录：面试前自查清单
 
 ### Phase 学习模板（Phase 4-12 用）

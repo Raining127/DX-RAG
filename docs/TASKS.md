@@ -1667,7 +1667,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0701 — Vector Retrieval
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement vector retrieval: embed query → call VectorStore.search() → return results with vector_score.
 
@@ -1711,7 +1711,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0702 — Hybrid Retrieval (Merge, Fusion, Relevance Filter, Top-K)
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement hybrid retrieval that merges keyword and vector results by chunk_id, applies weighted fusion, relevance filtering, and Top-K truncation.
 
@@ -1766,7 +1766,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0703 — Retrieval Module Integration
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Integrate keyword, vector, and hybrid retrievers into a cohesive retrieval module accessible by the QA service.
 

@@ -1,7 +1,7 @@
 # DX-RAG 面试指南（项目介绍 + 技术亮点 + 高频面试题）
 
 > 本文档把 DX-RAG 项目转译成"面试语言"：如何用 3 分钟讲清楚项目、如何亮出技术亮点、如何应对高频追问。
-> **诚实原则**：所有内容基于真实代码与 SPEC/TASKS。项目当前实现到 Phase 0-6（基础工程 + 向量存储 + Embedding + 文档摄取管道 + 知识库管理 API + 文件上传 API + Keyword Retrieval；Phase 6 已取得 PHASE_6_PASS 并完成 Learning Review；Phase 5 Gate Review 裁定 PHASE_5_FAIL 后 F-1/F-2 已修复，Re-review 待执行）；Phase 7-12 是 SPEC 已冻结的设计与 TASKS 已排期任务。**面试话术中注意区分"已实现"与"已设计"**——把设计讲成实现是面试大忌，本文档在关键处标注了诚实话术。
+> **诚实原则**：所有内容基于真实代码与 SPEC/TASKS。项目当前实现到 Phase 0-7 的已完成切片（基础工程 + 向量存储 + Embedding + 文档摄取管道 + 知识库管理 API + 文件上传 API + Keyword Retrieval + T0701 VectorRetriever + T0702 HybridRetriever + T0703 `retrieve()` wiring facade；Phase 6 已取得 PHASE_6_PASS 并完成 Learning Review；Phase 5 Gate Review 裁定 PHASE_5_FAIL 后 F-1/F-2 已修复，Re-review 待执行）；Phase 8-12 仍是 SPEC 已冻结的设计与 TASKS 已排期任务。**面试话术中注意区分"已实现"与"已设计"**——把设计讲成实现是面试大忌，本文档在关键处标注了诚实话术。
 
 ---
 
@@ -21,11 +21,11 @@
 **② 技术架构（约 60 秒）**
 
 > "技术栈是 FastAPI + Next.js 14 + ChromaDB + DeepSeek，前后端分离。架构分五层：前端是 Next.js 单页应用，负责知识库管理、文件上传、问答界面；API 层是 FastAPI 的路由，负责参数校验和错误响应；服务层是核心业务——文档摄取管道、混合检索、RAG 编排；AI/数据层是 Embedding 模型和大模型客户端；存储层是 ChromaDB 向量库加本地文件系统。
-> 系统有两条核心流水线。摄取流水线：上传文件 → 校验 → 保存 → 按格式解析（PDF 还有 OCR 兜底）→ 文本清洗 → 切分成 chunk → Embedding 向量化 → 写入向量库。查询流水线：用户提问 → 关键词检索和向量检索并行 → 按 3:7 加权融合 → 相关性过滤 → 取 Top-K → 拼装上下文 → DeepSeek 生成带来源引用的答案。"
+> 系统有两条核心流水线。摄取流水线：上传文件 → 校验 → 保存 → 按格式解析（PDF 还有 OCR 兜底）→ 文本清洗 → 切分成 chunk → Embedding 向量化 → 写入向量库。查询流水线：用户提问 → T0703 `retrieve()` facade 组装关键词/向量检索 →（设计上可并行；当前 T0702 实现顺序执行）按 3:7 加权融合 → 相关性过滤 → 取 Top-K → [设计] 拼装上下文 → [设计] DeepSeek 生成带来源引用的答案。"
 
 **③ 我的工作（约 45 秒）**
 
-> "我独立完成了这个项目的完整周期：首先是产品设计——写了 2800 多行的 SPEC 规格文档，把 17 个功能模块的接口契约、数据模型、错误码目录、验收标准全部冻结下来；然后是分 13 个 Phase、55 个 Task 的工程实现，目前已完成 Phase 0 到 6 的 Task——包括配置管理、统一错误体系、VectorStore 抽象层、Embedding 服务、文档摄取管道、知识库管理与上传 API，以及 mixed-language tokenizer、倒排索引、lazy/dirty 全量重建和 normalized keyword score；项目用 Gate Review 和学习复盘做阶段收口。这个过程中我重点解决了几个问题，下面挑三个讲。"
+> "我独立完成了这个项目的完整周期：首先是产品设计——写了 2800 多行的 SPEC 规格文档，把 17 个功能模块的接口契约、数据模型、错误码目录、验收标准全部冻结下来；然后是分 13 个 Phase、55 个 Task 的工程实现，目前已完成 Phase 0 到 6，并完成 Phase 7 的 T0701/T0702/T0703 retrieval slice——包括配置管理、统一错误体系、VectorStore 抽象层、Embedding 服务、文档摄取管道、知识库管理与上传 API，以及 mixed-language tokenizer、倒排索引、lazy/dirty 全量重建、normalized keyword score、query embedding → vector_score adapter、按 chunk_id 的 hybrid fusion/filter 和 `retrieve()` shared-store facade；项目用 Gate Review 和学习复盘做阶段收口。这个过程中我重点解决了几个问题，下面挑三个讲。"
 
 **④ 技术挑战 + 解决方案（约 45 秒）**
 
@@ -35,13 +35,13 @@
 
 **⑤ 收尾（约 15 秒，可选）**
 
-> "项目还在继续，下一步是 Phase 7 的向量检索与 hybrid fusion，之后才是问答和前端。如果你对某个模块的实现细节感兴趣，我可以展开讲摄取管道的三态回滚、上传接口的失败清理与 15 场景验证、知识库重命名的两层补偿，或者 Phase 6 如何用同一 tokenizer 统一 indexing/query token space，再以 lazy + dirty lifecycle 管理内存倒排索引。"
+> "项目还在继续，T0701 的向量检索 adapter、T0702 的按 chunk_id 加权融合与 relevance filter，以及 T0703 的 `retrieve(query, collection, top_k)` 统一 retrieval facade 已完成；之后才是问答和前端。如果你对某个模块的实现细节感兴趣，我可以展开讲摄取管道的三态回滚、上传接口的失败清理与 15 场景验证、知识库重命名的两层补偿，或者 Phase 6 如何用同一 tokenizer 统一 indexing/query token space，再以 lazy + dirty lifecycle 管理内存倒排索引。"
 
 ### 话术设计要点（为什么这么讲）
 
 | 分段 | 面试官在听什么 | 你的弹药 |
 |------|--------------|---------|
-| 背景 | 你懂不懂业务，做的东西有没有真实用户 | "字面不重合但语义是答案"的例子（AC-F010-01 真实案例） |
+| 背景 | 你懂不懂业务，做的东西有没有真实用户 | "字面不重合但语义是答案"的例子（SPEC AC-F010-01 语义示例；真实 semantic E2E 尚未验证） |
 | 架构 | 你能不能把复杂系统讲清楚；分层是否合理 | 五层架构 + 两条流水线——**结构感是面试官第一印象** |
 | 我的工作 | 你是不是真的做事的，还是抄的 | SPEC 冻结 + Phase/Task 编排 + Gate Review——**过程证据比结果更有说服力** |
 | 挑战 | 你有没有遇到真问题、有没有深度思考 | 三态回滚、分数语义边界——**选自己最能展开的两个**，宁缺毋滥 |
@@ -71,9 +71,9 @@
 
 **展开点**：distance→similarity 语义边界（`clamp(1.0 - distance)` 不出 `search()` 方法）；11 方法契约与 SPEC F008 逐行对齐。
 
-### 亮点 3：混合检索的分数语义设计（设计亮点，Phase 7 实现）
+### 亮点 3：混合检索的分数语义与 identity fusion（T0701/T0702/T0703 已实现，QA endpoint 为 Future）
 
-**一句话**：关键词 30% + 向量 70% 加权融合前，先在 VectorStore 边界把"距离"转成 [0,1] "相似度"，保证两路分数同向同尺度；四层分数命名（similarity_score → vector_score → final_score → relevance_score）每层只改名不改值。
+**一句话**：VectorStore 先把"距离"转成 [0,1] "相似度"，T0701 映射为 `vector_score`，T0702 再按 `chunk_id` 用 0.3/0.7 加权得到 `final_score`，过滤低于 `MIN_RELEVANCE_SCORE` 的候选并取最终 Top-K，T0703 通过 `retrieve()` facade 组装共享 store；QA endpoint 仍是 Future。
 
 **为什么值得说**：大部分人只会调 `collection.query()` 拿到距离直接用——能讲清楚"为什么距离不能直接加权"说明你真的理解检索数学。
 
@@ -193,7 +193,7 @@
 
 > 分类：项目理解（Q01-Q08）/ 架构设计（Q09-Q16）/ RAG（Q17-Q26）/ 工程问题（Q27-Q34）。
 > 每题四个部分：**面试官问题**（怎么问）/ **优秀回答**（怎么答）/ **进一步追问**（面试官大概率接着问什么）/ **回答方向**（追问怎么接）。
-> ⚠️ 标注 `[设计]` 的题目主要涉及 Phase 7-12：回答时用"设计上是……，实现排在 Phase X"的诚实话术。Phase 6 keyword retrieval 已实现；涉及完整 hybrid pipeline 时仍只讲已冻结设计。
+> ⚠️ 标注 `[设计]` 的题目主要涉及 Phase 7-12：回答时用"设计上是……，实现排在 Phase X"的诚实话术。Phase 6 keyword retrieval、T0701 vector adapter、T0702 service-level hybrid 与 T0703 `retrieve()` facade 已实现；QA endpoint、context/LLM 与后续 Phase 仍只讲已冻结设计。
 
 ---
 
@@ -201,7 +201,7 @@
 
 **面试官**：先介绍一下你这个 RAG 项目吧。
 
-**优秀回答**：按第一部分的三段话术：背景（企业知识散落、关键词搜索字面匹配失效）→ 架构（五层 + 两条流水线）→ 我的工作（SPEC 冻结 + Phase 0-6 已实现）→ 挑战（三态回滚、分数语义边界、共享 tokenizer 与索引生命周期）。
+**优秀回答**：按第一部分的三段话术：背景（企业知识散落、关键词搜索字面匹配失效）→ 架构（五层 + 两条流水线）→ 我的工作（SPEC 冻结 + Phase 0-6 完成并完成 T0701/T0702/T0703 retrieval slice）→ 挑战（三态回滚、分数语义边界、共享 tokenizer 与索引生命周期）。
 
 **进一步追问**：这个项目是个人学习项目还是有真实用户？
 
@@ -297,11 +297,11 @@
 
 **面试官**：在白板上画一下架构，从用户提问到看到答案，数据经过了什么？
 
-**优秀回答**：五层架构图（Frontend → API → Service → AI/Data → Storage）。查询链路：① 前端 QA 面板发 POST /api/query（question + kb_name + history）；② API 层校验参数（Pydantic model）；③ 服务层规划为两路检索——关键词检索（倒排索引 + bigram 分词，keyword_score）与向量检索（query 编码成 384 维向量 → ChromaDB HNSW 搜索 → distance 转 similarity_score）；④ 融合：`keyword*0.3 + vector*0.7` 按 chunk_id 去重合并；⑤ 排序 DESC → 过滤（MIN_RELEVANCE_SCORE=0.30）→ Top-K；⑥ 拼装上下文（chunk 内容 + 来源标注，MAX_CONTEXT_CHARS 截断）；⑦ DeepSeek 生成（System Prompt 约束只用提供的文档）；⑧ 响应含 answer + sources（chunk_id/file_name/score，**来源由程序组装，不是 LLM 生成**）。其中 Phase 6 已实现关键词支路；向量支路、两路并发与后融合仍属于 Phase 7 设计。
+**优秀回答**：五层架构图（Frontend → API → Service → AI/Data → Storage）。查询链路的 SPEC 目标是：① 前端 QA 面板发 POST /api/query（question + kb_name + history）；② API 层校验参数（Pydantic model）；③ 服务层先执行两路检索——关键词检索（倒排索引 + bigram 分词，keyword_score）与向量检索（T0701 已实现 query → embedding → VectorStore.search → `vector_score`）；④ T0702 已在 service level 按 `chunk_id` 合并，计算 `keyword*0.3 + vector*0.7`；⑤ T0702 已实现排序 DESC → 过滤（MIN_RELEVANCE_SCORE=0.30）→ Top-K；⑥ T0703 已提供 `retrieve(query, collection, top_k)` facade：先用同一个 `ChromaVectorStore` 做 empty-collection preflight，再把同一 store 注入 keyword/vector/hybrid retrievers；⑦ [设计] 拼装上下文（chunk 内容 + 来源标注，MAX_CONTEXT_CHARS 截断）；⑧ [设计] DeepSeek 生成（System Prompt 约束只用提供的文档）；⑨ [设计] 响应含 answer + sources（chunk_id/file_name/score，**来源由程序组装，不是 LLM 生成**）。当前真实状态是 Phase 6 keyword、T0701 vector adapter、T0702 service fusion/filter 与 T0703 facade 已有 unit evidence；facade 测试是 patched composition boundary，不等于真实 upload → Chroma → query E2E；QA endpoint 与真实 E2E 仍是 Future/DEFERRED。
 
 **进一步追问**：关键词检索和向量检索为什么并行而不是串行？
 
-**回答方向**：两路独立无依赖（一个查倒排索引，一个查向量库），串行会浪费延迟。当前真实状态：Phase 6 keyword branch 已实现并通过 unit tests；vector branch、两路并发与后融合属于 Phase 7 设计，尚未实现。
+**回答方向**：两路在数据依赖上独立（一个查倒排索引，一个查向量库），理论上可以并行以降低 wall-clock latency。当前真实状态：Phase 6 keyword branch、T0701 vector adapter、T0702 merge/fusion/filter 与 T0703 facade wiring 已实现并通过各自的 unit tests；Hybrid 当前顺序执行，facade 的 T0703 测试只验证 patched composition/propagation，真实 metadata 贯通、upload → Chroma → query E2E 与 QA endpoint 仍属于待实现范围。
 
 ---
 
@@ -453,7 +453,7 @@
 
 **面试官**：检索到几十个 chunk 之后呢？
 
-**优秀回答**：管道顺序是 SPEC 冻结的不变量：Retrieve（两路并行）→ Merge（chunk_id 合并去重）→ Calculate final_score（0.3kw + 0.7vec）→ Sort DESC → Relevance Filter（< 0.30 丢弃）→ Top-K。设计要点：① **顺序不可换**——先算分再排序再过滤再截断，截断在最后（避免把高分 chunk 挤出去）；② 阈值是硬过滤（不是 soft 加分）——低于 0.30 的 chunk 被视为噪音，宁可少召回不可乱召回；③ 检索全空 ≠ 上下文全空：检索无结果 → 明确错误（COLLECTION_EMPTY 或直接告知"知识库中没有相关内容"），**不会**让 LLM 裸答（防止幻觉）；④ Top-K 后拼装：chunk 内容 + 来源标注，总长超 MAX_CONTEXT_CHARS 时截断（保留高分优先）。
+**优秀回答**：管道顺序是 SPEC 冻结的不变量：Retrieve（设计上两路可并行；当前 T0702 顺序执行）→ Merge（chunk_id 合并去重）→ Calculate final_score（0.3kw + 0.7vec）→ Sort DESC → Relevance Filter（< 0.30 丢弃）→ Top-K。设计要点：① **顺序不可换**——先算分再排序再过滤再截断，截断在最后（避免把高分 chunk 挤出去）；② 阈值是硬过滤（不是 soft 加分）——低于 0.30 的 chunk 被视为噪音，宁可少召回不可乱召回；③ 检索全空 ≠ 上下文全空：检索无结果 → 明确错误（COLLECTION_EMPTY 或直接告知"知识库中没有相关内容"），**不会**让 LLM 裸答（防止幻觉）；④ Top-K 后拼装：chunk 内容 + 来源标注，总长超 MAX_CONTEXT_CHARS 时截断（保留高分优先）。
 
 **进一步追问**：为什么过滤在排序之后？
 
@@ -597,7 +597,7 @@
 
 **面试官**：项目有测试吗？怎么保证质量？
 
-**优秀回答**：三层验证：① **单元层**——每个模块跑最小相关验证；Phase 6 已有 `unittest` suite，6 个 tokenizer tests + 7 个 KeywordRetriever tests 共 13/13 PASS，Mock(spec=VectorStore) 隔离真实存储边界；② **契约层**——API / service contract 对照 SPEC，验证字段、状态码、score 与 lifecycle，不自己发明；③ **验收层**——按 AC 报告 PASS / DEFERRED，Phase 5 的 15 场景端点脚本和 Phase 6 Gate 都明确记录 real、mock 与 E2E 边界。诚实边界：v1 没有覆盖全项目的统一 CI；Phase 6 的 unit tests 不等于真实 upload → ChromaDB → query E2E，检索质量也没有量化评估集。**流程价值**：Gate Review + Learning Review 让证据强度和教学结论都被单独校准。
+**优秀回答**：三层验证：① **单元层**——每个模块跑最小相关验证；当前 `test_qa` suite 为 24/24 PASS：6 个 tokenizer tests + 7 个 KeywordRetriever tests + 4 个 VectorRetriever tests + 4 个 HybridRetriever tests + 3 个 T0703 facade composition tests，Mock(spec=VectorStore)、injected embedder 与 patched retrievers 隔离真实存储和模型边界；② **契约层**——API / service contract 对照 SPEC，验证字段、状态码、score 与 lifecycle，不自己发明；③ **验收层**——按 AC 报告 PASS / DEFERRED，Phase 5 的 15 场景端点脚本和 Phase 6 Gate 都明确记录 real、mock 与 E2E 边界。诚实边界：v1 没有覆盖全项目的统一 CI；T0701/T0702/T0703 unit tests 不等于真实 bge-small-zh-v1.5、upload → ChromaDB → query E2E，T0703 facade 的 concrete-store lifecycle、Hybrid 的 metadata 完整贯通、二次 vector recall 成本与检索质量也没有量化评估集。**流程价值**：Gate Review + Learning Review 让证据强度和教学结论都被单独校准。
 
 **进一步追问**：如果重来，你会先写测试还是先写实现？
 
@@ -986,7 +986,7 @@
 
 > 状态：T0601/T0602 均为 DONE；Phase Gate Review 于 2026-08-27 裁定 **PHASE_6_PASS**；Phase Learning Review 于 2026-08-27 完成。
 > 代码教材 → [phase-06-keyword-retrieval.md](../phase-06-keyword-retrieval.md)；工程复盘 → [phase-06-engineering-review.md](../engineering-review/phase-06-engineering-review.md)。
-> 诚实边界：Phase 6 的 tokenizer、in-memory inverted index、lazy/dirty lifecycle 与 keyword score 已实现并通过 unit tests；真实 upload → ChromaDB → query E2E、vector retrieval 与 hybrid fusion 仍属于后续 Phase / T1203 验收范围。
+> 诚实边界：Phase 6 的 tokenizer、in-memory inverted index、lazy/dirty lifecycle 与 keyword score 已实现并通过 unit tests；T0701 vector adapter、T0702 service-level hybrid fusion/filter 与 T0703 `retrieve()` facade 已实现并通过各自的 Mock boundary unit tests；真实 bge-small-zh-v1.5 semantic match、metadata 完整贯通、concrete Chroma lifecycle 与真实 upload → ChromaDB → query E2E 仍属于后续 Phase / 集成验收范围。
 
 ### P6-1. 30 秒回答
 
@@ -1043,7 +1043,7 @@
 
 **P6Q8. 13 个 tests 证明了什么？没有证明什么？**
 
-- **推荐回答**：6 个 tokenizer tests 证明 SPEC examples、lowercase、单字符过滤、segment boundary 和 stable dedup；7 个 retriever tests 证明 lazy `list_chunks`、无命中、0.6 partial score、mixed-language match、排序/top_k、dirty rebuild 与 absent invalidation no-op。测试使用 Mock VectorStore，所以没有证明真实 ChromaDB compatibility，也没有发起真实 upload HTTP workflow；AC-F009-05 的 literal E2E 仍是 T1203 边界。
+- **推荐回答**：6 个 tokenizer tests 证明 SPEC examples、lowercase、单字符过滤、segment boundary 和 stable dedup；7 个 retriever tests 证明 lazy `list_chunks`、无命中、0.6 partial score、mixed-language match、排序/top_k、dirty rebuild 与 absent invalidation no-op。测试使用 Mock VectorStore，所以没有证明真实 ChromaDB compatibility，也没有发起真实 upload HTTP workflow；AC-F009-05 的 literal E2E 仍是 Phase 12/T1202 边界。
 - **考察点**：是否能把 test count 转译成 observable behavior 和 evidence boundary。
 
 ### P6-4. Engineering Questions（4 道工程深问）
@@ -1063,14 +1063,14 @@
 
 **EP6-4. 这条检索支路怎样安全接到 Phase 7？**
 
-- **推荐回答**：Phase 6 已冻结稳定的 result shape 和 [0,1]、越大越相关的 `keyword_score`，Phase 7 可以按 chunk_id 与 vector results merge，再执行 `0.3 * keyword_score + 0.7 * vector_score`。但当前仓库还没有 VectorRetriever、HybridRetriever、relevance filter 或 query endpoint；我会把“可供下游消费的 contract”与“下游已经实现”明确分开。
+- **推荐回答**：Phase 6 已冻结稳定的 result shape 和 [0,1]、越大越相关的 `keyword_score`，T0701 提供对应的 vector result shape 与 `vector_score` pass-through，T0702 已按 `chunk_id` merge 并执行 `0.3 * keyword_score + 0.7 * vector_score`、relevance filter 与最终 Top-K，T0703 再提供 `retrieve(query, collection, top_k)` facade，把同一个 `ChromaVectorStore` 注入三层 retriever，并在空 collection 时短路返回 `[]`。当前仍没有 query endpoint；我会把“可供下游消费的 contract”与“HTTP/QA 下游已经完成”明确分开。
 - **考察点**：是否能讲清当前接口的 downstream readiness，而不提前认领 Future code。
 
 ### P6-5. 本 Phase 的诚实边界
 
-- 已实现：mixed-language tokenizer、per-collection in-memory inverted index、lazy build、dirty/full rebuild、normalized keyword score、public-interface-only build、13 个 unit tests。
+- 已实现：mixed-language tokenizer、per-collection in-memory inverted index、lazy build、dirty/full rebuild、normalized keyword score、public-interface-only build、13 个 Phase 6 unit tests；Phase 7 的 T0701 vector adapter、T0702 chunk_id-based fusion/filter 与 T0703 `retrieve()` facade（empty preflight、shared store、error propagation）也已实现。
 - 已验证但有边界：AC-F009-01～04 的 unit behavior 与 AC-F009-05 的 seam/lifecycle unit path；测试使用 Mock VectorStore。
-- 尚未验证或未实现：真实 upload → ChromaDB → query E2E、vector retrieval、hybrid fusion、QA API、incremental/persistent index、multi-process coherence、concurrency lock、量化 retrieval-quality benchmark。
+- 尚未验证或未实现：真实 bge-small-zh-v1.5 semantic match、upload → ChromaDB → query E2E、T0703 facade 的 concrete-store lifecycle、QA API、metadata 完整贯通、incremental/persistent index、multi-process coherence、concurrency lock、量化 retrieval-quality benchmark。
 
 ---
 
@@ -1091,6 +1091,6 @@
 - [ ] 能用一句话解释 Phase 6：shared tokenizer contract → derived inverted-index snapshot → lazy/dirty rebuild → normalized coverage ranking
 - [ ] 能画出 `_indexes` / `_chunks` / `_dirty_collections` 三份状态，并说明 class-level cache 与 instance-level VectorStore 的边界
 - [ ] 能解释 13 个 Phase 6 unit tests 各自证明什么，以及为什么它们不等于真实 upload → ChromaDB → query E2E
-- [ ] 能区分 Phase 6 已实现的 keyword branch 与 Phase 7 尚未实现的 vector / hybrid fusion
+- [ ] 能区分 Phase 6 keyword branch、T0701 vector adapter、T0702 service-level hybrid fusion/filter、T0703 已实现的 `retrieve()` facade 与仍待实现的 QA/HTTP wiring
 - [ ] 每个"已实现"的说法都能定位到代码文件；每个"已设计"的说法都标注 Phase 编号
 - [ ] 被问"为什么"时，答案里有"规模假设"（v1 是单机、万级文档、可信网络——决策都有前提）

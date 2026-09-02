@@ -9,7 +9,7 @@ T0601 把分词做成 pure function；T0602 在其上实现 per-collection in-me
 
 ## 2. 为什么需要这个模块
 
-Vector retrieval 解决 semantic similarity，keyword retrieval 补精确术语、型号、缩写和错误码。两者未来在 Phase 7 融合。Phase 6 先以共享 tokenizer 保证 indexing/query normalization 一致，再以 inverted index 将查询成本从扫描所有 chunk 转为访问相关 posting sets。
+Vector retrieval 解决 semantic similarity，keyword retrieval 补精确术语、型号、缩写和错误码；Phase 7 的 T0702 已按 `chunk_id` 将两者融合。Phase 6 先以共享 tokenizer 保证 indexing/query normalization 一致，再以 inverted index 将查询成本从扫描所有 chunk 转为访问相关 posting sets。
 
 ## 3. 核心设计决策
 
@@ -89,7 +89,7 @@ Vector retrieval 解决 semantic similarity，keyword retrieval 补精确术语�
 - **共享规则**: chunk content 与 query 必须复用同一函数，避免 indexing/query drift。
 - **隔离性**: index 只在内存中，不引入新 dependency 或持久化格式。
 - **seam 兑现**: [keyword_index.py:4](../../../backend/app/services/keyword_index.py#L4) 已从 documented no-op 变为调用 KeywordRetriever.invalidate()；既有 upload/rename/delete callers 无需改变调用形状。
-- **下游边界**: HybridRetriever/QA API 尚未实现，T0602 结果目前只有 tests 消费。
+- **下游边界**: T0702 `HybridRetriever` 已消费 T0602 的 keyword result；T0703 `retrieve()` facade 已把三层 retriever 组装到同一个入口；QA API 尚未实现。
 
 ## 5. 工程问题分析
 
@@ -160,6 +160,12 @@ AC-F009-01~04 的 unit-level behavior 已覆盖。AC-F009-05 的核心 lifecycle
 
 > **T0602 review boundary**: 本评审覆盖 Phase 6 implementation；不启动 Phase 7，不把 unit tests 写成 E2E PASS。
 
+> **后续状态（T0701 Learning Pass，2026-08-28）**：上面的“不启动 Phase 7”是 2026-08-27 Phase 6 review checkpoint。之后 T0701 已实现 `VectorRetriever`，把 query embedding 接到 `VectorStore.search()` 并透传 `vector_score`；详见 [Phase 7 Technical Learning](../phase-07-vector-retrieval.md) 与 [Phase 7 Engineering Review](./phase-07-engineering-review.md)。
+>
+> **后续状态（T0702 Learning Pass，2026-08-31）**：T0702 已在 `qa.py` 中按 `chunk_id` 完成 0.3/0.7 weighted fusion、relevance filter 与最终 Top-K，并以 unit tests 验证 service-level behavior。当时 T0703 unified wiring、真实 upload → ChromaDB → query E2E 与 QA API 仍未实现；本 Phase 6 review 的历史 Gate 结论不因此被改写。
+>
+> **后续状态（T0703 Learning Pass，2026-08-31）**：T0703 已在 `qa.py` 提供 `retrieve(query, collection, top_k)` facade。它在边界处创建 concrete `ChromaVectorStore`，对空 collection 返回 `[]`，非空时把同一 store 注入 Keyword/Vector/Hybrid retrievers；missing collection 的异常不被吞掉。3 个 facade tests 验证的是 patched composition/propagation boundary，而非真实 Chroma lifecycle 或 upload → query E2E。Phase 6 的 Gate/Learning Review 历史结论保持不变；QA API、context/LLM 与真实集成仍待后续 Phase。
+
 ## 10. Phase 6 Gate Review（2026-08-27）
 
 ### 10.1 Verdict
@@ -174,7 +180,7 @@ AC-F009-01~04 的 unit-level behavior 已覆盖。AC-F009-05 的核心 lifecycle
 | T0602 public-interface index build | PASS | `KeywordRetriever._build_index()` 只调用 `VectorStore.list_chunks()`，未访问 Chroma private object |
 | Lazy build + dirty/full rebuild | PASS | 首次查询只构建一次；shared invalidation seam 标脏；下一次查询重新读取全量 chunks |
 | Score / sort / top-k | PASS | AC-F009-01=1.0、AC-F009-02=[]、AC-F009-03=0.6、AC-F009-04=1.0，降序与 top-k 有独立测试 |
-| Mutation integration seam | PASS（代码路径 + unit lifecycle） | upload、rename、delete 的既有调用点均进入 `invalidate_keyword_index()`；真实 HTTP/Chroma E2E 仍按计划留给 T1203 |
+| Mutation integration seam | PASS（代码路径 + unit lifecycle） | upload、rename、delete 的既有调用点均进入 `invalidate_keyword_index()`；真实 HTTP/Chroma E2E 仍按计划留给 Phase 12/T1202 |
 | Focused test | PASS | `python -m unittest tests.test_qa -v` → 13/13 |
 | Discovered regression suite | PASS | `python -m unittest discover -s tests -v` → 13/13（当前仓库 tests 仅此 suite） |
 | Syntax/import compilation | PASS | `python -m compileall -q app tests` |
@@ -190,7 +196,7 @@ AC-F009-01~04 的 unit-level behavior 已覆盖。AC-F009-05 的核心 lifecycle
 - **AC-F009-02 — PASS**：无 token 命中返回空列表。
 - **AC-F009-03 — PASS**：3/5 unique query tokens 命中，score = 0.6。
 - **AC-F009-04 — PASS**：中英混合 query 的 `python` / `编程` 均命中，score = 1.0。
-- **AC-F009-05 — PASS（Phase 6 scope）**：已建索引经 shared seam 标脏后，下一次 search 全量重建并检索到新增 chunk。真实 upload HTTP → ChromaDB → query 的字面 E2E 未宣称通过，继续归 T1203。
+- **AC-F009-05 — PASS（Phase 6 scope）**：已建索引经 shared seam 标脏后，下一次 search 全量重建并检索到新增 chunk。真实 upload HTTP → ChromaDB → query 的字面 E2E 未宣称通过，继续归 Phase 12/T1202。
 
 ### 10.4 Non-blocking findings
 

@@ -14,7 +14,7 @@
 | [Engineering Review](./engineering-review/phase-06-engineering-review.md) | 设计取舍、维护性、性能、Known Gaps、Future 演进 | 逐行语法教学 |
 | [Interview Guide](./interview-notes/dx-rag-interview-guide.md) | Phase Learning Review 已 consolidation 的项目级话术 | 在 Technical Learning 复制完整答案 |
 
-本文把仓库能直接证明的 T0601 tokenizer 与 T0602 KeywordRetriever 标为 [PROJECT FACT]。Phase 7 hybrid retrieval、Phase 8 QA API、持久化/增量 keyword index 等仍属于 [FUTURE]；SPEC 已经设计好，不等于代码已经实现。
+本文把仓库能直接证明的 T0601 tokenizer 与 T0602 KeywordRetriever 标为 [PROJECT FACT]。Phase 7 的 T0702 hybrid merge/fusion/filter 与 T0703 `retrieve()` wiring facade 已在后续 Task 中实现；Phase 8 QA API、持久化/增量 keyword index 等仍属于 [FUTURE]；SPEC 已经设计好，不等于代码已经实现。
 
 ---
 
@@ -35,7 +35,7 @@ Phase 6 建成了一条 lexical retrieval（词面检索）支路：把 query �
 
 ### 1.2 为什么 RAG 还需要关键词检索
 
-[SPEC F009](../SPEC.md#f009-keyword-retrieval) 的目标不是替代 vector retrieval，而是补它的盲区。向量检索擅长“意思接近”，关键词检索擅长“字面必须出现”，例如产品型号、错误码、类名和缩写。Phase 7 才会把两路结果融合；T0601 先解决一个更基础的问题：什么叫“字面相同”？
+[SPEC F009](../SPEC.md#f009-keyword-retrieval) 的目标不是替代 vector retrieval，而是补它的盲区。向量检索擅长“意思接近”，关键词检索擅长“字面必须出现”，例如产品型号、错误码、类名和缩写。T0702 已在 Phase 7 把两路结果按 `chunk_id` 融合；T0601 先解决一个更基础的问题：什么叫“字面相同”？
 
 ### 1.3 本章核心学习点
 
@@ -116,8 +116,8 @@ T0601 的 Out of Scope 来自 [TASKS:1590](../TASKS.md#L1590)，并与 [SPEC F00
 - **所属层**: Service Layer；实现位于 [backend/app/services/qa.py](../../backend/app/services/qa.py)。
 - **直接依赖**: T0601 tokenize() + T0108 VectorStore.list_chunks() public interface。
 - **输入/输出契约**: keyword_search(collection, query, top_k) → List[Dict[str, object]]，字段为 chunk_id/file_id/file_name/content/keyword_score。
-- **下游消费者**: [FUTURE] Phase 7 HybridRetriever 消费 keyword results。
-- **边界**: qa.py 已有 tokenizer 与 KeywordRetriever，但没有 HybridRetriever、LLM QA service 或 HTTP query endpoint。
+- **下游消费者**: Phase 7 T0702 `HybridRetriever` 消费 keyword results；T0703 `retrieve()` facade 负责组装统一检索入口；QA endpoint 仍为 [FUTURE]。
+- **边界**: qa.py 已有 tokenizer、KeywordRetriever、HybridRetriever 与 T0703 `retrieve()` facade，但没有 LLM QA service 或 HTTP query endpoint。
 
 TypeScript 类比：tokenize() 像无副作用的 tokenize.ts utility；KeywordRetriever 像注入 VectorStore port 的 in-memory search service，而不是 route handler。
 
@@ -624,7 +624,7 @@ tokenize(query)         ──→ lookup → count → normalize → rank
 - tokenizer 负责 normalization，不负责存储和检索。
 - KeywordRetriever 负责 index/cache/score/top_k。
 - VectorStore 负责通过 public list_chunks() 提供数据；外部不得访问 Chroma private API。
-- [FUTURE] Phase 7 负责 keyword/vector fusion，不应塞进 tokenizer。
+- Phase 7/T0702 负责 keyword/vector fusion；不要把 merge/filter 塞进 tokenizer。
 - keyword_index.py 是 mutation callers 与 shared cache 之间的 seam；它不拥有第二份 index。
 
 ---
@@ -659,7 +659,7 @@ Phase 6 的工程主线从“小函数，大契约”扩展为“shared snapshot
 
 本 Phase 没有真实 incident、SPEC conflict 或 production-like failure investigation，因此没有为了凑格式虚构 STAR；晋升的是可由代码与测试证明的技术与工程问答。
 
-- **诚实边界**：tokenizer、inverted index、lazy/dirty lifecycle、keyword score 与 top_k 已实现并通过 unit tests；真实 upload-to-search E2E、hybrid retrieval 与 QA API 尚未完成。
+- **诚实边界**：tokenizer、inverted index、lazy/dirty lifecycle、keyword score 与 top_k 已实现并通过 unit tests；T0702 的 service-level hybrid retrieval 与 T0703 `retrieve()` facade 已实现并通过独立 unit tests；真实 concrete Chroma lifecycle、upload-to-search E2E 与 QA API 尚未完成。
 
 ---
 
@@ -742,4 +742,10 @@ T0602
   Deferred    literal upload-to-search E2E → Phase 12
 ~~~
 
-> **Phase 6 Learning Review 收官（2026-08-27）**：T0601 tokenizer + T0602 inverted index/search 已 consolidation 为一个“共享 normalization contract → derived snapshot → dirty/full rebuild → normalized coverage ranking”的统一心智模型。Phase Gate Review 已裁定 PHASE_6_PASS，Interview Candidates 已筛选晋升到项目级 Interview Guide；真实 upload-to-search E2E 仍归 Phase 12。本次不启动 Phase 7。
+> **Phase 6 Learning Review 收官（2026-08-27）**：T0601 tokenizer + T0602 inverted index/search 已 consolidation 为一个“共享 normalization contract → derived snapshot → dirty/full rebuild → normalized coverage ranking”的统一心智模型。Phase Gate Review 已裁定 PHASE_6_PASS，Interview Candidates 已筛选晋升到项目级 Interview Guide；真实 upload-to-search E2E 仍归 Phase 12。本段记录的是当时的历史 checkpoint。
+>
+> **后续状态（T0701 Learning Pass，2026-08-28）**：Phase 6 收官时尚未启动 Phase 7；之后 T0701 已在 `qa.py` 增加 `VectorRetriever`，其 query embedding、`similarity_score → vector_score` 映射与 expanded recall 见 [Phase 7 Technical Learning](./phase-07-vector-retrieval.md)。
+>
+> **后续状态（T0702 Learning Pass，2026-08-31）**：Phase 7 已在 `qa.py` 增加 `HybridRetriever`，按 `chunk_id` 做 0.3/0.7 weighted fusion、`MIN_RELEVANCE_SCORE` filter 与最终 Top-K；当时 T0703 unified wiring、真实 upload-to-search E2E 与 QA API 仍为 Future。本段保留 T0702 checkpoint 的历史边界，不把 keyword branch 的完成误写成完整 QA 完成。
+>
+> **后续状态（T0703 Learning Pass，2026-08-31）**：T0703 已在 `qa.py` 提供 `retrieve(query, collection, top_k)` facade：创建 concrete `ChromaVectorStore`，先做 empty-collection preflight，非空时把同一个 store 注入 Keyword/Vector/Hybrid retrievers，并让 missing-collection 异常自然向上传播。此 facade 的 wiring tests 是 patched composition boundary；真实 upload → ChromaDB → query E2E、QA API 与 context/LLM 仍属于后续范围。本段只同步后续事实，不改写 Phase 6 原有 Gate/Learning Review 结论。
