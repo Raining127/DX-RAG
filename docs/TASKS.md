@@ -1808,7 +1808,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0801 — Context Assembly & Source Assembly
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement RAG context assembly (format chunks with source labels, apply MAX_CONTEXT_CHARS boundary without mid-chunk truncation) and source list assembly from retrieval results.
 
@@ -1866,7 +1866,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0802 — Conversation History Processing
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement conversation history validation, formatting, and truncation for RAG prompt assembly.
 
@@ -1920,7 +1920,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0803 — DeepSeek Chat Client
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement the DeepSeek Chat API client with System Prompt, retry logic, timeout handling, and all error mappings.
 
@@ -1988,7 +1988,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0804 — QA Service Orchestration
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Wire the complete QA pipeline: retrieve → assemble context → process history → build prompt → call LLM → assemble sources → return result.
 
@@ -2055,7 +2055,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0805 — POST /api/query Endpoint
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement the POST /api/query endpoint with request validation, QA service orchestration, and all error responses.
 

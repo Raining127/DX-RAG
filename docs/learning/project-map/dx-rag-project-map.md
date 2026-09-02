@@ -3,10 +3,10 @@
 > 从项目整体角度理解 DX-RAG：它是什么、为什么存在、每一层做什么、13 个 Phase 如何拼成完整系统。
 > 不深入代码细节——代码级的逐行精读请阅读对应的 `phase-XX-*.md` 学习笔记，工程决策分析请阅读 `engineering-review/`。
 
-**当前状态快照**（以 `docs/TASKS.md` 为准，2026-08-31）：
+**当前状态快照**（以 `docs/TASKS.md` 为准，2026-09-02）：
 - SPEC.md v1.6 **FROZEN**，Blocking Questions = 0
 - Phase 0–5 ✅ DONE（工程地基 + 向量存储 + 嵌入 + 文档管道 + 知识库管理 API + 文件上传 API；Phase 5：Gate Review 裁定 PHASE_5_FAIL → F-1/F-2 修复完成 → Re-review 待执行；Learning Pass / ER / Learning Review 已完成）
-- Phase 6 ✅ COMPLETE（T0601–T0602 DONE；PHASE_6_PASS；Learning Review 完成，2026-08-27）；Phase 7 🟡 IN PROGRESS（T0701–T0703 DONE；Phase Gate/Learning Review 待执行）；Phase 8–12 ⬜ TODO
+- Phase 6 ✅ COMPLETE（T0601–T0602 DONE；PHASE_6_PASS；Learning Review 完成，2026-08-27）；Phase 7 🟡 IN PROGRESS（T0701–T0703 DONE；Phase Gate/Learning Review 待执行）；Phase 8 🟡 IN PROGRESS（T0801–T0805 DONE；Phase Gate/Learning Review 待执行）；Phase 9–12 ⬜ TODO
 
 ---
 
@@ -83,7 +83,7 @@ RAG（Retrieval-Augmented Generation）正是针对这四点设计的：**检索
 │  /api/health       ← Phase 0 ✅ 已实现                            │
 │  /api/collections  ← Phase 4 ✅                                  │
 │  /api/upload       ← Phase 5 ✅                                  │
-│  /api/query        ← Phase 8 ⬜                                  │
+│  /api/query        ← Phase 8 ✅（T0805）                         │
 │  /api/files        ← Phase 9 ⬜                                  │
 │  统一错误格式 {error: {code, message, details}} ✅                 │
 └───────────────────────────┬──────────────────────────────────────┘
@@ -97,7 +97,8 @@ RAG（Retrieval-Augmented Generation）正是针对这四点设计的：**检索
 │  Vector Retriever ✅   query embedding→similarity（T0701）       │
 │  Hybrid Retriever ✅   chunk_id merge→fusion→filter（T0702）    │
 │  Retrieval facade ✅    retrieve() shared-store wiring（T0703）   │
-│  QA Service ⬜         context→LLM→来源（Phase 8）                │
+│  DeepSeek Client ✅     prompt/retry/error adapter（T0803）       │
+│  QA Service ✅         context→LLM→来源（T0804, Phase 8）         │
 │  Embedding ✅      bge-small-zh-v1.5 lazy singleton（Phase 2）   │
 │  VectorStore ✅    11 方法公共接口 + ChromaDB 实现（Phase 1）      │
 └──────────┬──────────────────┬──────────────────┬────────────────┘
@@ -106,8 +107,8 @@ RAG（Retrieval-Augmented Generation）正是针对这四点设计的：**检索
 ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────────┐
 │ AI/DATA LAYER    │ │ STORAGE LAYER    │ │ EXTERNAL AI          │
 │                  │ │                  │ │                      │
-│ ChromaDB ✅      │ │ uploads/         │ │ DeepSeek Chat ⬜     │
-│ (每 KB 一个       │ │ {kb_name}/       │ │ (答案生成, Phase 8)   │
+│ ChromaDB ✅      │ │ uploads/         │ │ DeepSeek Chat ✅     │
+│ (每 KB 一个       │ │ {kb_name}/       │ │ (T0803 client)       │
 │  collection,     │ │ 原始上传文件 ✅    │ │                      │
 │  cosine+HNSW)    │ │                  │ │ Qwen-VL-Plus ✅      │
 │                  │ │ models/          │ │ (扫描页 OCR, Phase 3) │
@@ -153,7 +154,7 @@ Invalidate keyword index（该 KB 的倒排索引标记 dirty，下次查询重�
 
 ### 2.3 用户查询流程（Query Flow）
 
-> 下图是 SPEC 目标查询流；截至当前 checkout，T0701–T0703 已完成的是 Service Layer 的 vector/hybrid slice 与 `retrieve()` facade，`/api/query`、Context Assembly 与 LLM 仍未实现。[PROJECT FACT]
+> 下图是 SPEC 目标查询流；截至当前 checkout，T0701–T0703 已完成 Service Layer 的 vector/hybrid slice 与 `retrieve()` facade，T0801/T0802 已分别提供 Context/Source 与 history converters，T0803 已提供 DeepSeek client，T0804 已将这些边界接成 QAService，T0805 已接入 `/api/query`、HTTP request validation 与 response envelope；真实 provider/Chroma/upload E2E 与前端集成仍未验证。[PROJECT FACT]
 
 ```
 用户输入问题（选择 KB，携带对话历史）
@@ -162,12 +163,12 @@ Invalidate keyword index（该 KB 的倒排索引标记 dirty，下次查询重�
 Frontend: POST /api/query {question, collection_name, top_k, history}
     │
     ▼
-API Layer 校验 → QA Service
+API Layer 校验（T0805）→ QA Service（T0804；当前也可被 direct service caller 调用）
     │
     ├─ KB 有 0 chunk → 409 COLLECTION_EMPTY（不检索、不调 LLM）
     │
     ▼
-Retrieval facade（T0703 Service Layer；创建共享 ChromaVectorStore，先检查 chunk count，再委托 T0702 Hybrid）:
+QA Service direct HybridRetriever path（T0804；注入/懒创建共享 VectorStore；不调用 module-level retrieve facade）:
     Hybrid Retrieval（关键词 + 向量，向各 branch 传入 top_k × 2；当前 T0701 vector path 还会将其 ×2 传给 VectorStore）:
     KeywordRetriever: 倒排索引（lazy build）→ token 命中率 → keyword_score [0,1]
     VectorRetriever: 问题嵌入 → ChromaDB 检索 → similarity_score [0,1]
@@ -182,17 +183,20 @@ Retrieval facade（T0703 Service Layer；创建共享 ChromaVectorStore，先检
 Context Assembly：按分数降序拼装，MAX_CONTEXT_CHARS = 4000，不截断单个 chunk
     │
     ▼
-Prompt 组装：System Prompt + 对话历史（≤20 条）+ 参考文档 + 用户问题
+T0804 传入 prepared history/context/question + SYSTEM_PROMPT；T0803 组装两条 API message
     │
     ▼
-DeepSeek Chat（temperature=0.2, max_tokens=2048, 超时/网络/429/5xx 最多重试 2 次）
+DeepSeek Chat（T0803 client：temperature=0.2, max_tokens=2048, 超时/网络/429/5xx 最多重试 2 次）
     │
     ▼
-返回 {answer(Markdown), sources[{file_id, file_name, chunk_id, relevance_score}],
+T0804 返回 service result {answer(Markdown), sources[{file_id, file_name, chunk_id, relevance_score}],
        query, collection_name}
     │
     ▼
-Frontend: react-markdown 渲染答案 + 可折叠 sources 列表
+T0805 QueryResponse + unified error envelope（HTTP 200/4xx/5xx）
+    │
+    ▼
+Frontend: react-markdown 渲染答案 + 可折叠 sources 列表（Frontend integration 仍 Future）
 ```
 
 ---
@@ -319,13 +323,13 @@ Answer + Citation（answer 不含内联引用标记；sources 由后端从检索
 | 输出 | T0701 输出 `{chunk_id, file_id, file_name, content, vector_score}`；T0702 输出 `{chunk_id, file_id, file_name, content, final_score, metadata}`，按 `chunk_id` 合并、以 `0.3×keyword + 0.7×vector` 融合、执行 Relevance Filter 与最终 Top-K；T0703 输出 module-level `retrieve(query, collection, top_k)`，空库返回 `[]`、缺失 collection 异常传播 |
 | 为什么存在 | 检索质量决定 RAG 答案质量的上限。关键词覆盖精确匹配（型号、代码、编号），向量覆盖语义匹配（同义词、改写） |
 
-### Phase 8 — RAG & QA（问答）⬜ TODO
+### Phase 8 — RAG & QA（问答）🟡 IN PROGRESS（T0801、T0802、T0803、T0804、T0805 DONE）
 
 | 维度 | 内容 |
 |------|------|
 | 解决什么问题 | 检索结果不是答案——需要 LLM 把散落的 chunk 综合成结构化回答，并附上来源 |
 | 输入 | question + history + 检索结果 |
-| 输出 | {answer(Markdown), sources, query, collection_name}；POST /api/query |
+| 输出 | 当前 T0801–T0804：受 `MAX_CONTEXT_CHARS` 约束的 context text、backend-owned sources、经校验/截断/格式化的 history text、DeepSeek answer adapter，以及 service-level result；T0805 暴露 HTTP 200/统一错误 envelope 的 POST /api/query |
 | 为什么存在 | 产品核心价值所在：用户要的是答案，不是文档列表。System Prompt 六原则保证"只基于知识库回答、不编造、不被文档注入指令覆盖" |
 
 ### Phase 9 — File Management API（文件管理）⬜ TODO
@@ -371,4 +375,4 @@ Phase 0 (地基) ──┬──→ Phase 1 (VectorStore) ──┬──→ Pha
 
 > **Readme 导航**：[docs/learning/README.md](../README.md)（Phase 学习地图）· [SPEC.md](../../SPEC.md)（产品规格）· [TASKS.md](../../TASKS.md)（任务状态）
 > **工程决策分析**：[engineering-review/](../engineering-review/)（Phase 0-6 的设计决策与规模分析 + Phase 7 T0701–T0703 增量评审）
-> **面试准备**：[interview-notes/](../interview-notes/)（3 分钟介绍 + 34 高频问题 + Phase 4/5/6 深度章；Phase 7 当前只保留 T0701–T0703 candidates）
+> **面试准备**：[interview-notes/](../interview-notes/)（3 分钟介绍 + 34 高频问题 + Phase 4/5/6 深度章；Phase 7–8 当前保留 T0701–T0703 与 T0801–T0805 candidates）

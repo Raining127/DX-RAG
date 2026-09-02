@@ -8,7 +8,7 @@
 
 T0701 在 Service Layer 增加了一个窄职责的 `VectorRetriever`：它调用既有 `encode_chunks` 生成 query vector，再通过 `VectorStore.search` 获取已转换、已排序的 `similarity_score`，最后投影为 `vector_score` 并截断到 `top_k`。T0702 在同一 service module 增加 `HybridRetriever`：顺序调用两个 branch、按 `chunk_id` 合并、按固定权重计算 `final_score`、执行 relevance filter，再截断最终 Top-K。T0703 增加 module-level `retrieve()` facade：选择 `ChromaVectorStore`、先做 chunk-count preflight，再把同一 store 注入 keyword/vector retriever，最后委托给 Hybrid。实际代码见 [`backend/app/services/qa.py:87-216`](../../../backend/app/services/qa.py#L87-L216)。
 
-本轮的核心判断是：**T0701 的工程价值在于 contract ownership 和可组合性；T0702 的工程价值在于不改变两个 ranker 的 owner，却把它们合成为一个 identity-stable、可过滤的结果 contract；T0703 的工程价值在于把三者组装成一个可导入的 facade，同时保留 empty 与 missing collection 的不同语义。** Embedding model lifecycle 属于 F007/T0202，raw distance → similarity 属于 F008/T0105，keyword/vector fusion 属于 F011/T0702，module wiring 属于 T0703。当前 `python -m unittest tests.test_qa -v` 为 24/24 PASS，其中 4 个 vector tests 使用 injected embedder 与 Mock `VectorStore`，4 个 hybrid tests 使用 Mock retrievers，3 个 facade tests patch 了 store/retriever constructors；这不能升级为真实 model + ChromaDB semantic E2E 或 upload → query E2E。
+本轮的核心判断是：**T0701 的工程价值在于 contract ownership 和可组合性；T0702 的工程价值在于不改变两个 ranker 的 owner，却把它们合成为一个 identity-stable、可过滤的结果 contract；T0703 的工程价值在于把三者组装成一个可导入的 facade，同时保留 empty 与 missing collection 的不同语义。** Embedding model lifecycle 属于 F007/T0202，raw distance → similarity 属于 F008/T0105，keyword/vector fusion 属于 F011/T0702，module wiring 属于 T0703。Phase 7 review checkpoint 的 `python -m unittest tests.test_qa -v` 为 24/24 PASS；T0801 后续新增 5 个 context/source tests，成为 30/30 PASS；T0802 再新增 4 个 history tests，成为 34/34 PASS；T0803 再新增 12 个 DeepSeek client tests，成为 46/46 PASS；T0804 再新增 4 个 QAService orchestration tests，成为 50/50 PASS；T0805 再新增 10 个 route-level tests，当前完整 suite 为 60/60 PASS。原 review 中的 4 个 vector tests 使用 injected embedder 与 Mock `VectorStore`，4 个 hybrid tests 使用 Mock retrievers，3 个 facade tests patch 了 store/retriever constructors；T0801 使用 synthetic dict inputs，T0802 使用 synthetic list/dict histories，T0803 使用 injected/patched LLM client、OpenAI constructor、settings 与 sleep，T0804 使用 injected Mock store/retriever/LLM，T0805 使用真实 FastAPI `TestClient` 但 patch storage/service。这些证据不能升级为真实 model + ChromaDB + DeepSeek semantic E2E、Frontend history integration 或 upload → query E2E。
 
 ## 2. 为什么需要这个模块
 
@@ -23,10 +23,10 @@ F009 KeywordRetriever ───────────────────�
                                               ↓
                                   T0703 retrieve() facade
                                                ↓
-                                  [FUTURE] QA Service / HTTP API
+                                  T0804 QAService → T0805 HTTP API
 ```
 
-T0701 不负责 `MIN_RELEVANCE_SCORE` 或 `final_score`；T0702 已负责这两项；T0703 负责 concrete store selection、empty preflight 与 facade delegation。三者都不负责 context assembly、LLM 或 HTTP QA endpoint。当前两个 branch 顺序执行；F011 允许并行或顺序，不能据此声称有异步调度。
+T0701 不负责 `MIN_RELEVANCE_SCORE` 或 `final_score`；T0702 已负责这两项；T0703 负责 concrete store selection、empty preflight 与 facade delegation。三者都不负责 context assembly、DeepSeek client 或 HTTP QA endpoint；T0803 在后续 Phase 8 单独提供 LLM adapter。当前两个 branch 顺序执行；F011 允许并行或顺序，不能据此声称有异步调度。
 
 ## 3. 核心设计决策（ADR）
 
@@ -179,7 +179,8 @@ KeywordRetriever (F009/T0602) ─────────┘
                                              └─→ T0703 retrieve()
                                                    (shared ChromaVectorStore)
                                                          │
-                                                         └─→ [FUTURE] F012/F013/QA API
+                                                         └─→ T0801/T0802/T0803/T0804/T0805
+                                                               (real provider/storage E2E deferred)
 ```
 
 `qa.py` 的 T0701/T0702 retriever 依赖 `VectorStore` interface，而不是 `ChromaVectorStore` 或 `_collection`；T0703 facade 才在 composition boundary 选择 `ChromaVectorStore`，然后把同一个对象传给两个 retriever。Hybrid 进一步依赖两个 retriever 的 service-level methods，而不是直接访问 storage；这保持了 storage backend isolation，并允许用同一 control flow 做 unit test。
@@ -205,8 +206,8 @@ T0703 没有再发明一套结果 shape；`retrieve(query, collection, top_k)` �
 ### 4.3 没有改变的边界
 
 - 没有修改 `VectorStore` 的 public interface 或 Chroma distance semantics。
-- T0703 已提供 module-level `retrieve()`，但没有把 query retrieval 接到 `/api/query`；QA endpoint/LLM flow 仍属于后续 Phase。
-- T0702 已实现 hybrid merge、relevance filter 与 final score；T0703 只做 facade wiring，context assembly、source assembly 与 LLM 仍未实现。
+- T0703 已提供 module-level `retrieve()`，但没有把 query retrieval 接到 `/api/query`；T0804 后来实现了 service-level QA orchestration，T0805 再提供 HTTP endpoint/response envelope。T0805 的 route-level tests 不等于真实 provider/Chroma E2E。
+- T0702 已实现 hybrid merge、relevance filter 与 final score；T0703 只做 facade wiring；T0801/T0802 已分别提供 context/source 与 history converters，T0803 已提供 DeepSeek client，T0804 已直接把这些模块接入 `QAService`（不复用 T0703 facade），T0805 再把 QAService 接到 `/api/query`。
 - 没有新增持久化、cache、后台任务或网络 dependency。
 
 ## 5. 工程问题分析
@@ -266,8 +267,9 @@ T0701/T0702 不直接解析文件路径、不拼接 Chroma private query、不�
 本次执行：
 
 ```text
-python -m unittest tests.test_qa -v       → 24/24 PASS
-python -m unittest discover -s tests -v  → 24/24 PASS
+python -m unittest tests.test_qa -v       → 50/50 PASS（Phase 7 review checkpoint 24/24；T0801 后 30/30；T0802 后 34/34；T0803 后 46/46；T0804 后 50/50）
+python -m unittest tests.test_query -v    → 10/10 PASS（T0805 route-level Mocked boundary）
+python -m unittest discover -s tests -v  → 60/60 PASS（含 T0805；Phase 7 review checkpoint 为 24/24）
 python -m compileall -q app tests         → PASS
 ```
 
@@ -293,14 +295,14 @@ T0703 的三个 wiring tests 验证：
 
 测试类名 `RetrievalIntegrationTests` 不能改变证据等级：由于四个 constructor/依赖都被 patch 或替换，它们仍是 **Mocked composition tests**，不是 literal upload → ChromaDB → query integration。
 
-因此当前 verification classification 是 **unit-tested at injected/patched dependency boundary**。T0702 的 AC-F011-01～04 与 T0703 的 facade behavior 均有对应的 unit-level observable assertion，但测试没有证明 T0602/T0701/T0702 的真实串接、真实 Chroma persistence、真实 metadata、真实 bge-small-zh-v1.5、literal upload → query、HTTP QA integration 或 API error mapping。上述内容均为 **DEFERRED / not independently verified**，不能写成 real E2E PASS。
+因此当前 verification classification 是 **unit-tested at injected/patched dependency boundary**，并有 T0805 的 route-level `TestClient` evidence。T0702 的 AC-F011-01～04、T0703 的 facade behavior、T0804 的 service orchestration behavior 与 T0805 的 request/status/envelope mapping 均有对应的 observable assertion，但测试没有证明 T0602/T0701/T0702 的真实串接、真实 Chroma persistence、真实 metadata、真实 bge-small-zh-v1.5、literal upload → query、真实 DeepSeek 或完整 HTTP QA integration。上述内容均为 **DEFERRED / not independently verified**，不能写成 real E2E PASS。
 
 ## 8. Known Gaps & Pending Questions
 
 1. `encode_chunks([query])[0]` 对空返回没有显式错误语义。
 2. `top_k` 的最小/最大值校验与错误码 owner 尚未在 T0701 定义。
 3. 当前 tests 不执行真实 embedding model 或 ChromaDB；semantic quality 与 score distribution 未测量。
-4. T0703 已提供 module-level `retrieve()` facade，并消费 T0702 的 Hybrid；但尚未被 HTTP QA endpoint/QAService 消费。
+4. T0703 已提供 module-level `retrieve()` facade，并消费 T0702 的 Hybrid；T0804 有独立的 `QAService` path，T0805 已把该 path 接到 HTTP QA endpoint，但仍没有统一两个 retrieval entry point，且真实依赖尚未验证。
 5. T0702 → T0701 组合会使真实 vector storage 看到二次 `×2`；当前 tests mock 掉了这段调用链，尚无 recall/latency benchmark 或产品决策。
 6. Hybrid 输出 `metadata`，但 T0701/T0602 当前 projection 没有真实 metadata 来源；F012/F015 的 source contract 尚未贯通。
 7. `top_k`、weights range/sum、branch payload schema、equal-score tie-breaker 与 partial failure policy 没有专门 validation/contract。

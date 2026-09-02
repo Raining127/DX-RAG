@@ -253,25 +253,32 @@ Phase 只有取得标准化 `PHASE_X_PASS — READY_FOR_PHASE_Y` verdict 后，�
 - Hybrid Retrieval（关键词 30% + 向量 70% 加权融合，T0702 ✅）
 - `chunk_id`-based merge & dedup（T0702 ✅）
 - Relevance Filter（`MIN_RELEVANCE_SCORE`，T0702 ✅）
-- Retrieval facade / unified module entry point（T0703 ✅；QA Service 与 HTTP endpoint 仍为 Future）
+- Retrieval facade / unified module entry point（T0703 ✅；QA Service T0804 ✅；HTTP endpoint T0805 ✅）
 
 ---
 
 ### Phase 8 — RAG & QA
 
-**状态**: ⬜ NOT STARTED
+**状态**: 🟡 IN PROGRESS（T0801、T0802、T0803、T0804、T0805 DONE；T0805 Task Learning Pass 完成 2026-09-02；Phase Gate Review + Phase Learning Review 待执行）
 
-**Tasks**: T0801–T0805
+**Tasks**: T0801 ✅ | T0802 ✅ | T0803 ✅ | T0804 ✅ | T0805 ✅
 
-**未来主要学习主题**:
+**当前学习产物**:
 
-- RAG Context Assembly（格式化 + MAX_CONTEXT_CHARS 截断）
-- Source Citation（来源组装，非 LLM 生成）
-- Conversation History 处理
-- DeepSeek Chat API Client + System Prompt 设计
-- Retry 策略（指数退避、可重试 vs 不可重试错误）
-- QA Service 编排
-- COLLECTION_EMPTY vs relevance-filter-empty 的区别
+- 📖 **Technical Learning**: [phase-08-rag-qa.md](./phase-08-rag-qa.md)（T0801–T0805 增量教材：context/source assembly、history validation/truncation/formatting、DeepSeek client/System Prompt/retry/error mapping、QAService orchestration、POST `/api/query` endpoint、验证边界）
+- 🔍 **Engineering Review**: Phase 8 Engineering Review 尚未建立；完整 ADR、failure taxonomy 与规模分析不在本 Task Learning Pass 中
+- 🎤 **Interview Preparation**: T0801–T0805 当前只记录 Technical Learning 中的 Interview Candidates；待 Phase Gate 与 Phase Learning Review 后再按 cadence 晋升到项目级完整回答
+
+**当前与未来主要学习主题**:
+
+- RAG Context Assembly（格式化 + MAX_CONTEXT_CHARS 截断，T0801 ✅）
+- Source Citation（来源组装，非 LLM 生成，T0801 ✅）
+- Conversation History 处理（T0802 ✅：校验 + 最近 20 条截断 + 格式化）
+- DeepSeek Chat API Client + System Prompt（T0803 ✅：OpenAI-compatible adapter + message assembly）
+- Retry 策略（T0803 ✅：指数退避、可重试 vs 不可重试错误）
+- QA Service 编排（T0804 ✅：preflight → hybrid retrieval → context/history → LLM → sources）
+- POST `/api/query` API boundary（T0805 ✅：request validation → collection existence → QAService delegation → response/error envelope）
+- `COLLECTION_EMPTY` vs relevance-filter-empty 的区别（T0804/T0805 ✅；HTTP mapping 已完成，真实依赖仍 deferred）
 
 ---
 

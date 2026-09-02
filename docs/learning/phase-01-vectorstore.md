@@ -3258,7 +3258,7 @@ search
 
 ### 3 个易混淆点
 
-1. **"能检索" ≠ "能问答"** —— search 只做"向量相似度检索"；关键词检索（Phase 6）、混合融合（T0702）、LLM 生成（Phase 8）都还没实现。
+1. **"能检索" ≠ "能问答"** —— search 只做"向量相似度检索"；关键词检索（Phase 6）、混合融合（T0702）、LLM 生成（Phase 8）在本 T0105 checkpoint 都还没实现（历史快照；后续 T0601/T0702/T0803/T0804/T0805 已分别落地，真实 provider/Chroma/upload → query 与前端仍待集成验收）。
 2. **distance 和 similarity 方向相反** —— distance 越小越相似（ChromaDB 内部）；similarity 越大越相似（对外）。转换一旦漏掉，结果就反了。
 3. **`range(n)` 从 0 开始、到 n-1 结束** —— 和 TS 的 `for (let i = 0; i < n; i++)` 一致，但和 Python 默认的 `for x in list`（直接给元素）是两回事。
 

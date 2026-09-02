@@ -14,7 +14,7 @@
 | [Engineering Review](./engineering-review/phase-06-engineering-review.md) | 设计取舍、维护性、性能、Known Gaps、Future 演进 | 逐行语法教学 |
 | [Interview Guide](./interview-notes/dx-rag-interview-guide.md) | Phase Learning Review 已 consolidation 的项目级话术 | 在 Technical Learning 复制完整答案 |
 
-本文把仓库能直接证明的 T0601 tokenizer 与 T0602 KeywordRetriever 标为 [PROJECT FACT]。Phase 7 的 T0702 hybrid merge/fusion/filter 与 T0703 `retrieve()` wiring facade 已在后续 Task 中实现；Phase 8 QA API、持久化/增量 keyword index 等仍属于 [FUTURE]；SPEC 已经设计好，不等于代码已经实现。
+本文把仓库能直接证明的 T0601 tokenizer 与 T0602 KeywordRetriever 标为 [PROJECT FACT]。Phase 7 的 T0702 hybrid merge/fusion/filter 与 T0703 `retrieve()` wiring facade、Phase 8 的 T0801–T0805 QA slices 已在后续 Task 中实现；真实依赖集成、前端与持久化/增量 keyword index 等仍属于 [FUTURE]；SPEC 已经设计好，不等于代码已经实现。
 
 ---
 
@@ -116,8 +116,8 @@ T0601 的 Out of Scope 来自 [TASKS:1590](../TASKS.md#L1590)，并与 [SPEC F00
 - **所属层**: Service Layer；实现位于 [backend/app/services/qa.py](../../backend/app/services/qa.py)。
 - **直接依赖**: T0601 tokenize() + T0108 VectorStore.list_chunks() public interface。
 - **输入/输出契约**: keyword_search(collection, query, top_k) → List[Dict[str, object]]，字段为 chunk_id/file_id/file_name/content/keyword_score。
-- **下游消费者**: Phase 7 T0702 `HybridRetriever` 消费 keyword results；T0703 `retrieve()` facade 负责组装统一检索入口；QA endpoint 仍为 [FUTURE]。
-- **边界**: qa.py 已有 tokenizer、KeywordRetriever、HybridRetriever 与 T0703 `retrieve()` facade，但没有 LLM QA service 或 HTTP query endpoint。
+- **下游消费者**: Phase 7 T0702 `HybridRetriever` 消费 keyword results；T0703 `retrieve()` facade 负责组装统一检索入口；T0804 `QAService` 与 T0805 `POST /api/query` 继续消费这条 retrieval contract。
+- **边界**: qa.py 已有 tokenizer、KeywordRetriever、HybridRetriever、T0703 `retrieve()` facade、T0803 DeepSeek client 与 T0804 `QAService` orchestration；T0805 在 `api/query.py` 提供 HTTP request/response adapter。真实 provider、Chroma lifecycle 与 upload → query E2E 仍未验证。
 
 TypeScript 类比：tokenize() 像无副作用的 tokenize.ts utility；KeywordRetriever 像注入 VectorStore port 的 in-memory search service，而不是 route handler。
 
@@ -659,7 +659,7 @@ Phase 6 的工程主线从“小函数，大契约”扩展为“shared snapshot
 
 本 Phase 没有真实 incident、SPEC conflict 或 production-like failure investigation，因此没有为了凑格式虚构 STAR；晋升的是可由代码与测试证明的技术与工程问答。
 
-- **诚实边界**：tokenizer、inverted index、lazy/dirty lifecycle、keyword score 与 top_k 已实现并通过 unit tests；T0702 的 service-level hybrid retrieval 与 T0703 `retrieve()` facade 已实现并通过独立 unit tests；真实 concrete Chroma lifecycle、upload-to-search E2E 与 QA API 尚未完成。
+- **诚实边界**：tokenizer、inverted index、lazy/dirty lifecycle、keyword score 与 top_k 已实现并通过 unit tests；T0702 的 service-level hybrid retrieval 与 T0703 `retrieve()` facade 已实现并通过独立 unit tests；T0805 已提供 route-level QA API evidence，但真实 concrete Chroma lifecycle、provider 调用与 upload-to-query E2E 尚未完成。
 
 ---
 
@@ -749,3 +749,9 @@ T0602
 > **后续状态（T0702 Learning Pass，2026-08-31）**：Phase 7 已在 `qa.py` 增加 `HybridRetriever`，按 `chunk_id` 做 0.3/0.7 weighted fusion、`MIN_RELEVANCE_SCORE` filter 与最终 Top-K；当时 T0703 unified wiring、真实 upload-to-search E2E 与 QA API 仍为 Future。本段保留 T0702 checkpoint 的历史边界，不把 keyword branch 的完成误写成完整 QA 完成。
 >
 > **后续状态（T0703 Learning Pass，2026-08-31）**：T0703 已在 `qa.py` 提供 `retrieve(query, collection, top_k)` facade：创建 concrete `ChromaVectorStore`，先做 empty-collection preflight，非空时把同一个 store 注入 Keyword/Vector/Hybrid retrievers，并让 missing-collection 异常自然向上传播。此 facade 的 wiring tests 是 patched composition boundary；真实 upload → ChromaDB → query E2E、QA API 与 context/LLM 仍属于后续范围。本段只同步后续事实，不改写 Phase 6 原有 Gate/Learning Review 结论。
+>
+> **后续状态（T0803 Learning Pass，2026-09-02）**：**在该 T0803 checkpoint**，`qa.py` 已增加 DeepSeek client、System Prompt、message assembly、bounded retry 与错误映射，但尚未把 keyword/retrieval 结果接入 QA orchestration；本段保留该历史边界，不改写 Phase 6 的历史收官结论。
+>
+> **后续状态（T0804 Learning Pass，2026-09-02）**：T0804 已在同一 `qa.py` 增加 `QAService.answer()`，直接消费 `HybridRetriever` 的结果并串起 context/history、LLM 与 sources；它不是 T0703 facade 的复用，也不是 HTTP endpoint。真实 upload → ChromaDB → query → provider E2E 与 `/api/query` 仍属后续范围。
+>
+> **后续状态（T0805 Learning Pass，2026-09-02）**：T0805 已增加 `POST /api/query` 的 request validation、collection existence check、`QAService` delegation、`QueryResponse` 与统一错误 envelope，并以 10 个 route-level Mocked tests 验证 HTTP boundary。真实 provider/Chroma/upload → query E2E 与前端集成仍属后续范围；本段不改写 Phase 6 的历史收官结论。
