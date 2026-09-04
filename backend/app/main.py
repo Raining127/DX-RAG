@@ -3,6 +3,8 @@ import traceback
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -47,6 +49,23 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
         status_code=exc.http_status,
         content=ErrorResponse(
             error=ErrorDetail(code=exc.code, message=exc.message, details=exc.details)
+        ).model_dump(),
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_error_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    """Convert framework validation failures to the unified API envelope."""
+    return JSONResponse(
+        status_code=422,
+        content=ErrorResponse(
+            error=ErrorDetail(
+                code="REQUEST_VALIDATION_ERROR",
+                message="请求参数校验失败",
+                details={"validation_errors": jsonable_encoder(exc.errors())},
+            )
         ).model_dump(),
     )
 

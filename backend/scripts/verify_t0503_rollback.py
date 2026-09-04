@@ -51,12 +51,11 @@ Declared substitutions (T0503 Pre-flight decisions D-1/D-2)
 * SUCCESS_WITH_WARNINGS is produced by injecting an OCR warning through the
   F004 warning channel, not by a real Qwen-VL failure (``dashscope`` absent).
 
-Guards (decision D-4)
----------------------
-V11/V12 probe states that are unreachable in the current code but are
-documented in the T0503 Pre-flight as findings F-3/F-4.  They are reported,
-never enforced, and never repaired here — their owners are T0602 and the
-global handler.
+Phase 5 contract remediation checks (#38/#39)
+---------------------------------------------
+V11 and V15 are required checks for the remediated post-commit invalidation
+and framework request-validation contracts.  V12 remains a required cleanup
+isolation check for the original error path.
 
 Phase 5 Gate remediation (F-1/F-2, 2026-08-25)
 ----------------------------------------------
@@ -96,12 +95,12 @@ def run_probe(tmp_root: Path) -> int:
 
     import app.services.embedding as embedding_mod
     import app.services.ingest as ingest_mod
-    from app.api import upload as upload_mod
     from app.core.config import settings
     from app.core.errors import AppError
     from app.core.vector_store import ChromaVectorStore
     from app.main import app
     from app.services.ingest import IngestService
+    from app.services.qa import KeywordRetriever
 
     store = ChromaVectorStore()
     # raise_server_exceptions=False so the SPEC 9.4 global handler's 500
@@ -269,23 +268,35 @@ def run_probe(tmp_root: Path) -> int:
     print("\n--- V15 request-validation rejection (missing file part)")
     response = client.post("/api/upload", data={"collection_name": kb})
     check(
-        "missing file part -> 422 with no persistence side effect",
-        response.status_code == 422 and observe(kb)["count"] == 0,
+        "missing file part -> 422 REQUEST_VALIDATION_ERROR with no persistence side effect",
+        response.status_code == 422
+        and code_of(response) == "REQUEST_VALIDATION_ERROR"
+        and isinstance(response.json().get("error", {}).get("details", {}).get("validation_errors"), list)
+        and observe(kb)["count"] == 0,
         describe(response),
-    )
-    guard(
-        "F-4: request-validation 422 envelope is FastAPI's, not SPEC 6.7",
-        f"body keys={sorted(response.json().keys())} (owner: global handler, not T0503)",
     )
 
     # -- V3/V4/V5: the FAILED contract and re-upload invariant ---------------
     kb = "kb-failed"
     base = case("V3 empty effective content -> FAILED (AC-F002-08/09)", kb)
-    response = post(kb, "blank.txt", "   \n\t\n   \n".encode("utf-8"))
+
+    def _parse_failed_with_warning(file_path):
+        ingest_mod._record_ocr_warning(3, "OCR_PAGE_FAILED")
+        return "   \n\t\n   \n"
+
+    with patched(IngestService, "_parse", _parse_failed_with_warning):
+        response = post(kb, "blank.txt", b"ignored by injected parser")
+    failed_body = response.json()
     ac(
         "AC-F002-08: all-pages-fail equivalent -> 422 FILE_PARSE_ERROR",
         response.status_code == 422 and code_of(response) == "FILE_PARSE_ERROR",
         describe(response) + "  [D-2: whitespace-only .txt substitution]",
+    )
+    check(
+        "#37: FAILED warnings preserved in error.details.warnings",
+        failed_body.get("error", {}).get("details", {}).get("warnings")
+        == [{"page_number": 3, "error_code": "OCR_PAGE_FAILED"}],
+        f"details={failed_body.get('error', {}).get('details')}",
     )
     assert_rolled_back("AC-F002-09", kb, "blank.txt", base)
 
@@ -454,30 +465,36 @@ def run_probe(tmp_root: Path) -> int:
         describe(retry),
     )
 
-    # -- V11/V12: guards for known findings (never enforced, never fixed)
+    # -- V11/V12: post-commit and cleanup boundary checks --------------------
 
     kb = "kb-kwidx"
-    base = case("V11 GUARD keyword invalidation failure after commit (F-3)", kb)
+    base = case("V11 keyword invalidation failure after commit (F-3)", kb)
+
+    # Build an index before injection so the dirty/rebuild recovery path is
+    # observable after the committed upload.
+    KeywordRetriever(store).keyword_search(kb, "content", 5)
 
     def _raise_invalidate(collection_name):
         raise RuntimeError("simulated keyword index outage")
 
-    with fake_embeddings(), patched(upload_mod, "invalidate_keyword_index", _raise_invalidate):
+    with fake_embeddings(), patched(KeywordRetriever, "invalidate", _raise_invalidate):
         response = post(kb, "kwfail.txt", b"content whose ingestion succeeds")
     state = observe(kb)
-    guard(
-        "F-3: post-commit invalidation failure",
-        f"{describe(response)}; raw={state['raw']}; chunk_count "
-        f"{base['state']['count']} -> {state['count']}; get_files={state['files']}",
+    check(
+        "F-3: invalidation failure does not fail committed upload",
+        response.status_code == 200 and response.json().get("status") == "SUCCESS",
+        describe(response),
     )
     check(
         "V11: raw file and chunks stay mutually consistent",
         ("kwfail.txt" in state["raw"]) == ("kwfail.txt" in state["files"]),
         "no split raw/Chroma state",
     )
-    guard(
-        "F-3 note: seam is a no-op today and cannot raise unaided",
-        "reachable only once T0602 installs a real index",
+    recovered = KeywordRetriever(store).keyword_search(kb, "content", 5)
+    check(
+        "F-3: keyword index recovers via dirty rebuild",
+        any(result.get("file_name") == "kwfail.txt" for result in recovered),
+        f"results={[result.get('file_name') for result in recovered]}",
     )
 
     kb = "kb-cleanupfail"
@@ -565,7 +582,7 @@ def run_probe(tmp_root: Path) -> int:
 
     print("\n" + "=" * 78)
     print(f"Required checks : {len(required) - len(failed)}/{len(required)} passed")
-    print(f"Guards recorded : {len(guards)} (informational — decision D-4)")
+    print(f"Informational guards : {len(guards)}")
     print("=" * 78)
     for _, label, _, detail in guards:
         print(f"  GUARD  {label}\n         {detail}")

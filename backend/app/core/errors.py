@@ -2,7 +2,7 @@
 
 SPEC Section 6.7 — {error: {code, message, details}}
 SPEC Section 9.1 — Error categories (400/404/409/413/422/500/502)
-SPEC Section 9.2 — Error code catalog (23 application codes + INTERNAL_ERROR)
+SPEC Section 9.2 — Error code catalog
 SPEC Section 9.4 — Unhandled errors → 500 INTERNAL_ERROR
 """
 
@@ -54,6 +54,7 @@ _ERROR_CATALOG: Dict[str, tuple] = {
     "FILE_NOT_FOUND": (404, "文件不存在"),
     # --- Ingest ---
     "FILE_PARSE_ERROR": (422, "文件解析失败"),
+    "REQUEST_VALIDATION_ERROR": (422, "请求参数校验失败"),
     "ENCRYPTED_PDF": (422, "PDF文件已加密，无法解析"),
     "OCR_NOT_CONFIGURED": (500, "DashScope API密钥未配置"),
     "OCR_AUTH_FAILED": (500, "DashScope API认证失败"),

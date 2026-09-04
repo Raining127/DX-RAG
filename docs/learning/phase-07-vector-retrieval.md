@@ -1,10 +1,10 @@
 # Phase 7 — Vector & Hybrid Retrieval 学习笔记
 
-> **Phase 状态**：🟡 IN PROGRESS（T0701、T0702、T0703 已完成；Phase Gate Review 与 Phase Learning Review 尚未执行）
+> **Phase 状态**：✅ COMPLETE（T0701、T0702、T0703 已完成；Phase 7 Gate `PHASE_7_PASS — CLOSED`；Phase Learning Review 已完成，2026-09-03）
 >
-> **本文档状态**：T0701 Task Learning Pass 完成（2026-08-28）；T0702 Task Learning Pass 完成（2026-08-31）；T0703 Task Learning Pass 完成（2026-08-31）。这是 Phase 7 的增量 Technical Learning，不把尚未完成的 Phase 写成 complete。
+> **本文档状态**：T0701 Task Learning Pass 完成（2026-08-28）；T0702 Task Learning Pass 完成（2026-08-31）；T0703 Task Learning Pass 完成（2026-08-31）；Phase Learning Review 完成（2026-09-03）。本次 consolidation 将三个 Task 的碎片化说明提升为统一 mental model、跨 Task data flow、self-test chain 与验证边界；真实 BGE/Chroma/upload → query E2E 仍为 deferred。本文件保留 Technical Learning 与 Phase-level 学习总结，不替代 Engineering Review 的 ADR 与规模分析。
 >
-> **配套文档**：[Phase 7 Engineering Review](./engineering-review/phase-07-engineering-review.md) · [DX-RAG Interview Guide](./interview-notes/dx-rag-interview-guide.md)
+> **配套文档**：[Phase 7 Engineering Review / Gate record](./engineering-review/phase-07-engineering-review.md) · [DX-RAG Interview Guide](./interview-notes/dx-rag-interview-guide.md)
 
 本章只记录当前 checkout 中已经存在的 vector retrieval、hybrid retrieval 与统一 retrieval facade 学习内容。T0702 已在 `qa.py` 中实现 `HybridRetriever`、weighted fusion、chunk identity merge、relevance filter 与最终 Top-K；T0703 又增加了 `retrieve(query, collection, top_k)`，把 concrete `ChromaVectorStore`、两个 retriever 和 HybridRetriever 串成一个 service-level entry point。T0801 已提供无外部 I/O 的 context/source assembly，T0802 已提供 history validation、recent-window truncation 与 formatting，T0803 已提供独立的 DeepSeek client/System Prompt/retry adapter，T0804 已把这些边界编排成 `QAService` service result，T0805 已把 QAService 接到 `POST /api/query`；真实 provider/Chroma/upload E2E 与前端集成仍未验证。看到“未来”时，均表示 `[FUTURE] / Not implemented in v1`，不是当前代码已经拥有的能力。[PROJECT FACT]
 
@@ -16,7 +16,7 @@ Learning Pass 很容易被写成“代码改了哪些文件”的 Task summary�
 |---|---|---|
 | Layer 1 — Technical Learning | 本文 | 解释代码 mechanics、项目上下游、数据流、Python/TS 学习点、验证边界和练习 |
 | Layer 2 — Engineering Review | [phase-07-engineering-review.md](./engineering-review/phase-07-engineering-review.md) | 记录 ADR、trade-off、failure modes、scale 与 Known Gaps；本文只放短摘要和链接 |
-| Layer 3 — Interview Preparation | [dx-rag-interview-guide.md](./interview-notes/dx-rag-interview-guide.md) | 当前 Task 只保留 Interview Candidates；完整回答、STAR 与 answer bank 等 Phase 完成后再 consolidation |
+| Layer 3 — Interview Preparation | [dx-rag-interview-guide.md](./interview-notes/dx-rag-interview-guide.md) | Phase Learning Review 后将精选 candidates 晋升为项目级完整回答、追问与诚实边界；本章只保留学习导向的短问题 |
 
 本次 T0701/T0702/T0703 不会把完整 ADR、failure taxonomy、10x/100x/1000x 容量分析或完整 STAR 塞进 Technical Learning。本文的 `[PROJECT FACT]` 来自代码、SPEC、TASKS 和本次测试；`[ENGINEERING KNOWLEDGE]` 是可迁移的工程概念；`[FUTURE]` 明确表示尚未实现。
 
@@ -25,6 +25,16 @@ Learning Pass 很容易被写成“代码改了哪些文件”的 Task summary�
 ### 一句话定位
 
 Phase 7 先把 Phase 2 产出的 query embedding 接到 Phase 1 的 `VectorStore.search()`，再把 keyword/vector 两条可独立测试的 branch 按 `chunk_id` 融合成一个带阈值的最终候选列表，最后由 T0703 的 `retrieve()` facade 统一创建共享 storage、组装 retriever 并暴露一个可供 QA 层消费的入口。
+
+### Phase-level mental model：三项 Task 如何组成一条能力链
+
+Phase 7 不只是“再加一个向量检索类”，而是把三个不同 ownership 的边界串成一条可消费的 retrieval contract：
+
+1. **T0701 是 score-preserving adapter**：接收 query，调用 embedding 与 `VectorStore.search()`，把 storage 已经归一化的 `similarity_score` 投影为 `vector_score`；它不重新归一化，也不决定最终相关性。
+2. **T0702 是 identity-preserving rank fusion**：分别取得 keyword/vector candidates，以 `chunk_id` 作为稳定 identity 合并，缺失 branch score 按 `0.0` 计算，使用模块内部固定的 `0.3/0.7` 得到 `final_score`，然后执行 `final_score >= 0.30` 过滤与最终 `top_k` 截断。
+3. **T0703 是 composition root / facade**：选择 concrete `ChromaVectorStore`，对空 collection 做不触发 embedding 的 preflight，给两个 branch 注入同一个 store，并把异常与结果原样交给上层。它负责 wiring，不重复 ranking。
+
+阅读 Phase 7 时可以反复追问五个 ownership 问题：谁负责 distance → similarity、谁拥有 score、谁定义 chunk identity、谁执行 filter/Top-K、谁管理 storage lifecycle。这样就能把“query → embedding → search → merge → filter → facade”从调用顺序提升成可迁移的工程模型。[ENGINEERING KNOWLEDGE]
 
 ### 学习重点
 
@@ -204,7 +214,7 @@ T0701 的四个测试分别锁定这些 observable behaviors：
 
 SPEC 的 AC-F010-01（语义示例“AI 的子领域”匹配“人工智能的分支”）在当前证据下只能写成：**adapter mapping unit-tested；literal semantic match DEFERRED**。要升级为 real E2E，需要真实 model、真实 VectorStore/Chroma 数据和运行环境；该链路属于后续集成验证（项目当前计划将 literal upload → real Chroma → query 留给 Phase 12/T1202 范围）。AC-F010-02 的“空知识库返回空列表”在 mock boundary 已覆盖，但 real empty-KB 行为同样是 DEFERRED。[PROJECT FACT]
 
-### 4.5 Interview Candidates（仅候选，不生成完整答案）
+### 4.5 Interview Candidates（Task-level 自测素材；精选内容已晋升）
 
 - **Technical point**：为什么 `VectorRetriever` 直接使用 `similarity_score`，而不再做一次 normalization？
 - **Engineering question**：为什么 query 只编码一次，却向 `VectorStore` 请求 `top_k * 2`？这个扩大召回与后续 hybrid 的关系是什么？
@@ -217,7 +227,7 @@ SPEC 的 AC-F010-01（语义示例“AI 的子领域”匹配“人工智能的�
 
 T0702 的输入仍然是一个 query，但它不再只调用一个 ranker：
 
-- **输入**：`query: str`、`collection: str`、可选 `top_k: int`，以及 constructor 中可选的 `weights`。
+- **输入**：`query: str`、`collection: str`、可选 `top_k: int`。F011 最终 contract 不接受 `weights`；早期 T0702 interim material 曾把它写成可选 constructor input，这一治理冲突已由 owner 的 **OPTION B — Frozen Internal Weights** 决策与授权 remediation 关闭。
 - **召回**：先计算 `expanded_top_k = top_k * 2`，顺序调用 keyword 与 vector 两个 retriever。
 - **合并**：把两个 branch 的 dict 放进以 `chunk_id` 为 key 的 `merged` map；不存在的分支分数从 `0.0` 开始。
 - **融合**：默认按 `0.3 * keyword_score + 0.7 * vector_score` 计算 `final_score`。
@@ -271,14 +281,17 @@ class HybridRetriever {
   constructor(
     private keyword: KeywordRetriever,
     private vector: VectorRetriever,
-    private weights: [number, number] = [0.3, 0.7],
   ) {}
 }
+
+// v1 weights are module-internal constants, not constructor input.
+const KEYWORD_WEIGHT = 0.3;
+const VECTOR_WEIGHT = 0.7;
 ```
 
 Python 实际使用 `Dict[str, object]`，不是 TypeScript 那样的 discriminated union；因此 `.get()`、`float()` 和 `None` fallback 是运行时防御，而不是 compiler 已经替你证明的类型安全。对 frontend developer 来说，最重要的迁移点是：`Map<chunkId, accumulator>` 对应 Python dict accumulator；`final_score >= threshold` 对应一个明确的业务 predicate；`slice(0, topK)` 只能放在 filter 之后才符合 SPEC。
 
-`weights` 也不是一个自动验证过的 tuple：`weights or [0.3, 0.7]` 会在 `None` 或空 list 时使用默认值，但长度不是 2 会在 unpack 阶段失败，权重是否在 `[0,1]` 或是否和为 1 当前没有 guard。学习时要把“默认配置”与“输入校验”分成两个问题。[PROJECT FACT]
+F011 最终 contract 将 `0.3` 与 `0.7` 固定为 module-internal constants；`weights` 不是 caller、constructor、API 或 configuration input，v1 不支持 dynamic weighting。早期学习材料中的可选 `weights` 示例属于 remediation 前的 interim snapshot，保留其历史背景，但不能当作当前实现或 validation gap。[PROJECT FACT]
 
 ### 4.9 T0702 验证学习：四个测试分别锁定什么
 
@@ -288,7 +301,7 @@ Python 实际使用 `Dict[str, object]`，不是 TypeScript 那样的 discrimina
 python -m unittest tests.test_qa -v
 ```
 
-在 T0702 checkpoint（2026-08-31）结果为 **21/21 PASS**：6 个 tokenizer tests、7 个 keyword retriever tests、4 个 vector retriever tests、4 个 hybrid retriever tests。T0703 checkpoint 又增加 3 个 facade tests，成为 **24/24 PASS**；T0801 后续再增加 5 个 context/source tests，成为 **30/30 PASS**；T0802 再增加 4 个 history tests，成为 **34/34 PASS**；T0803 再增加 12 个 DeepSeek client tests，成为 **46/46 PASS**；T0804 再增加 4 个 QAService orchestration tests，成为 **50/50 PASS**；T0805 再增加 10 个 route-level tests，当前完整 suite 是 **60/60 PASS**。T0702 的四个测试使用 Mock retrievers，T0703 的三个测试使用 patched constructors，T0801 的五个测试使用 synthetic dict inputs，T0802 的四个测试使用 synthetic list/dict histories，T0803 的 12 个测试使用 injected/patched LLM client、OpenAI constructor、settings 与 sleep，T0804 的 4 个测试使用 injected Mock store/retriever/LLM，T0805 的 10 个测试使用真实 FastAPI `TestClient` 但 patch storage/service。它们验证各自边界的可观察行为，但不代表真实 embedding、ChromaDB、DeepSeek API、Frontend state 或 upload → query E2E。[PROJECT FACT]
+在 T0702 checkpoint（2026-08-31）结果为 **21/21 PASS**：6 个 tokenizer tests、7 个 keyword retriever tests、4 个 vector retriever tests、4 个 hybrid retriever tests。T0703 checkpoint 又增加 3 个 facade tests，成为 **24/24 PASS**；T0801 后续再增加 5 个 context/source tests，成为 **30/30 PASS**；T0802 再增加 4 个 history tests，成为 **34/34 PASS**；T0803 再增加 12 个 DeepSeek client tests，成为 **46/46 PASS**；T0804 再增加 4 个 QAService orchestration tests，成为 **50/50 PASS**；T0805 checkpoint 再增加 10 个 route-level tests，达到 **60/60 PASS**；T0901–T0903 后续增加 18 个 file-management/upload tests，当前 backend discovery 是 **78/78 PASS**。T0702 的四个测试使用 Mock retrievers，T0703 的三个测试使用 patched constructors，T0801 的五个测试使用 synthetic dict inputs，T0802 的四个测试使用 synthetic list/dict histories，T0803 的 12 个测试使用 injected/patched LLM client、OpenAI constructor、settings 与 sleep，T0804 的 4 个测试使用 injected Mock store/retriever/LLM，T0805 的 10 个测试使用真实 FastAPI `TestClient` 但 patch storage/service。它们验证各自边界的可观察行为，但不代表真实 embedding、ChromaDB、DeepSeek API、Frontend state 或 upload → query E2E。[PROJECT FACT]
 
 | 测试 | 观察到的行为 | 证据边界 |
 |---|---|---|
@@ -299,7 +312,7 @@ python -m unittest tests.test_qa -v
 
 所以本轮可以诚实地说：T0702 的四个 AC 行为与 T0703 的三个 facade behaviors 在其 checkpoint 的 injected/patched unit boundary 有对应证据；T0801 的 context/source behaviors 另有 5 个 unit tests，T0802 的 history behaviors 另有 4 个 unit tests，T0803 的 client/prompt/retry/error behaviors 另有 12 个 unit tests，T0804 的 service orchestration behaviors 另有 4 个 Mocked tests，T0805 的 route/error-envelope behaviors 另有 10 个 route-level Mocked tests，`python -m compileall -q app tests` 通过；不能把这些证据升级为真实 upload → Chroma → hybrid query → DeepSeek、Frontend history integration 或 QA context/LLM 的集成 PASS。真实语义质量、metadata 完整性、history lifecycle、branch failure policy、provider latency/cost、facade 与真实 storage 的串接、QAService 与真实依赖的贯通仍需后续验证。[PROJECT FACT]
 
-### 4.10 T0702 Interview Candidates（仅候选，不生成完整答案）
+### 4.10 T0702 Interview Candidates（Task-level 自测素材；精选内容已晋升）
 
 - **Technical point**：为什么 hybrid merge 必须用 `chunk_id`，而不能用 content 字符串？
 - **Scoring question**：`0.8` 与 `0.9` 为什么得到 `0.87`；缺失 branch 的 score=0 会带来什么产品语义？
@@ -308,7 +321,7 @@ python -m unittest tests.test_qa -v
 - **Boundary question**：HybridRetriever 输出 `metadata`，但 T0701 projection 没有 metadata；你会把补字段放在哪一层，依据是什么？
 - **Python/TS question**：`dict` accumulator 与 TypeScript `Map<chunkId, accumulator>` 的共同点和类型安全差异是什么？
 
-这些仍是 Task-level candidates；完整 30 秒/1–2 分钟回答、follow-ups 和 STAR 等 Phase-level assets 继续放在 [Interview Guide](./interview-notes/dx-rag-interview-guide.md) 的后续 consolidation，不在这里复制。
+这些条目保留为 Task-level 自测素材；Phase Learning Review 已完成去重与筛选，完整回答、追问和统一 retrieval story 已晋升到 [Interview Guide 的 Phase 7 深度章](./interview-notes/dx-rag-interview-guide.md#phase-7-深度章--vector--hybrid-retrievalt0701t0703-已实现--gate--learning-review-完成)。
 
 ### 4.11 T0703 A. Code Understanding：`retrieve()` facade 如何组装模块
 
@@ -410,11 +423,11 @@ T0703 在当前 `test_qa.py` 中增加了 3 个 `RetrievalIntegrationTests`。�
 | `test_retrieve_empty_collection_returns_empty_list_without_embedding` | `get_chunk_count()==0` 后返回 `[]`，三个 retriever constructor 都不会调用 | store 是 Mock；不证明真实空 Chroma collection 的 count 行为 |
 | `test_retrieve_propagates_missing_collection_error` | `get_chunk_count` 抛异常时，facade 不吞异常，原异常向上传播 | 使用 `RuntimeError` substitute；不证明 Chroma 的具体异常类型或 API error mapping |
 
-因此当前 suite 的数字应按 checkpoint 解释：T0702 Learning Pass 时是 21/21；T0703 增加 3 个 facade tests 后是 **24/24**；T0801 再增加 5 个 context/source tests，成为 **30/30**；T0802 再增加 4 个 history tests，成为 **34/34**；T0803 再增加 12 个 DeepSeek client tests，成为 **46/46**；T0804 再增加 4 个 QAService tests，成为 **50/50**；T0805 再增加 10 个 query endpoint tests，当前是 **60/60**（6 tokenizer + 7 keyword + 4 vector + 5 hybrid + 3 retrieval facade + 5 context/source + 4 history + 12 DeepSeek client + 4 QAService + 10 query endpoint）。这证明了各层 module-level/route-level observable behavior，不证明 Task 描述中的 literal “text file uploaded → query → merged”、真实 provider answer、Frontend history lifecycle 或完整 QA context/LLM 链路。[PROJECT FACT]
+因此当前 suite 的数字应按 checkpoint 解释：T0702 Learning Pass 时是 21/21；T0703 增加 3 个 facade tests 后是 **24/24**；T0801 再增加 5 个 context/source tests，成为 **30/30**；T0802 再增加 4 个 history tests，成为 **34/34**；T0803 再增加 12 个 DeepSeek client tests，成为 **46/46**；T0804 再增加 4 个 QAService tests，成为 **50/50**；T0805 checkpoint 再增加 10 个 query endpoint tests，成为 **60/60**；T0901–T0903 再增加 18 个 file-management/upload tests，当前 backend discovery 是 **78/78**（Phase 7 本身的 vector/hybrid/facade assertions 仍以各自 Task boundary 解释）。这证明了各层 module-level/route-level observable behavior，不证明 Task 描述中的 literal “text file uploaded → query → merged”、真实 provider answer、Frontend history lifecycle 或完整 QA context/LLM 链路。[PROJECT FACT]
 
 T0703 的真实集成验证仍需要：真实 `ChromaVectorStore`、已入库的 text chunk、可用 embedding model（或明确的 test substitute）、keyword index lifecycle、VectorStore query，以及对最终 merge 结果的断言。按当前任务边界，这类 upload → real Chroma → query 验证继续归后续集成验收范围，而不是把 Mock wiring test 升级成 E2E PASS。
 
-### 4.15 T0703 Interview Candidates（仅候选，不生成完整答案）
+### 4.15 T0703 Interview Candidates（Task-level 自测素材；精选内容已晋升）
 
 - **Facade question**：为什么 `retrieve()` 要先做 `get_chunk_count()`，而不是直接让两个 retriever 返回空列表？
 - **Dependency question**：为什么 keyword 与 vector retriever 必须共享同一个 `VectorStore` instance？共享的是对象、接口还是 state？
@@ -422,7 +435,7 @@ T0703 的真实集成验证仍需要：真实 `ChromaVectorStore`、已入库的
 - **Failure question**：missing collection 为什么应该传播，而 empty collection 为什么返回 `[]`？这两个状态在 API 层如何继续区分？
 - **Evidence question**：为什么 `RetrievalIntegrationTests` 仍只能算 Mocked wiring evidence？要满足 literal integration 还缺什么真实依赖？
 
-这些仍是 Task-level candidates；完整回答、STAR 与 Phase-level retrieval story 等待 Phase Gate 与 Phase Learning Review consolidation。
+这些条目保留为 Task-level 自测素材；Phase Learning Review 已完成去重与筛选，完整回答、追问和统一 retrieval story 已晋升到 [Interview Guide 的 Phase 7 深度章](./interview-notes/dx-rag-interview-guide.md#phase-7-深度章--vector--hybrid-retrievalt0701t0703-已实现--gate--learning-review-完成)。
 
 ## 5. 代码理解：close reading
 
@@ -575,6 +588,10 @@ results.sort(key=lambda r: r.similarity_score, reverse=True)
 真实代码位于 [`qa.py:120-199`](../../backend/app/services/qa.py#L120-L199)：
 
 ```python
+_KEYWORD_WEIGHT = 0.3
+_VECTOR_WEIGHT = 0.7
+
+
 class HybridRetriever:
     """Merge keyword and vector retrieval results with weighted scoring."""
 
@@ -582,11 +599,9 @@ class HybridRetriever:
         self,
         keyword_retriever: KeywordRetriever,
         vector_retriever: VectorRetriever,
-        weights: Optional[List[float]] = None,
     ) -> None:
         self.keyword_retriever = keyword_retriever
         self.vector_retriever = vector_retriever
-        self.keyword_weight, self.vector_weight = weights or [0.3, 0.7]
 
     def hybrid_search(
         self,
@@ -634,8 +649,8 @@ class HybridRetriever:
         results = []
         for entry in merged.values():
             final_score = (
-                float(entry["keyword_score"]) * self.keyword_weight
-                + float(entry["vector_score"]) * self.vector_weight
+                float(entry["keyword_score"]) * _KEYWORD_WEIGHT
+                + float(entry["vector_score"]) * _VECTOR_WEIGHT
             )
             results.append(
                 {
@@ -657,11 +672,11 @@ class HybridRetriever:
         return results[:top_k]
 ```
 
-#### 读取 1：constructor 先固定依赖，再固定权重
+#### 读取 1：constructor 固定依赖，权重由模块内部固定
 
-`keyword_retriever` 与 `vector_retriever` 是 constructor injection。HybridRetriever 不自己 new 两个 concrete implementation，所以测试可以用两个 Mock 观察调用；生产代码则可以传入真实 retriever。`weights or [0.3, 0.7]` 表达的是默认值选择，不是完整的 configuration validation：`None` 或空 list 使用默认值，长度不为 2 的 list 会在 unpack 时失败，负数、超过 1 或总和不为 1 的权重目前不会被拒绝。[PROJECT FACT]
+`keyword_retriever` 与 `vector_retriever` 是 constructor injection。HybridRetriever 不自己 new 两个 concrete implementation，所以测试可以用两个 Mock 观察调用；生产代码则可以传入真实 retriever。当前 v1 的 `keyword_weight = 0.3` 与 `vector_weight = 0.7` 是 module-internal constants，不存在 `weights` constructor input。早期版本曾有可选权重参数；那是 F011 governance conflict 的历史材料，已被 OPTION B 决策和授权 remediation supersede。[PROJECT FACT]
 
-这和 TypeScript 的 `constructor(private keyword: KeywordRetriever, private vector: VectorRetriever, private weights: [number, number] = [0.3, 0.7])` 很像；差异在于 Python 的 `List[float]` 只写了意图，runtime 不会自动 enforce tuple length 或 value range。[ENGINEERING KNOWLEDGE]
+这和 TypeScript 的 `constructor(private keyword: KeywordRetriever, private vector: VectorRetriever)` 很像；固定权重则类似同一 module 中的 `const KEYWORD_WEIGHT = 0.3` 与 `const VECTOR_WEIGHT = 0.7`，调用方不能通过 constructor 改写。[ENGINEERING KNOWLEDGE]
 
 #### 读取 2：`expanded_top_k` 是 orchestration policy
 
@@ -765,9 +780,9 @@ model load failure ────────────→ AppError(EMBEDDING_MO
 branch/storage exception ──────→ exception propagation（facade/Hybrid 不 catch）
 missing chunk_id ──────────────→ KeyError
 missing/non-numeric score ─────→ 0.0 fallback / float conversion error
-invalid weights length ────────→ unpack ValueError
+invalid caller weights ───────→ constructor boundary rejects unsupported input
 empty keyword + vector results → []
-invalid top_k/weight range ────→ 当前没有专门 validation
+invalid top_k range ───────────→ 当前没有专门 validation
 ```
 
 ### 6.4 Mental Model
@@ -776,7 +791,7 @@ invalid top_k/weight range ────→ 当前没有专门 validation
 
 > T0701 把“人类问题”转换成“可查询的向量”，把 storage 的“已排序相似度”转换成 `vector_score`；T0702 再把 keyword/vector 的 evidence 按不可变 `chunk_id` union，补齐缺失分支的零分，计算统一的 `final_score`，先过滤噪声再截断 Top-K；T0703 最后创建共享 storage、完成 empty-collection short-circuit，并把整条 retrieval chain 暴露为 `retrieve()`。它不重新发明 embedding、距离或 RRF，也不假装已经接到 HTTP QA。
 
-这个 mental model 比记住一串函数名更有用。以后看到任何 retrieval pipeline，都可以问四件事：谁生成 evidence？谁拥有 score semantics？谁决定 identity merge？谁决定 filter 与最终返回多少条？
+这个 mental model 比记住一串函数名更有用。以后看到任何 retrieval pipeline，都可以问五件事：谁生成 evidence？谁拥有 score semantics？谁决定 identity merge？谁决定 filter 与最终返回多少条？谁管理 concrete storage lifecycle？这五个问题也是 Phase 7 的 phase-level self-test chain。
 
 ## 7. 架构设计：新增能力与刻意保留的边界
 
@@ -820,7 +835,7 @@ Phase 6 的 `keyword_score` 与 T0701 的 `vector_score` 是进入 F011 的两�
 - 输出 `metadata` 但允许 `{}`：保持 F011 shape，同时诚实暴露 T0701 projection 尚未传 metadata 的缝隙。
 - 由 `retrieve()` 做 composition：共享一个 `ChromaVectorStore`，先用 `get_chunk_count()` 处理空库，再把真实 store 注入三个 retriever。
 
-完整 ADR、failure taxonomy 与 scale analysis 在 [Engineering Review](./engineering-review/phase-07-engineering-review.md) 维护，本文不重复展开。
+完整 ADR、failure taxonomy 与 scale analysis 在 [Engineering Review](./engineering-review/phase-07-engineering-review.md) 维护，本文不重复展开。Phase Learning Review 已完成跨 Task 去重与 mental model consolidation；Interview Guide 维护面试场景的完整回答，本章不复制 answer bank。
 
 ## 8. Engineering Review 摘要
 
@@ -831,10 +846,10 @@ Phase 6 的 `keyword_score` 与 T0701 的 `vector_score` 是进入 F011 的两�
 - 当前错误与 validation ownership；
 - empty result、embedding failure、storage exception 的 failure boundary；
 - 单次 query 的调用成本、T0701/T0702 组合后的二次召回与 `top_k * 2` 取舍；
-- duplicate payload、metadata continuity、weight/top_k validation 与 error propagation 的 Known Gaps；
+- duplicate payload、metadata continuity、top_k validation 与 error propagation 的 Known Gaps；F011 dynamic weighting 已明确不属于 v1 能力；
 - 多 worker、真实 model/Chroma E2E、T0703 facade 的 literal integration 与后续 QA wiring 等仍未完成的边界。
 
-请在需要工程判断、规模推演或完整 ADR 时阅读 [Phase 7 Engineering Review](./engineering-review/phase-07-engineering-review.md)，不要把本章的学习摘要当成完整 review。
+请在需要工程判断、规模推演或完整 ADR 时阅读 [Phase 7 Engineering Review](./engineering-review/phase-07-engineering-review.md)，不要把本章的学习摘要当成完整 review；Phase 级学习结论则以本章的 consolidation 与 Interview Guide 的 Phase 7 深度章为准。
 
 ## 9. Technical Decision：当前实现为什么这样写
 
@@ -849,7 +864,7 @@ Phase 6 的 `keyword_score` 与 T0701 的 `vector_score` 是进入 F011 的两�
 | 默认 `settings.DEFAULT_TOP_K` | 每次调用都要求显式 top_k | 与项目 config contract 对齐 | retriever 本身不负责范围 validation |
 | `HybridRetriever` 注入两个 ranker | 在 hybrid 内部 new concrete retriever | 测试可替换依赖，orchestrator 只负责组合 | facade 仍需负责 concrete store selection；T0805 route 通过 T0804 path 接入，但不复用 facade |
 | 用 `chunk_id` accumulator merge | append 后按 content 去重 | identity 稳定，双命中只产生一条结果；同 branch 重复取最高分 | 冲突 payload 不会自动报错，需要上游 identity contract |
-| 固定 `[0.3, 0.7]` weighted sum | RRF 或 dynamic weighting | 直接兑现 F011，分数可解释、实现小 | 没有 weight range/sum validation，也没有质量 benchmark |
+| 固定 `[0.3, 0.7]` weighted sum | RRF 或 dynamic weighting | 直接兑现 F011，分数可解释、实现小 | dynamic weighting 明确不属于 v1；仍没有质量 benchmark |
 | filter 后再 `[:top_k]` | 每个 branch 先截最终数量或先切片再过滤 | 低分噪声不占名额，保留融合后才变高的候选 | 当前阈值与顺序有 unit evidence，真实检索质量未测量 |
 | 顺序执行 keyword → vector | `asyncio.gather` 并行 | F011 允许顺序；当前同步依赖和错误传播更直接 | wall-clock latency 未 benchmark，不能声称已并行 |
 | `retrieve()` 先 `get_chunk_count()` | 让每个 branch 自己处理空库 | 空 collection 直接返回 `[]`，避免无意义 embedding/index work；missing collection exception 保留 | concrete `ChromaVectorStore` 在 facade 内选择；真实 empty/missing Chroma 行为未做 E2E |
@@ -858,7 +873,7 @@ Phase 6 的 `keyword_score` 与 T0701 的 `vector_score` 是进入 F011 的两�
 
 ## 10. Interview Notes 路由
 
-本 Task 只新增候选素材，不提前生成完整面试答案：
+本章保留 Task-level 自测素材，不重复生成完整面试答案。Phase Learning Review 已完成候选筛选、去重与晋升：
 
 1. 解释 `similarity_score` 与 `vector_score` 的 ownership boundary。
 2. 解释 `top_k * 2` 的 expanded recall 为什么在 hybrid pipeline 有意义。
@@ -867,7 +882,7 @@ Phase 6 的 `keyword_score` 与 T0701 的 `vector_score` 是进入 F011 的两�
 5. 解释 `final_score`、`MIN_RELEVANCE_SCORE` 与 Top-K 的顺序，以及为什么阈值相等仍保留。
 6. 诚实说明 T0701/T0702/T0703 unit tests 没有覆盖的 real model、real Chroma、metadata 完整贯通、literal upload → query、HTTP QA 和并发行为。
 
-候选的完整晋升路径是：T0701/T0702/T0703 Task Learning Pass → Phase Gate Review → Phase Learning Review → 更新项目级 [Interview Guide](./interview-notes/dx-rag-interview-guide.md)。当前 Phase 7 尚未满足这个 consolidation 条件，因此本文不写 30 秒稿、1–2 分钟稿或 STAR。
+完整 30 秒稿、1–2 分钟稿与追问已晋升到项目级 [Interview Guide 的 Phase 7 深度章](./interview-notes/dx-rag-interview-guide.md#phase-7-深度章--vector--hybrid-retrievalt0701t0703-已实现--gate--learning-review-完成)。本章继续保留 code mechanics、ownership 问题与 self-test；Engineering Review 继续维护 ADR、failure taxonomy 和规模推演。没有真实 incident，因此不虚构 STAR；面试话术必须保留 Mocked/static evidence 与 real semantic E2E deferred 的边界。
 
 ## 11. Future Improvement：未来边界
 
@@ -879,7 +894,8 @@ Phase 6 的 `keyword_score` 与 T0701 的 `vector_score` 是进入 F011 的两�
 | HTTP query adapter | 将已编排的 QA result 暴露为稳定的 request/response/error contract | T0805 已实现 `/api/query` 与 10 个 route-level Mocked tests；真实 provider/Chroma/upload E2E 仍 deferred | Phase 8 / T0805 |
 | Literal upload → retrieval integration | 验证摄取、持久化与 facade 的真实串接 | `[FUTURE]` / DEFERRED；当前 3 个 T0703 tests 是 Mocked wiring | Phase 12/T1202 |
 | Metadata continuity | 让真实 T0701 projection 的 metadata 能到达 F012/F015 | `[FUTURE]`；Hybrid 有 `{}` fallback，真实上游目前不提供 metadata | Phase 7/8 service contract |
-| Weight/top_k validation | 防止非法权重、超范围 top_k 进入计算或 storage | `[FUTURE]`；当前 class 没有专门 guard | T0703/API boundary |
+| Top-K validation | 防止超范围 top_k 进入计算或 storage | `[FUTURE]`；当前 class 没有专门 guard | T0703/API boundary |
+| Dynamic weighting | 支持按请求或运行时改变融合比例 | v1 明确不支持；weights 固定为 0.3/0.7 | 未来产品决策，不属于当前 gap |
 | Parallel branch scheduling | 在不改变错误/timeout 语义的前提下降低 wall-clock latency | `[FUTURE]`；当前顺序 keyword → vector | Phase 7/QA orchestration |
 | Real semantic AC | 使用真实 bge-small-zh-v1.5、VectorStore 与数据验证 paraphrase match | `[FUTURE]` / DEFERRED；当前只有 Mock adapter evidence | 集成验证 / Phase 12 T1202 |
 | Full upload → Chroma → query E2E | 验证 ingest、persistence、retrieval 的真实链路 | `[FUTURE]` / DEFERRED | Phase 12/T1202 范围 |
@@ -913,7 +929,7 @@ Phase 6 的 `keyword_score` 与 T0701 的 `vector_score` 是进入 F011 的两�
 
 11. 如果有人提议让 `VectorRetriever` 直接调用 `self.vector_store._collection.query(...)`，你会指出哪条架构边界被破坏？
 12. 如果下一步实现 T0702，为什么应该保留 `vector_score` 这个名字，而不是在 T0701 中提前改成 `final_score`？
-13. 如果真实 semantic AC 失败，你会先检查 query text、model version、stored embeddings、distance semantics 还是 hybrid weights？请按 ownership 顺序说明，不要把所有问题都归给 retriever。
+13. 如果真实 semantic AC 失败，你会先检查 query text、model version、stored embeddings、distance semantics 还是固定的 F011 score contract？请按 ownership 顺序说明，不要把所有问题都归给 retriever。
 14. 如果未来需要返回 metadata，应该直接把 storage 的全部 dict 泄漏出来，还是先更新 service contract？为什么？
 
 ### T0702 Hybrid Retrieval
@@ -930,7 +946,7 @@ Phase 6 的 `keyword_score` 与 T0701 的 `vector_score` 是进入 F011 的两�
 19. `top_k=5` 时 T0702 传给两个 retriever 的参数分别是什么？如果 vector retriever 是当前 T0701 实现，VectorStore 最终收到多少？
 20. 同一 branch 对同一 `chunk_id` 出现两个 score，代码为什么使用 `max()` 而不是累加？这个选择隐含了什么输入假设？
 21. keyword result 没有 `metadata`，vector result 提供 `{"source": "vector"}`；最终 metadata 是什么？如果两个 branch 都没有呢？
-22. `weights=[0.3]` 或 `weights=[0.3, 0.7, 0.0]` 会怎样？当前是否有友好的 domain error？
+22. 为什么当前 v1 不接受 `weights` 参数？早期 interim contract 的治理冲突是如何通过 owner decision 关闭的？
 23. 如果 keyword retriever 抛出 storage exception，HybridRetriever 会返回空列表、尝试 vector fallback，还是直接向上传播？请从实际代码找证据。
 
 #### Design reasoning
@@ -945,7 +961,7 @@ Phase 6 的 `keyword_score` 与 T0701 的 `vector_score` 是进入 F011 的两�
 28. 用两个简单的 fake retriever 写一个小表：chunk A 双命中（0.8/0.9）、chunk B 仅 vector 命中（0.5）、chunk C 仅 keyword 命中（0.6）。手算三条 pre-filter `final_score`，判断哪些会被 0.30 filter 保留。
 29. 把 fake vector retriever 替换成当前 `VectorRetriever`，记录 `top_k=2` 时 Hybrid → VectorRetriever → VectorStore 的每一级参数；解释为什么底层候选数不是直觉中的 4。
 30. 写一个断言，证明两个不同 content 但相同 `chunk_id` 只产生一条结果；再写一个断言，证明 metadata 为空时输出仍有 `metadata={}`。
-31. 设计一个尚未实现的 validation test：非法 `weights` 或负 `top_k` 应由哪个边界拒绝？只写测试意图，不把它写成当前代码已经 PASS。
+31. 设计一个尚未实现的 validation test：负 `top_k` 应由哪个边界拒绝？只写测试意图，不把它写成当前代码已经 PASS。
 
 ### T0703 Retrieval Module Integration
 
@@ -970,7 +986,7 @@ Phase 6 的 `keyword_score` 与 T0701 的 `vector_score` 是进入 F011 的两�
 39. 在 Python REPL 中写一个 `fake_embedder(texts)`，断言它只收到 `['hello']`，并返回 `[[1.0, 0.0]]`；再用 `Mock(spec=VectorStore)` 返回两个 `VectorSearchResult`，手工预测 `top_k=1` 的 vector 结果。
 40. 把 fake store 的返回顺序改成相似度 `[0.2, 0.9, 0.7]`，思考：当前 vector retriever 会不会自己排序？如果不会，哪个 upstream contract 必须保证顺序？
 41. 写一个小表格记录一次 hybrid 调用的类型：`str`、`int`、branch dict、merge accumulator、final service dict；为每次转换写一句“谁负责”。
-42. 设计一个尚未实现的 test case，专门说明“negative/zero top_k 或非法 weights 的 validation owner 还没有决定”，但不要把它写成当前代码已经 PASS。
+42. 设计一个尚未实现的 test case，专门说明“negative/zero top_k 的 validation owner 还没有决定”，但不要把它写成当前代码已经 PASS。
 
 ## Quick Review
 
@@ -991,7 +1007,7 @@ T0701 + T0702 + T0703 mental model
   Filter      keep final_score >= MIN_RELEVANCE_SCORE (0.30)
   Truncate    results[:top_k]（filter 之后）
   Facade     T0703 共享一个 store，创建三个 retriever 后 delegation 到 Hybrid
-  Verified   4 vector + 5 hybrid + 3 facade + 5 context/source + 4 history + 12 DeepSeek + 10 query tests inside 60-test suite; compileall PASS
+  Verified   Phase 7 vector/hybrid/facade assertions plus downstream QA coverage; focused test_qa 50/50 PASS, full backend suite 78/78 PASS, compileall PASS
   Honest gap  facade/retriever/LLM/storage dependencies are Mocked or patched in tests; real upload→Chroma→DeepSeek→query/QA E2E DEFERRED
 ```
 
@@ -1018,3 +1034,7 @@ T0701 + T0702 + T0703 mental model
 > **后续状态（T0804 Learning Pass，2026-09-02）**：T0804 在 `qa.py` 增加 `QAService` 的 dependency injection/lazy creation、collection preflight、Hybrid retrieval、context/history converters、DeepSeek call、sources projection 与 service result 组装；4 个 orchestration tests 让当前完整 `test_qa` suite 达到 50/50 PASS。`/api/query`、真实 provider/Chroma/upload E2E、Phase 7 Gate Review 与 Phase Learning Review 仍未执行；本段只同步当前 downstream 状态，不改写 T0701–T0703 的历史 checkpoint。
 >
 > **后续状态（T0805 Learning Pass，2026-09-02）**：T0805 在 `api/query.py` 增加 request validation、collection existence、QAService delegation、`QueryResponse` 与统一错误 envelope；10 个 route-level Mocked tests 使当前完整 suite 达到 60/60 PASS。T0703 facade 仍不是 T0805 的调用入口，真实 provider/Chroma/upload → query E2E 与前端集成仍未执行；本段只同步当前 downstream 状态，不改写 T0701–T0703 的历史 checkpoint。
+>
+> **Phase 7 Gate closure synchronization**：后续 Formal Closure / Gate Verification 已确认 T0701–T0703 DONE、F011 CLOSED、BLOCKER 0、MAJOR 0，并将 verdict 固化为 `PHASE_7_PASS — CLOSED`。[Gate record](./engineering-review/phase-07-engineering-review.md#10-phase-7-formal-closure--gate-verification) 保留 F011 冲突、OPTION B 决策、SPEC remediation、accepted MINOR over-fetch 与 T1202 deferred evidence。
+>
+> **Phase 7 Learning Review（2026-09-03）**：在全部 Tasks DONE 且 Gate closure 已落档后，本次 review 完成了跨 T0701/T0702/T0703 的 unified mental model、ownership/data-flow 去重、Phase-level self-test chain 与验证边界 consolidation；精选素材已晋升到 Interview Guide 的 Phase 7 深度章。真实 BGE/Chroma、upload → query E2E、semantic quality benchmark 与 frontend integration 仍为 deferred，未因 Learning Review 完成而升级证据等级。

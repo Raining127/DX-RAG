@@ -2,13 +2,13 @@
 
 > **Coverage**: T0701 — Vector Retrieval + T0702 — Hybrid Retrieval + T0703 — Retrieval Module Integration（本轮增量评审）
 >
-> **Status**: IN PROGRESS（2026-08-31）。T0701/T0702/T0703 implementation 与 Task Learning Pass 已完成；Phase Gate Review 与 Phase Learning Review 尚未完成。
+> **Status**: COMPLETE（following the Phase 7 Formal Closure / Gate Verification）。T0701/T0702/T0703 implementation、F011 decision/remediation/verification、Gate closure 与 Phase Learning Review 已完成（2026-09-03）。
 
 ## 1. 当前工程结论
 
 T0701 在 Service Layer 增加了一个窄职责的 `VectorRetriever`：它调用既有 `encode_chunks` 生成 query vector，再通过 `VectorStore.search` 获取已转换、已排序的 `similarity_score`，最后投影为 `vector_score` 并截断到 `top_k`。T0702 在同一 service module 增加 `HybridRetriever`：顺序调用两个 branch、按 `chunk_id` 合并、按固定权重计算 `final_score`、执行 relevance filter，再截断最终 Top-K。T0703 增加 module-level `retrieve()` facade：选择 `ChromaVectorStore`、先做 chunk-count preflight，再把同一 store 注入 keyword/vector retriever，最后委托给 Hybrid。实际代码见 [`backend/app/services/qa.py:87-216`](../../../backend/app/services/qa.py#L87-L216)。
 
-本轮的核心判断是：**T0701 的工程价值在于 contract ownership 和可组合性；T0702 的工程价值在于不改变两个 ranker 的 owner，却把它们合成为一个 identity-stable、可过滤的结果 contract；T0703 的工程价值在于把三者组装成一个可导入的 facade，同时保留 empty 与 missing collection 的不同语义。** Embedding model lifecycle 属于 F007/T0202，raw distance → similarity 属于 F008/T0105，keyword/vector fusion 属于 F011/T0702，module wiring 属于 T0703。Phase 7 review checkpoint 的 `python -m unittest tests.test_qa -v` 为 24/24 PASS；T0801 后续新增 5 个 context/source tests，成为 30/30 PASS；T0802 再新增 4 个 history tests，成为 34/34 PASS；T0803 再新增 12 个 DeepSeek client tests，成为 46/46 PASS；T0804 再新增 4 个 QAService orchestration tests，成为 50/50 PASS；T0805 再新增 10 个 route-level tests，当前完整 suite 为 60/60 PASS。原 review 中的 4 个 vector tests 使用 injected embedder 与 Mock `VectorStore`，4 个 hybrid tests 使用 Mock retrievers，3 个 facade tests patch 了 store/retriever constructors；T0801 使用 synthetic dict inputs，T0802 使用 synthetic list/dict histories，T0803 使用 injected/patched LLM client、OpenAI constructor、settings 与 sleep，T0804 使用 injected Mock store/retriever/LLM，T0805 使用真实 FastAPI `TestClient` 但 patch storage/service。这些证据不能升级为真实 model + ChromaDB + DeepSeek semantic E2E、Frontend history integration 或 upload → query E2E。
+本轮的核心判断是：**T0701 的工程价值在于 contract ownership 和可组合性；T0702 的工程价值在于不改变两个 ranker 的 owner，却把它们合成为一个 identity-stable、可过滤的结果 contract；T0703 的工程价值在于把三者组装成一个可导入的 facade，同时保留 empty 与 missing collection 的不同语义。** Embedding model lifecycle 属于 F007/T0202，raw distance → similarity 属于 F008/T0105，keyword/vector fusion 属于 F011/T0702，module wiring 属于 T0703。Phase 7 review checkpoint 的 `python -m unittest tests.test_qa -v` 为 24/24 PASS；T0801 后续新增 5 个 context/source tests，成为 30/30 PASS；T0802 再新增 4 个 history tests，成为 34/34 PASS；T0803 再新增 12 个 DeepSeek client tests，成为 46/46 PASS；T0804 再新增 4 个 QAService orchestration tests，成为 50/50 PASS；T0805 checkpoint 再新增 10 个 route-level tests，成为 60/60 PASS；T0901–T0903 后续新增 18 个 file-management/upload tests，当前 backend discovery 为 78/78 PASS。原 review 中的 4 个 vector tests 使用 injected embedder 与 Mock `VectorStore`，4 个 hybrid tests 使用 Mock retrievers，3 个 facade tests patch 了 store/retriever constructors；T0801 使用 synthetic dict inputs，T0802 使用 synthetic list/dict histories，T0803 使用 injected/patched LLM client、OpenAI constructor、settings 与 sleep，T0804 使用 injected Mock store/retriever/LLM，T0805 使用真实 FastAPI `TestClient` 但 patch storage/service。这些证据不能升级为真实 model + ChromaDB + DeepSeek semantic E2E、Frontend history integration 或 upload → query E2E。
 
 ## 2. 为什么需要这个模块
 
@@ -86,7 +86,7 @@ T0701 不负责 `MIN_RELEVANCE_SCORE` 或 `final_score`；T0702 已负责这两�
 
 ### ADR-07：通过 constructor 注入两个 ranker，Hybrid 只做 orchestration
 
-- **Decision**：`HybridRetriever` 接收 `KeywordRetriever`、`VectorRetriever` 与可选 `weights`，不在内部 new concrete retriever。
+- **Decision**：`HybridRetriever` 只接收 `KeywordRetriever` 与 `VectorRetriever`，不在内部 new concrete retriever；F011 权重由 module-internal constants 持有。
 - **Context / Problem**：Hybrid 的责任是组合两个已经存在的 score contract；若它自行创建 storage、embedding 或 keyword index，会重新拥有生命周期和基础设施依赖。
 - **Chosen Solution**：保存两个 retriever instance，在 `hybrid_search()` 中按各自公开方法调用；测试以 Mock 替换二者。
 - **Why**：依赖方向清晰，调用参数、返回 shape 和 error propagation 都能被观察；这也让 T0702 unit tests 不需要真实 model/Chroma。
@@ -122,12 +122,13 @@ T0701 不负责 `MIN_RELEVANCE_SCORE` 或 `final_score`；T0702 已负责这两�
 
 ### ADR-11：固定权重 + filter-before-final-top-k
 
-- **Decision**：默认权重为 `[0.3, 0.7]`；每个 accumulator 先计算 `final_score`，排序后删除 `< settings.MIN_RELEVANCE_SCORE` 的结果，最后 `[:top_k]`。
+- **Decision**：v1 使用内部固定常量 `keyword_weight = 0.3` 与 `vector_weight = 0.7`；每个 accumulator 先计算 `final_score`，排序后删除 `< settings.MIN_RELEVANCE_SCORE` 的结果，最后 `[:top_k]`。
 - **Context / Problem**：F011 需要关键词精确性与向量语义的可解释加权，并明确 relevance filter 必须发生在最终 Top-K 之前。
-- **Chosen Solution**：使用 constructor 权重完成线性组合，当前 config 的阈值为 `0.30`；比较式为 `>=`，因此等于阈值保留。
+- **Historical finding**：早期 T0702/interim material 曾把 `weights` 写成可选 constructor input，形成 F011 governance conflict；owner 已决定 **OPTION B — Frozen Internal Weights**，并完成授权的 SPEC remediation。该历史发现保留，但不再代表当前 contract。
+- **Chosen Solution**：使用 module-internal fixed constants 完成线性组合，当前 config 的阈值为 `0.30`；比较式为 `>=`，因此等于阈值保留。
 - **Why**：权重与 score 的 [0,1] 前提直接对应 SPEC；先过滤避免噪声占名额，也保留融合后才达到阈值的候选。
-- **Trade-off**：固定权重未经过真实评估集校准；`weights` 没有 range/sum validation，排序的 equal-score tie-breaker 也未定义。
-- **Future Improvement**：用真实 relevance judgments 评估权重、阈值和 tie-breaker；若引入 RRF/dynamic weighting，需重审 score semantics 与验收标准。
+- **Trade-off**：固定权重未经过真实评估集校准，排序的 equal-score tie-breaker 也未定义；这不构成 v1 的 caller configuration gap。
+- **Future Improvement**：用真实 relevance judgments 评估权重、阈值和 tie-breaker；若未来引入 RRF/dynamic weighting，需重新取得产品决策并重审 score semantics 与验收标准。
 
 ### ADR-12：Hybrid 不吞异常，也不私自添加 input validation
 
@@ -233,7 +234,7 @@ T0701 的方法短且职责单一；T0702 也保持为一个同步 orchestration
 | invalid/negative `top_k` | class 内无范围校验 | 需要后续调用边界 contract |
 | branch result 缺少 `chunk_id` | `result["chunk_id"]` 触发 `KeyError` | Hybrid 不吞异常；schema validation 尚未建立 |
 | branch score 缺失/非法 | 缺失或 falsy 值 fallback 到 `0.0`；非 numeric 在 `float()` 处失败 | 依赖 F009/F010 score contract；没有 clamp |
-| `weights` 长度不是 2 | tuple unpack 触发 `ValueError` | constructor 没有 domain-specific validation |
+| caller supplied `weights` | 当前 `HybridRetriever` constructor 不接受该输入，override 会在调用边界失败 | dynamic weighting 不是 v1 contract；已由 F011 focused regression verification 固化 |
 | duplicate/conflicting payload | score 取 branch 内 max；非空 file/content 首值保留 | 不自动检测同一 chunk 的 payload 冲突 |
 | empty collection | `get_chunk_count()==0` 后 facade 返回 `[]` | T0703 unit 覆盖的是 Mock count；真实 Chroma empty-KB 未验证 |
 | missing collection | `get_chunk_count()` 异常直接向上传播 | 不在 retrieval module 映射 HTTP error；具体 Chroma exception 未验证 |
@@ -250,7 +251,7 @@ T0701 的方法短且职责单一；T0702 也保持为一个同步 orchestration
 
 ### 5.5 安全与隔离
 
-T0701/T0702 不直接解析文件路径、不拼接 Chroma private query、不执行用户输入；T0703 只在 facade 边界选择 `ChromaVectorStore`，随后仍通过 public methods 访问 count/list/search。query、collection 只作为 service/public method 参数传递。Hybrid/facade 仍未验证 `chunk_id`/payload schema，也未提供 query length、weights 或 top_k range guard。认证、请求限流与 HTTP 输入 policy 不是本 Task 的已实现能力，仍由外层边界决定。
+T0701/T0702 不直接解析文件路径、不拼接 Chroma private query、不执行用户输入；T0703 只在 facade 边界选择 `ChromaVectorStore`，随后仍通过 public methods 访问 count/list/search。query、collection 只作为 service/public method 参数传递。Hybrid/facade 仍未验证 `chunk_id`/payload schema，也未提供 query length 或 top_k range guard；weights 不属于 caller input。认证、请求限流与 HTTP 输入 policy 不是本 Task 的已实现能力，仍由外层边界决定。
 
 ## 6. 规模分析（Future）
 
@@ -269,7 +270,7 @@ T0701/T0702 不直接解析文件路径、不拼接 Chroma private query、不�
 ```text
 python -m unittest tests.test_qa -v       → 50/50 PASS（Phase 7 review checkpoint 24/24；T0801 后 30/30；T0802 后 34/34；T0803 后 46/46；T0804 后 50/50）
 python -m unittest tests.test_query -v    → 10/10 PASS（T0805 route-level Mocked boundary）
-python -m unittest discover -s tests -v  → 60/60 PASS（含 T0805；Phase 7 review checkpoint 为 24/24）
+python -m unittest discover -s tests -v  → 78/78 PASS（含 T0901–T0903；T0805 checkpoint 为 60/60，Phase 7 review checkpoint 为 24/24）
 python -m compileall -q app tests         → PASS
 ```
 
@@ -305,7 +306,7 @@ T0703 的三个 wiring tests 验证：
 4. T0703 已提供 module-level `retrieve()` facade，并消费 T0702 的 Hybrid；T0804 有独立的 `QAService` path，T0805 已把该 path 接到 HTTP QA endpoint，但仍没有统一两个 retrieval entry point，且真实依赖尚未验证。
 5. T0702 → T0701 组合会使真实 vector storage 看到二次 `×2`；当前 tests mock 掉了这段调用链，尚无 recall/latency benchmark 或产品决策。
 6. Hybrid 输出 `metadata`，但 T0701/T0602 当前 projection 没有真实 metadata 来源；F012/F015 的 source contract 尚未贯通。
-7. `top_k`、weights range/sum、branch payload schema、equal-score tie-breaker 与 partial failure policy 没有专门 validation/contract。
+7. `top_k`、branch payload schema、equal-score tie-breaker 与 partial failure policy 没有专门 validation/contract；dynamic weighting 已明确排除在 v1 外。
 8. service/test module docstring 仍有旧的 tokenizer wording，需要后续文档维护。
 9. backend distance metric、model version、multi-worker deployment 的一致性策略仍需在后续阶段决定。
 10. facade 当前直接创建 concrete `ChromaVectorStore`，真实 store lifecycle、missing/empty Chroma behavior 与 upload → query integration 尚未执行。
@@ -320,4 +321,68 @@ T0703 的三个 wiring tests 验证：
 - Previous retrieval learning：[phase-06-keyword-retrieval.md](../phase-06-keyword-retrieval.md)
 - Project-level interview candidates：[dx-rag-interview-guide.md](../interview-notes/dx-rag-interview-guide.md)
 
-> **Review boundary**：本文件覆盖 T0701 + T0702 + T0703 的增量工程评审，不是 Phase 7 Gate Review，也不表示 Phase 7 已完成。Phase 7 Gate 与 Learning Review 必须在全部 Task 完成后独立执行。
+> **Review boundary**：本文件第 1–9 节覆盖 T0701 + T0702 + T0703 的增量工程评审；第 10 节是随后同步的正式 closure record。Phase Learning Review 是独立的学习 consolidation 工作，已于 2026-09-03 完成；其 Technical Learning 与 Interview Guide 产物不替代本文件的工程判断。
+
+## 10. Phase 7 Formal Closure / Gate Verification
+
+> 本节同步已建立的 Phase 7 Formal Closure / Gate Verification 结果，不是新的 technical re-review、remediation 或 Phase 10 authorization。历史评审、F011 决策与修复链保持可追溯。
+
+### 10.1 Historical chain
+
+```text
+T0701–T0703 implementation completed
+  → Phase 7 retrieval verification
+  → Interim Engineering Review
+  → F011 weights governance conflict identified
+  → Owner Decision: OPTION B — Frozen Internal Weights
+  → Authorized F011 SPEC remediation
+  → F011 verification
+  → Phase 7 Formal Closure / Gate Verification
+  → PHASE_7_PASS — CLOSED
+```
+
+### 10.2 Final F011 record
+
+```text
+F011 Decision: OPTION B — Frozen Internal Weights
+
+keyword_weight = 0.3
+vector_weight = 0.7
+
+final_score = keyword_score * 0.3 + vector_score * 0.7
+```
+
+The weights are fixed internal v1 constants. They are not caller-, runtime-, constructor-, `QAService`-, API-, environment-, or application-configuration inputs. Dynamic weighting is not supported in v1.
+
+**Final F011 state: CLOSED.**
+
+### 10.3 Gate evidence
+
+| Gate item | Result | Evidence boundary |
+|---|---|---|
+| T0701–T0703 declared completion | PASS | All three Tasks remain `DONE`; current implementation and Task contracts were rechecked |
+| Fixed-weight retrieval contract | PASS | Static implementation inspection plus fixed-weight regression; no weight exposure |
+| Focused Phase 7 / QA tests | PASS | `python -m unittest tests.test_qa -v` → 50/50; MOCKED/STATIC composition evidence |
+| Full backend suite | PASS | `python -m unittest discover -s tests -v` → 78/78; real model/Chroma E2E not implied |
+| Compilation | PASS | `python -m compileall -q app scripts tests` |
+| Diff check | PASS | `git diff --check` |
+
+### 10.4 Findings and deferred evidence
+
+- `BLOCKER`: 0.
+- `MAJOR`: 0.
+- Nested retrieval over-fetch remains `MINOR` with disposition `ACCEPTED_V1_BOUNDARY`; it is not fixed or escalated here.
+- Real BGE semantic retrieval, real ChromaDB retrieval E2E, and real semantic empty-KB verification remain `DEFERRED / T1202`.
+- The focused F011 closure did not require a full Phase 7 Gate re-review.
+
+### 10.5 Closure state
+
+**PHASE_7_PASS — CLOSED**
+
+Phase 10 was not started by the closure review. Phase Learning Review was completed on 2026-09-03: the Technical Learning now records the cross-task mental model and verification boundary, and selected Interview Candidates were promoted to the Phase 7 deep chapter. This changed documentation state only; it introduced no technical contract change and is not a new Gate finding.
+
+| Governance record | State |
+|---|---|
+| Engineering Review | SYNCHRONIZED / COMPLETE |
+| Phase 7 Gate Review | `PHASE_7_PASS — CLOSED` |
+| Phase Learning Review | `COMPLETE`（2026-09-03） |

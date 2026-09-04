@@ -3,10 +3,10 @@
 > 从项目整体角度理解 DX-RAG：它是什么、为什么存在、每一层做什么、13 个 Phase 如何拼成完整系统。
 > 不深入代码细节——代码级的逐行精读请阅读对应的 `phase-XX-*.md` 学习笔记，工程决策分析请阅读 `engineering-review/`。
 
-**当前状态快照**（以 `docs/TASKS.md` 为准，2026-09-02）：
+**当前状态快照**（以 `docs/TASKS.md` 为准，2026-09-04）：
 - SPEC.md v1.6 **FROZEN**，Blocking Questions = 0
 - Phase 0–5 ✅ DONE（工程地基 + 向量存储 + 嵌入 + 文档管道 + 知识库管理 API + 文件上传 API；Phase 5：Gate Review 裁定 PHASE_5_FAIL → F-1/F-2 修复完成 → Re-review 待执行；Learning Pass / ER / Learning Review 已完成）
-- Phase 6 ✅ COMPLETE（T0601–T0602 DONE；PHASE_6_PASS；Learning Review 完成，2026-08-27）；Phase 7 🟡 IN PROGRESS（T0701–T0703 DONE；Phase Gate/Learning Review 待执行）；Phase 8 🟡 IN PROGRESS（T0801–T0805 DONE；Phase Gate/Learning Review 待执行）；Phase 9–12 ⬜ TODO
+- Phase 6 ✅ COMPLETE（T0601–T0602 DONE；PHASE_6_PASS；Learning Review 完成，2026-08-27）；Phase 7 ✅ COMPLETE（T0701–T0703 DONE；`PHASE_7_PASS — CLOSED`；Engineering Review 与 Phase Learning Review 完成，2026-09-03）；Phase 8 ✅ COMPLETE（T0801–T0805 DONE；`PHASE_8_PASS — READY_FOR_PHASE_9`；Learning Review 完成，2026-09-02；当前证据复核完成 2026-09-03；Engineering Review 完成，2026-09-04）；Phase 9 ✅ COMPLETE（T0901–T0903 DONE；`PHASE_9_PASS — READY_FOR_PHASE_10`；Phase Learning Review 完成，2026-09-04；Engineering Review 独立待办）；Phase 10–12 ⬜ TODO
 
 ---
 
@@ -84,7 +84,7 @@ RAG（Retrieval-Augmented Generation）正是针对这四点设计的：**检索
 │  /api/collections  ← Phase 4 ✅                                  │
 │  /api/upload       ← Phase 5 ✅                                  │
 │  /api/query        ← Phase 8 ✅（T0805）                         │
-│  /api/files        ← Phase 9 ⬜                                  │
+│  /api/files        ← Phase 9 ✅（list + preview + delete）      │
 │  统一错误格式 {error: {code, message, details}} ✅                 │
 └───────────────────────────┬──────────────────────────────────────┘
                             │
@@ -314,7 +314,7 @@ Answer + Citation（answer 不含内联引用标记；sources 由后端从检索
 | 输出 | UploadResponse（status/file_id/file_name/chunks/warnings）；FAILED 时全量回滚（T0503 端点级验证：15 场景矩阵 + 零业务代码修复）；Gate 修复 F-1/F-2：add_texts 分批持久化 + 批次失败补偿删除（V9/V10 升级 CHECK 复跑 PASS） |
 | 为什么存在 | 知识库内容的入口 API。六道校验（路径安全/扩展名/大小/空/KB/同名）全部在写盘之前完成；回滚契约（SPEC F002 Upload Failure Atomicity）由验证脚本固化 |
 
-### Phase 6-7 — Retrieval（关键词 + 向量 + 混合检索）✅ Phase 6 已完成；🟡 Phase 7 进行中（T0701–T0703 已完成，Gate/Learning Review 待执行）
+### Phase 6-7 — Retrieval（关键词 + 向量 + 混合检索）✅ Phase 6 与 Phase 7 均已完成（T0701–T0703 已完成；`PHASE_7_PASS — CLOSED`；Phase Learning Review 完成 2026-09-03）
 
 | 维度 | 内容 |
 |------|------|
@@ -323,22 +323,24 @@ Answer + Citation（answer 不含内联引用标记；sources 由后端从检索
 | 输出 | T0701 输出 `{chunk_id, file_id, file_name, content, vector_score}`；T0702 输出 `{chunk_id, file_id, file_name, content, final_score, metadata}`，按 `chunk_id` 合并、以 `0.3×keyword + 0.7×vector` 融合、执行 Relevance Filter 与最终 Top-K；T0703 输出 module-level `retrieve(query, collection, top_k)`，空库返回 `[]`、缺失 collection 异常传播 |
 | 为什么存在 | 检索质量决定 RAG 答案质量的上限。关键词覆盖精确匹配（型号、代码、编号），向量覆盖语义匹配（同义词、改写） |
 
-### Phase 8 — RAG & QA（问答）🟡 IN PROGRESS（T0801、T0802、T0803、T0804、T0805 DONE）
+### Phase 8 — RAG & QA（问答）✅ COMPLETE（T0801–T0805 DONE；Gate PASS；Learning Review 完成 2026-09-02；Engineering Review 完成 2026-09-04）
 
 | 维度 | 内容 |
 |------|------|
 | 解决什么问题 | 检索结果不是答案——需要 LLM 把散落的 chunk 综合成结构化回答，并附上来源 |
 | 输入 | question + history + 检索结果 |
-| 输出 | 当前 T0801–T0804：受 `MAX_CONTEXT_CHARS` 约束的 context text、backend-owned sources、经校验/截断/格式化的 history text、DeepSeek answer adapter，以及 service-level result；T0805 暴露 HTTP 200/统一错误 envelope 的 POST /api/query |
+| 输出 | T0801–T0804：受 `MAX_CONTEXT_CHARS` 约束的 context text、backend-owned sources、经校验/截断/格式化的 history text、DeepSeek answer adapter，以及 service-level result；T0805 暴露 HTTP 200/统一错误 envelope 的 POST /api/query；Phase Learning Review 已完成统一 data flow 与验证边界收口 |
 | 为什么存在 | 产品核心价值所在：用户要的是答案，不是文档列表。System Prompt 六原则保证"只基于知识库回答、不编造、不被文档注入指令覆盖" |
 
-### Phase 9 — File Management API（文件管理）⬜ TODO
+> 工程复盘见 [Phase 8 Engineering Review](../engineering-review/phase-08-engineering-review.md)；真实 provider/Chroma/upload → query E2E 与 frontend integration 仍未验证。
+
+### Phase 9 — File Management API（文件管理）✅ COMPLETE（T0901–T0903 DONE；`PHASE_9_PASS — READY_FOR_PHASE_10`；Learning Review 完成 2026-09-04）
 
 | 维度 | 内容 |
 |------|------|
 | 解决什么问题 | 用户需要看到知识库里有什么、预览内容、删除过期文件 |
 | 输入 | GET /api/files、GET /api/files/{file_id}/preview、DELETE /api/files/{file_id} |
-| 输出 | 文件列表（metadata 聚合）；chunk 拼接预览（≤5000 字符）；级联删除（文件 + chunks + keyword index） |
+| 输出 | T0901 已提供文件列表（metadata 聚合）；T0902 已提供 persisted chunk 拼接预览（≤5000 字符，诊断性视图）；T0903 已提供 raw file → ChromaDB file data → keyword-index dirty mark 的级联删除；Phase Learning Review 已收口统一 identity、data flow、证据边界与 self-test chain |
 | 为什么存在 | 知识库的"生命周期后半段"：入库不是终点，还需要维护和清理 |
 
 ### Phase 10-11 — Frontend（前端产品）⬜ TODO
@@ -374,5 +376,5 @@ Phase 0 (地基) ──┬──→ Phase 1 (VectorStore) ──┬──→ Pha
 ```
 
 > **Readme 导航**：[docs/learning/README.md](../README.md)（Phase 学习地图）· [SPEC.md](../../SPEC.md)（产品规格）· [TASKS.md](../../TASKS.md)（任务状态）
-> **工程决策分析**：[engineering-review/](../engineering-review/)（Phase 0-6 的设计决策与规模分析 + Phase 7 T0701–T0703 增量评审）
-> **面试准备**：[interview-notes/](../interview-notes/)（3 分钟介绍 + 34 高频问题 + Phase 4/5/6 深度章；Phase 7–8 当前保留 T0701–T0703 与 T0801–T0805 candidates）
+> **工程决策分析**：[engineering-review/](../engineering-review/)（Phase 0-6 的设计决策与规模分析 + Phase 7 T0701–T0703 增量评审及 Gate closure record）
+> **面试准备**：[interview-notes/](../interview-notes/)（3 分钟介绍 + 高频问题 + Phase 4/5/6/7/8/9 深度章；Phase 9 Learning Review 已完成，精选 file-management candidates 已晋升到 Phase 9 深度章）

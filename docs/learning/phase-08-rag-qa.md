@@ -1,8 +1,8 @@
 # Phase 8 — RAG & QA 学习笔记
 
-> **Phase 状态**：🟡 IN PROGRESS（T0801、T0802、T0803、T0804、T0805 DONE；Phase Gate Review 与 Phase Learning Review 尚未执行）
+> **Phase 状态**：✅ COMPLETE（Technical Learning / Gate / Learning Review 收口范围：T0801、T0802、T0803、T0804、T0805 DONE；Phase Gate Review `PHASE_8_PASS — READY_FOR_PHASE_9`；Phase Learning Review 完成 2026-09-02，本次证据复核完成 2026-09-03；Engineering Review 仍为独立文档责任）
 >
-> **本文档状态**：T0805 Task Learning Pass 完成（2026-09-02）。本文在 T0801 的 context/source、T0802 的 Conversation History、T0803 的 DeepSeek Chat Client 与 T0804 QA Service orchestration 学习之上，增量记录 POST `/api/query` endpoint；不把尚未完成的 Phase 写成 complete。
+> **本文档状态**：T0801–T0805 Task Learning Pass + Phase Learning Review 完成（2026-09-02）；当前证据复核完成（2026-09-03）。本文已把五个 Task 的 code mechanics、数据流、验证边界和 self-test 收口为一个 Phase mental model；真实 provider/Chroma/upload E2E、semantic quality 与前端 history lifecycle 仍保留为 deferred boundary，不因学习收口或本次复核而被写成已验证。
 >
 > **配套文档**：[Phase 7 Technical Learning](./phase-07-vector-retrieval.md) · [DX-RAG Interview Guide](./interview-notes/dx-rag-interview-guide.md)
 
@@ -13,8 +13,8 @@
 | Layer | Canonical home | 本章怎么处理 |
 |---|---|---|
 | Layer 1 — Technical Learning | 本文 | 代码 mechanics、项目上下游、Python/TypeScript 学习点、数据流、验证边界和练习 |
-| Layer 2 — Engineering Review | `engineering-review/phase-08-engineering-review.md`（当前尚未建立） | 这里只保留短的 engineering implication，不生成完整 ADR、failure taxonomy 或规模分析 |
-| Layer 3 — Interview Preparation | [Interview Guide](./interview-notes/dx-rag-interview-guide.md) | 本 Task 只保留 Interview Candidates；完整话术等 Phase Gate 与 Phase Learning Review 后按 cadence consolidation |
+| Layer 2 — Engineering Review | [`engineering-review/phase-08-engineering-review.md`](./engineering-review/phase-08-engineering-review.md)（2026-09-04 完成） | 这里只保留短的 engineering implication；完整 ADR、failure taxonomy 与规模分析见独立文档 |
+| Layer 3 — Interview Preparation | [Interview Guide](./interview-notes/dx-rag-interview-guide.md) | 本文保留 Task-level candidates；Phase Learning Review 已将精选内容晋升到 Interview Guide 的 Phase 8 深度章 |
 | Phase Gate / Phase Learning Review / Task Learning Pass | [Gate template](./templates/phase-gate-review-template.md) · [Task Learning Pass workflow](./templates/phase-learning-pass-workflow.md) | 本文不能替代独立 Gate，也不能把 Task Learning Pass 写成 Phase 收口 |
 
 T0801/T0802/T0803/T0804/T0805 的 `[PROJECT FACT]` 来自当前 `TASKS.md`、`SPEC.md`、`qa.py`、`query.py`、`router.py`、`main.py`、`config.py`、`schemas.py`、`errors.py`、`test_qa.py`、`test_query.py` 和本轮测试；`[ENGINEERING KNOWLEDGE]` 是可迁移的工程概念；`[FUTURE]` 明确表示当前尚未实现的能力。[PROJECT FACT]
@@ -193,7 +193,7 @@ cd backend
 python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-T0801 checkpoint 的结果是 **30/30 PASS**；T0802 checkpoint 后 suite 为 **34/34 PASS**；T0803 checkpoint 后为 **46/46 PASS**；T0804 checkpoint 后为 **50/50 PASS**；T0805 后当前完整 suite 为 **60/60 PASS**。其中 T0801 有 5 个无外部 I/O 转换 unit tests；另外执行 `python -m compileall -q app tests`，结果 PASS。[PROJECT FACT]
+T0801 checkpoint 的结果是 **30/30 PASS**；T0802 checkpoint 后 suite 为 **34/34 PASS**；T0803 checkpoint 后为 **46/46 PASS**；T0804 checkpoint 后为 **50/50 PASS**；T0805 checkpoint 当时为 **60/60 PASS**。当前 checkout full suite 为 **78/78 PASS**，其中后续 18 个测试属于 T0901–T0903，不属于 Phase 8；T0801 有 5 个无外部 I/O 转换 unit tests；另外执行 `python -m compileall -q app tests`，结果 PASS。[PROJECT FACT]
 
 | 测试 | 证明什么 | 证据边界 |
 |---|---|---|
@@ -247,7 +247,7 @@ cd backend
 python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-T0802 checkpoint 的结果是 **34/34 PASS**；T0803 checkpoint 后为 **46/46 PASS**；T0804 checkpoint 后为 **50/50 PASS**；T0805 后当前完整 suite 为 **60/60 PASS**。其中 T0802 有 4 个 test methods；另外执行 `python -m compileall -q app tests`，结果 PASS。[PROJECT FACT]
+T0802 checkpoint 的结果是 **34/34 PASS**；T0803 checkpoint 后为 **46/46 PASS**；T0804 checkpoint 后为 **50/50 PASS**；T0805 checkpoint 当时为 **60/60 PASS**。当前 checkout full suite 为 **78/78 PASS**（后续 18 个测试属于 T0901–T0903，不属于 Phase 8）；其中 T0802 有 4 个 test methods；另外执行 `python -m compileall -q app tests`，结果 PASS。[PROJECT FACT]
 
 | 测试 | 证明什么 | 证据边界 |
 |---|---|---|
@@ -302,7 +302,7 @@ cd backend
 python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-**在 T0803 checkpoint**，完整 suite 为 **46/46 PASS**；T0804 checkpoint 后为 **50/50 PASS**；T0805 后当前 suite 为 **60/60 PASS**。其中 T0803 有 12 个 test methods，另外执行 `python -m compileall -q app tests`，结果 PASS。[PROJECT FACT]
+**在 T0803 checkpoint**，完整 suite 为 **46/46 PASS**；T0804 checkpoint 后为 **50/50 PASS**；T0805 checkpoint 当时为 **60/60 PASS**。当前 checkout full suite 为 **78/78 PASS**（后续 18 个测试属于 T0901–T0903，不属于 Phase 8）；其中 T0803 有 12 个 test methods，另外执行 `python -m compileall -q app tests`，结果 PASS。[PROJECT FACT]
 
 | 测试 | 证明什么 | 证据边界 |
 |---|---|---|
@@ -366,7 +366,7 @@ cd backend
 python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-**在 T0804 checkpoint**，完整 suite 为 **50/50 PASS**；T0805 后当前 suite 为 **60/60 PASS**。其中 T0804 有 4 个 `QAServiceTests` test methods，另外执行 `python -m compileall -q app tests`，结果 PASS。[PROJECT FACT]
+**在 T0804 checkpoint**，完整 suite 为 **50/50 PASS**；T0805 checkpoint 当时为 **60/60 PASS**。当前 checkout full suite 为 **78/78 PASS**（后续 18 个测试属于 T0901–T0903，不属于 Phase 8）；其中 T0804 有 4 个 `QAServiceTests` test methods，另外执行 `python -m compileall -q app tests`，结果 PASS。[PROJECT FACT]
 
 | 测试 | 证明什么 | 证据边界 |
 |---|---|---|
@@ -421,7 +421,7 @@ cd backend
 python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-T0805 增加 10 个 `QueryEndpointTests` test methods；T0804 checkpoint 的 50/50 加上它们后，当前完整 suite 为 **60/60 PASS**。[PROJECT FACT]
+T0805 增加 10 个 `QueryEndpointTests` test methods；T0804 checkpoint 的 50/50 加上它们后，Phase 8 checkpoint suite 为 **60/60 PASS**。当前 checkout full suite 为 **78/78 PASS**，后续 18 个测试属于 T0901–T0903，不属于 Phase 8。[PROJECT FACT]
 
 | 测试 | 证明什么 | 证据边界 |
 |---|---|---|
@@ -705,6 +705,17 @@ T0804 QAService.answer(question, collection, top_k, history)
 
 把 Phase 8 当前切片记成“**四个准备/适配模块 + 一个编排器 + 一个 API boundary**”：T0801 把 ranked evidence 投影成受预算控制的 context text 和可审计 sources；T0802 把 frontend history 投影成经过校验、保留最近 20 条的 prompt-ready text；T0803 把 policy 与这些已准备文本交给 OpenAI-compatible DeepSeek client；T0804 负责 preflight、retrieval、转换器、LLM 与 result 的顺序组合；T0805 负责 JSON body、collection existence、service delegation、response model 与错误 envelope。context 只保留完整 chunk 的高分前缀，sources 在同一份完整 retrieval results 上映射所有输入项（包括被 context budget 排除的尾部），history 则不是知识事实。T0804 是 service-level integration seam，T0805 是 HTTP adapter；两者都不等于真实 provider/Chroma E2E。[ENGINEERING KNOWLEDGE]
 
+### 6.5 Phase Learning Review 收口（2026-09-02）
+
+本次 Phase-level review 把五个 Task 的增量笔记合并成一条可迁移的 mental model：**validated request → collection preflight → ranked evidence → bounded context/history → policy-preserving LLM adapter → backend-owned sources → typed HTTP response**。[PROJECT FACT]
+
+- **去重**：T0801 保留 context/source projection；T0802 保留 history contract；T0803 保留 provider adapter、message policy、retry/error mapping；T0804 保留 orchestration 顺序；T0805 保留 HTTP validation、collection existence、response model 与 error envelope。跨 Task 的重复内容统一回收到上面的 data flow 和边界表，而不是再复制五份 end-to-end 叙述。
+- **关键 seam**：`query.py` 的 `message.model_dump()` 是 API → service 的 normalization seam：HTTP 层使用 `ChatMessage` model，T0804/T0802 仍消费 plain dict，不把 Pydantic 类型泄露到下游 prompt contract。[PROJECT FACT]
+- **前置与下游**：Phase 8 消费 Phase 7 的 ranked chunks；它已经把 service result 接到 `/api/query`，但真实 provider/Chroma/upload → query E2E、semantic quality 与 frontend history lifecycle 仍由 T1202/后续 Phase 负责。[PROJECT FACT]
+- **验证口径**：Phase 8 专项 focused evidence 为 35/35（5 个 T0801、4 个 T0802、12 个 T0803、4 个 T0804、10 个 T0805）；Phase 8 checkpoint 的完整 backend suite 为 60/60；当前 checkout 为 78/78（T0901–T0903 后续增加 18 个 file-management/upload tests）。这些是 unit、composition 和 route-level Mocked evidence，不是 real provider/model 或 concrete upload-to-query E2E。[PROJECT FACT]
+- **本次复核（2026-09-03）**：重新执行 `python -m unittest tests.test_qa -v`、`python -m unittest discover -s tests -v` 与 `python -m compileall -q app scripts tests`，结果分别为 50/50、78/78 与 PASS；这些数字更新了当前 checkout 口径，不改变 Phase 8 的 contract、Gate verdict 或 deferred evidence。[PROJECT FACT]
+- **学习层级**：Engineering Review 继续归 `engineering-review/phase-08-engineering-review.md` 的独立责任；精选的项目级回答已晋升到 [Interview Guide 的 Phase 8 深度章](./interview-notes/dx-rag-interview-guide.md)。Technical Learning 保留 mechanics、data flow、evidence boundaries 和 self-test，不复制完整面试话术。
+
 ## 7. 架构设计：新增能力与刻意保留的边界
 
 ### 7.1 新增能力
@@ -722,7 +733,7 @@ T0804 QAService.answer(question, collection, top_k, history)
 - 不改变 T0703 的 `final_score`，也不重新排序 retrieval semantics 之外的字段。
 - T0801/T0802 不调用 embedding、LLM、文件系统或 HTTP；T0803 仅在 `generate_answer()` 被调用时访问 OpenAI-compatible LLM；T0804 负责 service-level orchestration；T0805 负责 HTTP route、request validation 与 response envelope。[PROJECT FACT]
 - 不持久化 history、不实现 session management 或 user isolation；这些是 F014 明确排除的 backend 责任。[PROJECT FACT]
-- 不宣称 Phase 8 已完成；T0801–T0805 虽已实现，Phase Gate 和 Phase Learning Review 仍未执行。[PROJECT FACT]
+- 本文的 Phase 8 Learning Review 已完成；这不等同于真实 provider/Chroma/upload E2E。Phase 8 Engineering Review 现已在独立文档完成，T0801–T0805 的实现与 Gate verdict 已记录，但后续集成验收仍按 T1202 责任推进。[PROJECT FACT]
 
 ### 7.3 简短 engineering implication
 
@@ -730,7 +741,7 @@ T0804 QAService.answer(question, collection, top_k, history)
 
 ## 8. Engineering Review 摘要
 
-当前五个 Task 的完整 ADR、failure taxonomy、规模分析和后续容量决策不放入 Technical Learning。这里仅保留导航结论：context 长度由配置控制；source identity 使用 `chunk_id`；backend 组装 sources；history 在 service boundary 校验后只保留最近 20 条，且不由 backend 持久化；T0803 在 client boundary 统一 DeepSeek 参数、retry 和 error code；T0804 在 service boundary 统一 preflight、retrieval、转换器、LLM 与 result 的顺序；T0805 在 API boundary 统一 request validation、collection existence、service delegation、response model 与 error envelope。Phase 8 Engineering Review 当前尚未建立；这不影响 T0801/T0802/T0803/T0804/T0805 的 Task Learning Pass，也不替代未来独立的 Engineering Review。[PROJECT FACT]
+当前五个 Task 的完整 ADR、failure taxonomy、规模分析和后续容量决策不放入 Technical Learning。这里仅保留导航结论：context 长度由配置控制；source identity 使用 `chunk_id`；backend 组装 sources；history 在 service boundary 校验后只保留最近 20 条，且不由 backend 持久化；T0803 在 client boundary 统一 DeepSeek 参数、retry 和 error code；T0804 在 service boundary 统一 preflight、retrieval、转换器、LLM 与 result 的顺序；T0805 在 API boundary 统一 request validation、collection existence、service delegation、response model 与 error envelope。完整工程复盘已迁移到 [Phase 8 Engineering Review](./engineering-review/phase-08-engineering-review.md)，包括 ADR、failure taxonomy、规模分析与已知缺口；这不影响 T0801/T0802/T0803/T0804/T0805 的 Task Learning Pass，也不替代独立 Gate 或后续真实集成验收。[PROJECT FACT]
 
 ## 9. Technical Decision（技术决策速查）
 
@@ -907,16 +918,18 @@ Phase 8 current mental model
   LLM         T0803 system policy + user sections → DeepSeek call → bounded retry → answer
   Orchestrator T0804 preflight → hybrid → converters → LLM → sources → result dict
   API         T0805 existence check → QAService delegation → QueryResponse/error envelope
-  Verified    5 T0801 + 4 T0802 + 12 T0803 + 4 T0804 + 10 T0805 test methods inside 60-test suite; compileall PASS
+  Verified    5 T0801 + 4 T0802 + 12 T0803 + 4 T0804 + 10 T0805 focused tests = 35/35; Phase 8 checkpoint 60/60; current backend 78/78 after 18 T0901–T0903 tests; compileall PASS
   Deferred    real provider/API E2E, Chroma/upload integration, frontend integration, semantic quality
 ```
+
+> **Phase 8 Learning Review 收官（2026-09-02；当前证据复核 2026-09-03）**：T0801–T0805 已从五组 Task explanation consolidation 为一个可迁移 mental model：`validated request → preflight → ranked evidence → bounded context/history → policy-preserving LLM adapter → backend-owned sources → typed HTTP response`。本次 Gate verdict 为 `PHASE_8_PASS — READY_FOR_PHASE_9`；Technical Learning 保留 code mechanics、data flow、verification boundaries 与 self-test，Engineering Review 与项目级 interview answers 继续归各自 canonical home。Phase 8 专项 focused evidence 为 35/35；Phase 8 checkpoint 的完整 backend suite 为 60/60；当前 checkout 为 78/78（T0901–T0903 后续增加 18 个 tests）。真实 provider/Chroma/upload → query E2E、semantic quality、frontend history lifecycle 仍由 T1202/后续 Phase 负责。[PROJECT FACT]
 
 > **T0801 Learning Pass 记录（2026-09-02）**：本章记录 context/source 两条无外部 I/O 转换路径、完整 chunk budget、chunk-level source identity。
 >
 > **T0802 Learning Pass 记录（2026-09-02）**：本章增量记录 history 的 runtime validation、最近 20 条 suffix window、`User:/Assistant:` formatting 与 34/34 unit verification。**在该 T0802 checkpoint 当时**，T0803–T0805、Phase 8 Gate Review 与 Phase Learning Review 尚未执行；当前 T0803 已由下方增量记录，本 Task 的学习文档不能替代独立的 Phase Review。
 >
-> **T0803 Learning Pass 记录（2026-09-02）**：本章增量记录 `SYSTEM_PROMPT` 六原则、OpenAI-compatible DeepSeek adapter、两条 message assembly、lazy key/config、bounded retry、错误映射与 response extraction。**在该 T0803 checkpoint 当时**，当前 46/46 tests PASS；真实 DeepSeek API、QA orchestration、`/api/query`、Phase 8 Gate Review 与 Phase Learning Review 尚未执行。T0804 已在下方增量接入 service orchestration。
+> **T0803 Learning Pass 记录（2026-09-02）**：本章增量记录 `SYSTEM_PROMPT` 六原则、OpenAI-compatible DeepSeek adapter、两条 message assembly、lazy key/config、bounded retry、错误映射与 response extraction。**在该 T0803 checkpoint 当时**，该 checkpoint suite 为 46/46 tests PASS；真实 DeepSeek API、QA orchestration、`/api/query`、Phase 8 Gate Review 与 Phase Learning Review 尚未执行。T0804 已在下方增量接入 service orchestration。
 >
 > **T0804 Learning Pass 记录（2026-09-02）**：**在该 T0804 checkpoint**，本章增量记录 QAService 的 dependency injection/lazy creation、collection preflight、空库与空检索结果分叉、context/history/LLM/sources 顺序、service result shape 与 4 个 Mocked orchestration tests；当时 50/50 tests PASS，`/api/query` 尚未执行。真实 provider/Chroma/upload E2E、Phase 8 Gate Review 与 Phase Learning Review 仍未执行。
 >
-> **T0805 Learning Pass 记录（2026-09-02）**：本章增量记录 POST `/api/query` 的手动 body/request validation、collection existence check、T0804 service delegation、`QueryResponse` response model、全局 `AppError` envelope 与 10 个 route-level Mocked tests。当前完整 suite 为 60/60 PASS；真实 provider/Chroma/upload → query E2E、Frontend history lifecycle、Phase 8 Gate Review 与 Phase Learning Review 仍未执行。
+> **T0805 Learning Pass 记录（2026-09-02）**：本章增量记录 POST `/api/query` 的手动 body/request validation、collection existence check、T0804 service delegation、`QueryResponse` response model、全局 `AppError` envelope 与 10 个 route-level Mocked tests。该 checkpoint 的 Phase 8 suite 为 60/60 PASS；当前 checkout 为 78/78（T0901–T0903 后续增加 18 个 tests）。当时真实 provider/Chroma/upload → query E2E、Frontend history lifecycle、Phase 8 Gate Review 与 Phase Learning Review 尚未执行；本次 Phase Learning Review 已在后续收口，集成边界仍 deferred。[PROJECT FACT]

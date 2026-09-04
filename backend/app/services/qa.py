@@ -79,7 +79,12 @@ class KeywordRetriever:
     def invalidate(cls, collection: str) -> None:
         """Mark an existing collection index for full rebuild on next search."""
         if collection in cls._indexes:
-            cls._dirty_collections.add(collection)
+            cls.mark_dirty(collection)
+
+    @classmethod
+    def mark_dirty(cls, collection: str) -> None:
+        """Force a collection to rebuild its keyword index on next search."""
+        cls._dirty_collections.add(collection)
 
     def _build_index(self, collection: str) -> None:
         inverted_index: Dict[str, Set[str]] = {}

@@ -7,7 +7,7 @@ Endpoint flow (SPEC F002 Detail normal flow, T0502):
   9.    invalidate this collection's keyword index cache
   10.   return the Section 6.3 response
 
-Validation order (SPEC F002 Detail normal flow steps 2-6 + Section 10.2):
+Single-invalid mappings (SPEC F002 + Section 10.2):
   1. file name safety     — 400 `INVALID_FILE_NAME`
   2. extension whitelist  — 400 `UNSUPPORTED_FILE_TYPE`
   3. size limit           — 413 `FILE_TOO_LARGE`
@@ -15,9 +15,9 @@ Validation order (SPEC F002 Detail normal flow steps 2-6 + Section 10.2):
   5. knowledge base exists— 404 `COLLECTION_NOT_FOUND`
   6. duplicate file name  — 409 `FILE_ALREADY_EXISTS`
 
-File name safety runs first: SPEC Section 10.2 requires the check to
-happen before any filesystem operation, and putting it ahead of the
-whole pipeline means no later step ever handles an unvalidated path.
+Multi-invalid precedence is intentionally unspecified in v1.  File name
+safety still runs before any filesystem operation, and no rejected request
+may write the raw file.
 
 Every check is side-effect free — a rejected upload leaves no file in
 ``uploads/`` and no data in ChromaDB (AC-SEC-01).
@@ -143,9 +143,9 @@ def validate_upload(
         raise AppError("COLLECTION_NOT_FOUND")
 
     # Duplicate scope is one knowledge base (SPEC F002 step 6 / AC-F002-03):
-    # the same name in another collection is a different file.  Compared
-    # case-insensitively because uploads/ lives on case-insensitive
-    # filesystems, where "Doc.pdf" would overwrite "doc.pdf".
+    # the same name in another collection is a different file.  Comparison is
+    # case-insensitive by contract, so raw storage cannot collide by spelling
+    # alone on a case-insensitive filesystem.
     existing = {file["file_name"].lower() for file in store.get_files(collection)}
     if file_name.lower() in existing:
         raise AppError("FILE_ALREADY_EXISTS")
@@ -202,7 +202,11 @@ def upload_file(
         raise
 
     if result["status"] == "FAILED":
-        raise AppError("FILE_PARSE_ERROR")
+        warnings = result["warnings"]
+        raise AppError(
+            "FILE_PARSE_ERROR",
+            details={"warnings": warnings} if warnings else None,
+        )
 
     invalidate_keyword_index(collection)
 

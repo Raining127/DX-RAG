@@ -232,7 +232,7 @@ No Task is complete until all Completion Conditions are met.
 **SPEC References:**
 - Section 6.7 (Unified Error Response Format — `{error: {code, message, details}}`)
 - Section 9.1 (Error Categories — 400/404/409/413/422/500/502)
-- Section 9.2 (Error Code Catalog — all 23 error codes)
+- Section 9.2 (Error Code Catalog)
 - Section 9.4 (Unhandled Errors — 500 INTERNAL_ERROR, traceback logged, not exposed)
 
 **Dependencies:**
@@ -243,6 +243,7 @@ No Task is complete until all Completion Conditions are met.
 - Define error response model: `ErrorResponse` with `code: str`, `message: str`, `details: dict`
 - Define custom exception classes or a pattern for raising typed HTTP errors with error codes
 - Register global exception handler on FastAPI app
+- Register a handler for framework-generated `RequestValidationError` responses using the same envelope with 422 `REQUEST_VALIDATION_ERROR`
 - Unhandled exceptions → 500 `INTERNAL_ERROR`, log traceback, empty details
 - Error messages in Chinese as implied by SPEC examples
 
@@ -258,6 +259,7 @@ No Task is complete until all Completion Conditions are met.
 **Acceptance / Verification:**
 - Raising a handled error produces correct JSON `{error: {code, message, details}}`
 - Unhandled exception produces 500 `INTERNAL_ERROR` without traceback in response
+- Representative malformed request body/form/query validation produces 422 `REQUEST_VALIDATION_ERROR` with `details.validation_errors`
 - Error response format matches SPEC Section 6.7 exactly
 
 **Completion Conditions:**
@@ -1425,13 +1427,14 @@ No Task is complete until all Completion Conditions are met.
 - T0107 (VectorStore.get_files — for duplicate check)
 
 **Implementation Scope:**
-- File validation pipeline (order matters per SPEC F002):
+- File validation pipeline (single-invalid outcomes are normative; multi-invalid precedence is intentionally unspecified):
   1. Extension check (case-insensitive, against whitelist: .txt, .md, .csv, .json, .log, .pdf, .docx, .xlsx, .xlsm, .xltx, .xltm)
   2. File size check (≤ MAX_UPLOAD_SIZE_MB, reject if >)
   3. Empty file check (0 bytes → reject)
   4. Path traversal check (contains `..`, `/`, `\`, or directory components → reject)
   5. KB existence check (collection exists in ChromaDB)
-  6. Duplicate check (same file_name in same KB → reject)
+  6. Duplicate check (same file_name, case-insensitive, in same KB → reject)
+- The implementation may choose which violated rule to report for a multi-invalid request, but every required pre-write/path-safety invariant remains enforced
 - Each check returns appropriate HTTP status + error code
 - Validation happens BEFORE any file system write (per AC-SEC-01)
 - File name sanitization forbidden — must reject, not modify
@@ -1454,7 +1457,7 @@ No Task is complete until all Completion Conditions are met.
 - Non-existent KB → 404 `COLLECTION_NOT_FOUND`
 
 **Completion Conditions:**
-- All 6 validation checks implemented in correct order
+- All 6 validation checks implemented; single-invalid outcomes match the SPEC and multi-invalid precedence remains unspecified
 - No file system writes before validation passes
 - Error codes match SPEC Section 9.2
 
@@ -1487,10 +1490,11 @@ No Task is complete until all Completion Conditions are met.
 - Save file to `uploads/{collection_name}/{file_name}`
 - Call IngestService.process() (T0308)
 - Invalidate keyword index cache for this collection
+- Treat raw-file plus ChromaDB persistence as the durable commit point; keyword-index invalidation is non-throwing post-commit cache maintenance with dirty/lazy-rebuild recovery
 - Build response per Section 6.3:
   - SUCCESS: status="SUCCESS", warnings=[]
   - SUCCESS_WITH_WARNINGS: status="SUCCESS_WITH_WARNINGS", warnings=[...]
-- FAILED from IngestService → 422 `FILE_PARSE_ERROR`
+- FAILED from IngestService → 422 `FILE_PARSE_ERROR`, preserving non-empty warnings in `error.details.warnings`
 
 **Out of Scope:**
 - Do NOT handle partial upload / resume
@@ -1504,6 +1508,8 @@ No Task is complete until all Completion Conditions are met.
 - AC-F002-01: upload valid PDF to "test-kb" → 200, file saved, chunks > 0
 - AC-F002-03: same filename to different KBs → both succeed
 - AC-F002-07: PDF with some OCR failures → 200, SUCCESS_WITH_WARNINGS
+- FAILED with structured warnings → 422 `FILE_PARSE_ERROR` with warnings under `error.details.warnings`
+- Post-commit invalidation failure → upload remains 200/committed and the index is recoverable by the dirty/lazy-rebuild path
 - Response JSON matches SPEC Section 6.3 format exactly
 
 **Completion Conditions:**
@@ -1538,6 +1544,9 @@ No Task is complete until all Completion Conditions are met.
   3. Verify keyword index doesn't contain the file
   4. Re-upload same file name → succeeds (not blocked by 409)
   5. Upload that produces SUCCESS_WITH_WARNINGS → file persists, chunks persist
+  6. Verify FAILED structured warnings are preserved in `error.details.warnings`
+  7. Verify framework-generated request validation uses the unified 422 error envelope
+  8. Verify post-commit keyword-index invalidation failure does not undo the durable upload and the next query rebuilds the index
 - If verification fails, fix the rollback logic in T0308/T0502
 
 **Out of Scope:**
@@ -1552,6 +1561,7 @@ No Task is complete until all Completion Conditions are met.
 - AC-F002-08: all pages fail → 422 `FILE_PARSE_ERROR`
 - AC-F002-09: 4 mandatory observable behaviors all pass
 - AC-F002-10: re-upload after FAILED → 200, not 409
+- FAILED warnings, request-validation envelope, and post-commit invalidation recovery checks pass
 
 **Completion Conditions:**
 - All F002 FAILED-related ACs pass
@@ -1634,6 +1644,7 @@ No Task is complete until all Completion Conditions are met.
 - **Build**: iterate VectorStore.list_chunks(), tokenize each chunk's content, register chunk_id in each token's Set
 - **Lazy**: build on first keyword_search() call
 - **Invalidation**: mark index dirty (flag per collection)
+- **Invalidation failure recovery**: invalidation is non-throwing post-commit cache maintenance; on failure, mark the collection dirty for the existing lazy full rebuild path
 - **Rebuild**: if dirty on next search, rebuild from scratch (full rebuild, no incremental)
 - **Search**: tokenize query → for each unique query token, find matching chunk_ids → calculate score:
   ```
@@ -1654,6 +1665,7 @@ No Task is complete until all Completion Conditions are met.
 - AC-F009-02: query "量子计算" with no matching chunks → empty list
 - AC-F009-03: 5 unique tokens, chunk matches 3 → keyword_score = 0.6
 - AC-F009-05: upload new file → index dirty → next query rebuilds → new file searchable
+- Invalidation failure after a committed mutation → mutation remains committed, no exception escapes the API boundary, and the next query rebuilds from `VectorStore.list_chunks()`
 
 **Completion Conditions:**
 - Inverted index builds from VectorStore.list_chunks()
@@ -2119,7 +2131,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0901 — GET /api/files (File List)
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement the file listing endpoint returning all files in a knowledge base with metadata.
 
@@ -2163,7 +2175,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0902 — GET /api/files/{file_id}/preview (Chunk-Based Preview)
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement the file preview endpoint that reconstructs file content from persisted chunks (not original file re-parsing).
 
@@ -2219,7 +2231,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T0903 — DELETE /api/files/{file_id} (Cascade Delete)
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement file deletion with cascade cleanup: raw file removal, ChromaDB chunk/vector/metadata removal, and keyword index invalidation.
 

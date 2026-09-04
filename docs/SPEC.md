@@ -437,6 +437,8 @@ KB Rename 由业务层（KB Management API / Service）与存储层（VectorStor
 9. Invalidate keyword index cache for this collection
 10. 返回 `{status, message, file_id, file_name, chunks, collection_name, warnings}`（见 Section 6.3 完整 Response 格式）
 
+所有文件名/path-safety、扩展名、大小、空文件、知识库存在性和同名校验，必须在第 7 步文件系统写入前完成。若同一请求同时违反多个校验规则，v1 不规定错误优先级；但不得因此跳过任何必需的前置校验或 path-safety 约束。知识库内同名判断不区分大小写，原始 `file_name` 仍作为展示名称和响应值保留。
+
 **边界条件**:
 - 单文件最大 50 MB（`MAX_UPLOAD_SIZE_MB` configurable）
 - Frontend 和 Backend 均做校验：`file size > MAX_UPLOAD_SIZE_MB` 时拒绝（50 MB 本身允许上传）
@@ -454,6 +456,11 @@ KB Rename 由业务层（KB Management API / Service）与存储层（VectorStor
 | `SUCCESS_WITH_WARNINGS` | Persisted | Valid chunks persisted | Valid chunks added | Invalidated → rebuild |
 | `FAILED` | **不得残留** | **不得残留** | **不得残留任何该 file_id 的 chunk/vector/metadata** | **不得包含该文件** |
 
+**Durable commit boundary and cache maintenance**:
+- The durable upload commit point is the raw file plus ChromaDB chunks/vectors/metadata successfully persisted.
+- Keyword-index invalidation is post-commit cache maintenance, not part of FAILED ingestion rollback.
+- Invalidation is non-throwing at the upload API boundary. If normal invalidation fails, the collection is marked dirty and the existing lazy full-rebuild path provides recovery; the committed upload remains valid and the API must not report a false failed upload.
+
 **FAILED 的 observable behavior（强制要求）**:
 1. `uploads/` 中不得残留该文件
 2. ChromaDB 中不得残留该 `file_id` 的任何 chunk/vector/metadata
@@ -470,7 +477,7 @@ KB Rename 由业务层（KB Management API / Service）与存储层（VectorStor
 | file_name 包含路径遍历字符 | 400 | `INVALID_FILE_NAME` |
 | 文件超过大小限制 | 413 | `FILE_TOO_LARGE` |
 | 文件为空 (0 byte) | 400 | `EMPTY_FILE` |
-| 同名文件已存在（同一 KB） | 409 | `FILE_ALREADY_EXISTS` |
+| 同名文件已存在（同一 KB，不区分大小写） | 409 | `FILE_ALREADY_EXISTS` |
 | 知识库不存在 | 404 | `COLLECTION_NOT_FOUND` |
 | 文件解析失败 | 422 | `FILE_PARSE_ERROR` |
 
@@ -715,7 +722,7 @@ KB Rename 由业务层（KB Management API / Service）与存储层（VectorStor
 **AC-F004-04: 全部页面失败 — FAILED**
 - **Given**: PDF 有 3 页，全部为扫描图片且 Qwen-VL 全部失败
 - **When**: 系统逐页处理
-- **Then**: ingestion status = `FAILED`，API 返回 422 `FILE_PARSE_ERROR`，warnings 包含 3 条记录
+- **Then**: ingestion status = `FAILED`，API 返回 422 `FILE_PARSE_ERROR`，结构化 warnings 保留在 `error.details.warnings` 中，包含 3 条记录
 
 **AC-F004-05: 禁止静默忽略**
 - **Given**: 某页 OCR 失败
@@ -1087,6 +1094,7 @@ inverted_index: Dict[str, Set[chunk_id]]
 - **Rebuild**: 下一次 Query 时若为 dirty，重新全量构建
 - **无增量更新**: v1 不支持增量索引，每次重建为全量
 - **存储**: 仅内存存储（服务重启后自动重建）。v1 不做磁盘持久化
+- Invalidation is post-commit cache maintenance. If invalidation itself fails after a durable upload/delete commit, the operation must not be reported as failed; the collection is marked dirty so the existing lazy full rebuild path can recover the index.
 
 **检索流程**:
 1. 确保倒排索引已构建且有效（否则构建/重建）
@@ -1200,10 +1208,12 @@ inverted_index: Dict[str, Set[chunk_id]]
 | **是什么** | 融合关键词检索和向量检索的结果，加权排序后返回 |
 | **为什么存在** | 单一检索方式有盲区；混合检索兼顾精确匹配和语义理解 |
 | **用户** | 系统内部（QA Service） |
-| **输入** | query (str), top_k (int, default=5, range: 1–20), weights (List[float], default=[0.3, 0.7]) |
+| **输入** | query (str), top_k (int, default=5, range: 1–20) |
 | **输出** | List[{chunk_id, file_id, file_name, content, final_score, metadata}]，final_score 为融合后得分 |
 | **包含** | 并行触发两种检索、分数归一化、按 chunk_id 合并、加权求和、去重、排序、Top-K |
 | **不包含** | RRF 融合、动态权重调整、检索结果重排序模型 |
+
+**固定权重（v1）**：`keyword_weight = 0.3`、`vector_weight = 0.7` 是 Hybrid Retrieval 的内部固定常量，不是 caller、API、constructor、QAService、environment 或 application configuration 的输入。v1 不支持动态权重调整。
 
 #### Detail
 
@@ -2259,6 +2269,8 @@ All error responses follow this structure:
 | error.message | String | Human-readable description |
 | error.details | Object | Optional additional context (e.g., `{"max_size_mb": 50}` for FILE_TOO_LARGE) |
 
+Framework-generated request validation errors use this same envelope with HTTP 422 and code `REQUEST_VALIDATION_ERROR`. The JSON-serializable framework validation entries are provided in `error.details.validation_errors`.
+
 ---
 
 ## 7. Data Models
@@ -2423,6 +2435,7 @@ v1 SHALL NOT 引入通用成功响应包装器（universal success-response wrap
 | `FILE_ALREADY_EXISTS` | 409 | Upload | Same file name exists in collection |
 | `FILE_NOT_FOUND` | 404 | Files | File does not exist |
 | `FILE_PARSE_ERROR` | 422 | Ingest | File parsing/extraction failure |
+| `REQUEST_VALIDATION_ERROR` | 422 | Global | Framework-generated request body/query/form validation failed |
 | `ENCRYPTED_PDF` | 422 | Ingest | PDF is encrypted |
 | `INVALID_QUERY` | 400 | Query | question is empty/missing |
 | `INVALID_TOP_K` | 400 | Query | top_k outside valid range [1, 20] |
@@ -2450,6 +2463,7 @@ No retry for: 401, 403 (auth errors), 400 (bad request). Backoff applies only be
 
 ### 9.4 Unhandled Errors
 
+- Framework-generated request validation errors are handled separately and return 422 `REQUEST_VALIDATION_ERROR` in the Section 6.7 envelope.
 - Unexpected exceptions caught by global FastAPI exception handler
 - Return 500 with `INTERNAL_ERROR` code
 - Log full traceback to backend logs (do not expose to client)
@@ -2594,7 +2608,7 @@ No retry for: 401, 403 (auth errors), 400 (bad request). Backoff applies only be
 
 **AC-F002-02: 同名文件被拒**
 - **Given**: 知识库 "test-kb" 已有 "doc.pdf"
-- **When**: 再次上传 "doc.pdf" 到 "test-kb"
+- **When**: 再次上传 "doc.pdf" 或大小写变体（如 "DOC.PDF"）到 "test-kb"
 - **Then**: HTTP 409，`FILE_ALREADY_EXISTS`
 
 **AC-F002-03: 不同 KB 同名文件独立**
@@ -2625,7 +2639,7 @@ No retry for: 401, 403 (auth errors), 400 (bad request). Backoff applies only be
 **AC-F002-08: 上传全部页面失败 — FAILED**
 - **Given**: PDF 所有页面均无有效文本
 - **When**: 上传该 PDF
-- **Then**: HTTP 422，`FILE_PARSE_ERROR`
+- **Then**: HTTP 422，`FILE_PARSE_ERROR`；若存在结构化 warnings，则保留在 `error.details.warnings`
 
 **AC-F002-09: FAILED 上传不残留数据**
 - **Given**: 上传文件导致 FAILED ingestion

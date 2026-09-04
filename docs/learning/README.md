@@ -236,15 +236,15 @@ Phase 只有取得标准化 `PHASE_X_PASS — READY_FOR_PHASE_Y` verdict 后，�
 
 ### Phase 7 — Vector & Hybrid Retrieval
 
-**状态**: 🟡 IN PROGRESS（T0701、T0702、T0703 DONE；T0703 Task Learning Pass 完成 2026-08-31；Phase Gate Review + Phase Learning Review 待执行）
+**状态**: ✅ COMPLETE（T0701、T0702、T0703 DONE；`PHASE_7_PASS — CLOSED`；Engineering Review 与 Phase Learning Review 已完成，2026-09-03）
 
 **Tasks**: T0701 ✅ | T0702 ✅ | T0703 ✅
 
 **当前学习产物**:
 
-- 📖 **Technical Learning**: [phase-07-vector-retrieval.md](./phase-07-vector-retrieval.md)（T0701–T0703 增量教材：query embedding adapter / score boundary / `chunk_id` merge / 0.3·0.7 fusion / relevance filter / shared-store facade / empty short-circuit / DI 与测试边界 / 自测练习）
-- 🔍 **Engineering Review**: [engineering-review/phase-07-engineering-review.md](./engineering-review/phase-07-engineering-review.md)（T0701–T0703 增量评审：ADR-01~15 / score、identity 与 composition ownership / failure boundary / 二次召回与 facade 成本 / metadata gap / scale 与 Known Gaps；Phase 7 尚未收口）
-- 🎤 **Interview Preparation**: T0701–T0703 当前只记录 Technical Learning 中的 Interview Candidates；待 Phase Gate 与 Phase Learning Review 完成后，再按 cadence 晋升到项目级完整回答
+- 📖 **Technical Learning**: [phase-07-vector-retrieval.md](./phase-07-vector-retrieval.md)（T0701–T0703 + Phase Learning Review：统一 retrieval mental model、score/identity/filter/storage ownership、跨 Task data flow、self-test chain 与验证边界）
+- 🔍 **Engineering Review / Gate record**: [engineering-review/phase-07-engineering-review.md](./engineering-review/phase-07-engineering-review.md)（T0701–T0703 增量评审 + `PHASE_7_PASS — CLOSED` closure record；F011 历史、accepted MINOR 与 T1202 deferred evidence 已保留）
+- 🎤 **Interview Preparation**: Phase Learning Review 已完成候选筛选与晋升，完整 30 秒 / 1–2 分钟回答、10 道高频追问、4 道工程深问与诚实验证边界已进入 [Interview Guide 的 Phase 7 深度章](./interview-notes/dx-rag-interview-guide.md#phase-7-深度章--vector--hybrid-retrievalt0701t0703-已实现--gate--learning-review-完成)
 
 **当前与未来主要学习主题**:
 
@@ -259,15 +259,15 @@ Phase 只有取得标准化 `PHASE_X_PASS — READY_FOR_PHASE_Y` verdict 后，�
 
 ### Phase 8 — RAG & QA
 
-**状态**: 🟡 IN PROGRESS（T0801、T0802、T0803、T0804、T0805 DONE；T0805 Task Learning Pass 完成 2026-09-02；Phase Gate Review + Phase Learning Review 待执行）
+**状态**: ✅ COMPLETE（T0801、T0802、T0803、T0804、T0805 DONE；Phase Gate Review `PHASE_8_PASS — READY_FOR_PHASE_9`；Phase Learning Review 完成 2026-09-02；当前证据复核完成 2026-09-03；Engineering Review 完成 2026-09-04）
 
 **Tasks**: T0801 ✅ | T0802 ✅ | T0803 ✅ | T0804 ✅ | T0805 ✅
 
 **当前学习产物**:
 
-- 📖 **Technical Learning**: [phase-08-rag-qa.md](./phase-08-rag-qa.md)（T0801–T0805 增量教材：context/source assembly、history validation/truncation/formatting、DeepSeek client/System Prompt/retry/error mapping、QAService orchestration、POST `/api/query` endpoint、验证边界）
-- 🔍 **Engineering Review**: Phase 8 Engineering Review 尚未建立；完整 ADR、failure taxonomy 与规模分析不在本 Task Learning Pass 中
-- 🎤 **Interview Preparation**: T0801–T0805 当前只记录 Technical Learning 中的 Interview Candidates；待 Phase Gate 与 Phase Learning Review 后再按 cadence 晋升到项目级完整回答
+- 📖 **Technical Learning**: [phase-08-rag-qa.md](./phase-08-rag-qa.md)（T0801–T0805 + Phase Learning Review：统一 RAG→QA data flow、context/source assembly、history validation/truncation/formatting、DeepSeek client/System Prompt/retry/error mapping、QAService orchestration、POST `/api/query` endpoint、验证边界；当前 35/35 Phase 8 focused、78/78 backend evidence 已复核）
+- 🔍 **Engineering Review**: [engineering-review/phase-08-engineering-review.md](./engineering-review/phase-08-engineering-review.md)（T0801–T0805：ADR、failure taxonomy、一致性/可维护性、同步 retry 与输入预算边界、10x/100x/1000x 规模分析）
+- 🎤 **Interview Preparation**: Phase Learning Review 已将精选内容晋升到 [Interview Guide 的 Phase 8 深度章](./interview-notes/dx-rag-interview-guide.md)；Technical Learning 仍保留完整 self-test 与候选问题
 
 **当前与未来主要学习主题**:
 
@@ -284,15 +284,21 @@ Phase 只有取得标准化 `PHASE_X_PASS — READY_FOR_PHASE_Y` verdict 后，�
 
 ### Phase 9 — File Management API
 
-**状态**: ⬜ NOT STARTED
+**状态**: ✅ COMPLETE（T0901、T0902、T0903 DONE；Phase Gate Review：`PHASE_9_PASS — READY_FOR_PHASE_10`；Phase Learning Review 完成 2026-09-04）
 
 **Tasks**: T0901–T0903
 
-**未来主要学习主题**:
+**当前与未来主要学习主题**:
 
-- File list API（metadata 聚合）
-- Chunk-based file preview
-- File cascade delete
+- File list API（metadata 聚合，T0901 ✅）
+- Chunk-based file preview（T0902 ✅：persisted chunks 按 `chunk_index` 重建，最多 5000 字符）
+- File cascade delete（T0903 ✅：raw file → ChromaDB file data → keyword index dirty mark）
+
+**当前学习产物**:
+
+- 📖 **Technical Learning**: [phase-09-file-management.md](./phase-09-file-management.md)（T0901–T0903 Task 精读 + Phase-level mental model、data flow、ownership、evidence boundary 与 self-test chain）
+- 🔍 **Engineering Review**: Phase 9 Engineering Review 尚未建立；T0901–T0903 只保留短 engineering implication
+- 🎤 **Interview Preparation**: [Interview Guide](./interview-notes/dx-rag-interview-guide.md) 已收录 Phase 9 深度章；本文仍保留 Task-level candidates，避免和项目级 answer bank 重复
 
 ---
 
@@ -371,7 +377,8 @@ Phase 定位 / 为什么需要这个模块 / 核心设计决策（Decision-Conte
 - [phase-04-engineering-review.md](./engineering-review/phase-04-engineering-review.md) — Knowledge Base Management（T0401：SPEC_CONFLICT 真实案例 / ADR-01~05 / Create 双副作用一致性缺口）
 - [phase-05-engineering-review.md](./engineering-review/phase-05-engineering-review.md) — File Upload API（T0501–T0503：校验、端点编排、回滚验证）
 - [phase-06-engineering-review.md](./engineering-review/phase-06-engineering-review.md) — Keyword Retrieval（T0601–T0602 增量评审完成；含历史 PHASE_6_PASS Gate 记录）
-- [phase-07-engineering-review.md](./engineering-review/phase-07-engineering-review.md) — Vector & Hybrid Retrieval（T0701–T0703 增量评审；Phase 7 尚未收口）
+- [phase-07-engineering-review.md](./engineering-review/phase-07-engineering-review.md) — Vector & Hybrid Retrieval（T0701–T0703 增量评审 + `PHASE_7_PASS — CLOSED` Gate record；Phase Learning Review 已完成）
+- [phase-08-engineering-review.md](./engineering-review/phase-08-engineering-review.md) — RAG & QA（T0801–T0805：Context/Source、History、DeepSeek adapter、QA orchestration、`/api/query`；ADR / failure taxonomy / scale analysis；2026-09-04）
 
 ### 面试指南
 
@@ -382,7 +389,8 @@ Phase 定位 / 为什么需要这个模块 / 核心设计决策（Decision-Conte
 - 第三部分：34 道高频面试题（项目理解/架构设计/RAG/工程问题四类，每题含 面试官问题/优秀回答/进一步追问/回答方向）
 - Phase 4 深度章（T0401–T0404 已实现）：30 秒回答 / 1-2 分钟深入 / SPEC_CONFLICT STAR / 18 道高频追问 + 8 道工程深问
 - Phase 5 深度章（T0501–T0503 已实现，含 Gate Review 修复中状态）：30 秒回答 / 1-2 分钟深入 / 验证驱动修复 STAR / 12 道高频追问 + 4 道工程深问
-- Phase 7 当前仅保留 T0701–T0703 Interview Candidates；完整 retrieval 话术待 Gate 与 Phase Learning Review 后 consolidation
+- Phase 7 深度章（T0701–T0703 已实现；Gate `PHASE_7_PASS — CLOSED`；Learning Review 完成）：30 秒回答 / 1–2 分钟深入 / 10 道高频追问 + 4 道工程深问 / 诚实验证边界
+- Phase 8 深度章（T0801–T0805 已实现；Gate PASS；Learning Review 完成）：30 秒回答 / 1-2 分钟深入 / 10 道高频追问 + 4 道工程深问 / 诚实验证边界
 - 附录：面试前自查清单
 
 ### Phase 学习模板（Phase 4-12 用）

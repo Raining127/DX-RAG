@@ -1,7 +1,7 @@
 # DX-RAG 面试指南（项目介绍 + 技术亮点 + 高频面试题）
 
 > 本文档把 DX-RAG 项目转译成"面试语言"：如何用 3 分钟讲清楚项目、如何亮出技术亮点、如何应对高频追问。
-> **诚实原则**：所有内容基于真实代码与 SPEC/TASKS。项目当前实现到 Phase 0-7 的已完成切片，并新增 Phase 8 的 T0801 Context/Source Assembly、T0802 Conversation History Processing、T0803 DeepSeek Chat Client、T0804 QA Service Orchestration 与 T0805 `POST /api/query` endpoint slices（基础工程 + 向量存储 + Embedding + 文档摄取管道 + 知识库管理 API + 文件上传 API + Keyword Retrieval + T0701 VectorRetriever + T0702 HybridRetriever + T0703 `retrieve()` wiring facade + T0801 context/source projection + T0802 history validation/truncation/formatting + T0803 System Prompt/message assembly/retry/error mapping + T0804 collection preflight/retrieval/context-history-LLM-source orchestration + T0805 request validation/collection existence/service delegation/response model/unified error envelope；Phase 6 已取得 PHASE_6_PASS 并完成 Learning Review；Phase 5 Gate Review 裁定 PHASE_5_FAIL 后 F-1/F-2 已修复，Re-review 待执行）；真实 provider/Chroma/upload E2E、前端集成与 Phase 9-12 仍是后续范围。**面试话术中注意区分“已实现”与“已验证”**——把设计或 Mocked evidence 讲成真实 E2E 是面试大忌，本文档在关键处标注了诚实话术。
+> **诚实原则**：所有内容基于真实代码与 SPEC/TASKS。项目当前实现到 Phase 0-9 的已完成切片（基础工程 + 向量存储 + Embedding + 文档摄取管道 + 知识库管理 API + 文件上传 API + Keyword Retrieval + T0701 VectorRetriever + T0702 HybridRetriever + T0703 `retrieve()` wiring facade + T0801–T0805 RAG/QA slices + T0901 file list + T0902 chunk-based preview + T0903 cascade delete）；Phase 6 已取得 PHASE_6_PASS 并完成 Learning Review；Phase 7 已取得 `PHASE_7_PASS — CLOSED` 并完成 Gate 与 Learning Review；Phase 8 已取得 `PHASE_8_PASS — READY_FOR_PHASE_9` 并完成 Learning Review；Phase 9 已取得 `PHASE_9_PASS — READY_FOR_PHASE_10` 并完成 Learning Review（2026-09-04）；Phase 5 Gate Review 裁定 PHASE_5_FAIL 后 F-1/F-2 已修复，Re-review 待执行。真实 provider/Chroma/upload E2E、前端集成与 Phase 10-12 仍是后续范围。**面试话术中注意区分“已实现”与“已验证”**——把设计或 Mocked evidence 讲成真实 E2E 是面试大忌，本文档在关键处标注了诚实话术。
 
 ---
 
@@ -25,7 +25,7 @@
 
 **③ 我的工作（约 45 秒）**
 
-> “我独立完成了这个项目的完整周期：首先是产品设计——写了 2800 多行的 SPEC 规格文档，把 17 个功能模块的接口契约、数据模型、错误码目录、验收标准全部冻结下来；然后是分 13 个 Phase、55 个 Task 的工程实现，目前已完成 Phase 0 到 6，并完成 Phase 7 的 T0701/T0702/T0703 retrieval slice 和 Phase 8 的 T0801 context/source assembly、T0802 history processing、T0803 DeepSeek client、T0804 QA Service orchestration、T0805 `/api/query` endpoint slices——包括配置管理、统一错误体系、VectorStore 抽象层、Embedding 服务、文档摄取管道、知识库管理与上传 API，以及 mixed-language tokenizer、倒排索引、lazy/dirty 全量重建、normalized keyword score、query embedding → vector_score adapter、按 chunk_id 的 hybrid fusion/filter、`retrieve()` shared-store facade、MAX_CONTEXT_CHARS 边界、backend-owned source projection、history validation/truncation/formatting、F013 六原则 System Prompt、OpenAI-compatible client、bounded retry、错误归一化、collection preflight、空库/空检索结果分流、service result 组装、request validation、collection existence、response model 与统一错误 envelope；项目用 Gate Review 和学习复盘做阶段收口。这个过程中我重点解决了几个问题，下面挑三个讲。”
+> “我独立完成了这个项目的完整周期：首先是产品设计——写了 2800 多行的 SPEC 规格文档，把 17 个功能模块的接口契约、数据模型、错误码目录、验收标准全部冻结下来；然后是分 13 个 Phase、55 个 Task 的工程实现，目前 Phase 0 到 9 已完成，其中 Phase 9 包含 T0901 file list、T0902 persisted-chunk preview、T0903 按 `file_id` 的 cascade delete；前面还完成了 Phase 8 的 T0801 context/source assembly、T0802 history processing、T0803 DeepSeek client、T0804 QA Service orchestration、T0805 `/api/query` endpoint slices——包括配置管理、统一错误体系、VectorStore 抽象层、Embedding 服务、文档摄取管道、知识库管理与上传 API，以及 mixed-language tokenizer、倒排索引、lazy/dirty 全量重建、normalized keyword score、query embedding → vector_score adapter、按 chunk_id 的 hybrid fusion/filter、`retrieve()` shared-store facade、MAX_CONTEXT_CHARS 边界、backend-owned source projection、history validation/truncation/formatting、F013 六原则 System Prompt、OpenAI-compatible client、bounded retry、错误归一化、collection preflight、空库/空检索结果分流、service result 组装、request validation、collection existence、response model 与统一错误 envelope；项目用 Gate Review 和学习复盘做阶段收口。这个过程中我重点解决了几个问题，下面挑三个讲。”
 
 **④ 技术挑战 + 解决方案（约 45 秒）**
 
@@ -35,7 +35,7 @@
 
 **⑤ 收尾（约 15 秒，可选）**
 
-> “项目还在继续，T0701 的向量检索 adapter、T0702 的按 chunk_id 加权融合与 relevance filter、T0703 的 `retrieve(query, collection, top_k)` 统一 retrieval facade、T0801 的 context/source assembly、T0802 的 history validation/truncation/formatting、T0803 的 DeepSeek client、System Prompt、message assembly、retry/error mapping、T0804 的 QAService preflight/retrieval/context-history/LLM/source orchestration，以及 T0805 的 `/api/query` request validation、collection existence、response model 与统一错误 envelope 已完成；真实 provider/Chroma E2E、Frontend integration 与后续 Phase 仍在后续。如果你对某个模块的实现细节感兴趣，我可以展开讲摄取管道的三态回滚、上传接口的失败清理与 15 场景验证、知识库重命名的两层补偿，或者 Phase 6 如何用同一 tokenizer 统一 indexing/query token space，再以 lazy + dirty lifecycle 管理内存倒排索引。”
+> “项目还在继续，T0701 的向量检索 adapter、T0702 的按 chunk_id 加权融合与 relevance filter、T0703 的 `retrieve(query, collection, top_k)` 统一 retrieval facade、T0801 的 context/source assembly、T0802 的 history validation/truncation/formatting、T0803 的 DeepSeek client、System Prompt、message assembly、retry/error mapping、T0804 的 QAService preflight/retrieval/context-history/LLM/source orchestration、T0805 的 `/api/query` request validation/collection existence/response model/unified error envelope，以及 T0901–T0903 的 file list、persisted-chunk preview、cascade delete 已完成；Phase 9 的 Gate 与 Learning Review 已收口，但真实 provider/Chroma/upload E2E、Frontend integration、T1203 跨 feature 文件管理验证与后续 Phase 仍在后续。如果你对某个模块的实现细节感兴趣，我可以展开讲摄取管道的三态回滚、上传接口的失败清理与 15 场景验证、知识库重命名的两层补偿，或者 Phase 9 如何用同一 `file_id` 串起 metadata projection、preview reconstruction 与跨存储 cleanup。”
 
 ### 话术设计要点（为什么这么讲）
 
@@ -597,7 +597,7 @@
 
 **面试官**：项目有测试吗？怎么保证质量？
 
-**优秀回答**：三层验证：① **单元层**——每个模块跑最小相关验证；当前 `test_qa` suite 为 50/50 PASS：6 个 tokenizer tests + 7 个 KeywordRetriever tests + 4 个 VectorRetriever tests + 5 个 HybridRetriever tests + 3 个 T0703 facade composition tests + 5 个 T0801 context/source tests + 4 个 T0802 history tests + 12 个 T0803 DeepSeek client tests + 4 个 T0804 QAService orchestration tests；另有 `test_query` 的 10 个 `QueryEndpointTests`，全量 suite 为 60/60 PASS。前者使用 Mock(spec=VectorStore)、injected embedder、injected LLM client 与 patched `OpenAI`/`time.sleep`，后者使用真实 FastAPI `TestClient` 但 patched storage/service，隔离真实存储、模型和等待边界；② **契约层**——API / service contract 对照 SPEC，验证字段、状态码、score、message shape、response envelope 与 retry lifecycle，不自己发明；③ **验收层**——按 AC 报告 PASS / DEFERRED，Phase 5 的 15 场景端点脚本和 Phase 6 Gate 都明确记录 real、mock 与 E2E 边界。诚实边界：v1 没有覆盖全项目的统一 CI；这些 unit/route tests 不等于真实 bge-small-zh-v1.5、真实 DeepSeek API、真实 Chroma persistence、upload → ChromaDB → query E2E、T0703 facade 的 concrete-store lifecycle、Hybrid 的 metadata 完整贯通、Frontend history lifecycle、二次 vector recall 成本与检索质量评估。**流程价值**：Gate Review + Learning Review 让证据强度和教学结论都被单独校准。
+**优秀回答**：三层验证：① **单元层**——每个模块跑最小相关验证；T0801–T0805 的 Phase 8 checkpoint 为 60/60 PASS：5 个 T0801 context/source tests + 4 个 T0802 history tests + 12 个 T0803 DeepSeek client tests + 4 个 T0804 QAService orchestration tests + 10 个 T0805 `QueryEndpointTests`，另有既有 retrieval tests；当前 checkout full suite 为 78/78 PASS，后续 18 个测试属于已完成的 T0901–T0903 file-management/upload slice。前者使用 Mock(spec=VectorStore)、injected embedder、injected LLM client 与 patched `OpenAI`/`time.sleep`，后者使用真实 FastAPI `TestClient` 但 patched storage/service，隔离真实存储、模型和等待边界；② **契约层**——API / service contract 对照 SPEC，验证字段、状态码、score、message shape、response envelope 与 retry lifecycle，不自己发明；③ **验收层**——按 AC 报告 PASS / DEFERRED，Phase 5 的 15 场景端点脚本和 Phase 6/8 Gate 都明确记录 real、mock 与 E2E 边界。诚实边界：v1 没有覆盖全项目的统一 CI；这些 unit/route tests 不等于真实 bge-small-zh-v1.5、真实 DeepSeek API、真实 Chroma persistence、upload → ChromaDB → query E2E、T0703 facade 的 concrete-store lifecycle、Hybrid 的 metadata 完整贯通、Frontend history lifecycle、二次 vector recall 成本与检索质量评估。**流程价值**：Gate Review + Learning Review 让证据强度和教学结论都被单独校准。
 
 **进一步追问**：如果重来，你会先写测试还是先写实现？
 
@@ -1074,6 +1074,309 @@
 
 ---
 
+## Phase 7 深度章 — Vector & Hybrid Retrieval（T0701–T0703 已实现 + Gate / Learning Review 完成）
+
+> 状态：T0701–T0703 均为 DONE；Phase Gate Review 已关闭为 **`PHASE_7_PASS — CLOSED`**；Phase Learning Review 于 2026-09-03 完成。
+> 代码教材 → [phase-07-vector-retrieval.md](../phase-07-vector-retrieval.md)；工程与 Gate 记录 → [phase-07-engineering-review.md](../engineering-review/phase-07-engineering-review.md)。
+> 诚实边界：当前证据是 service-level unit/composition/static verification；真实 BGE、concrete Chroma、upload → query E2E、semantic quality benchmark 与 metadata 完整贯通仍 deferred。T0701/T0702 的 nested `top_k * 2` over-fetch 是已记录并接受的 v1 minor boundary。
+
+### P7-1. 30 秒回答
+
+**面试官**：Phase 7 做了什么？
+
+> Phase 7 把 Phase 6 的 `keyword_score` 和 Phase 2/1 链路产生的 `vector_score` 组合成一个可供 QA 消费的 retrieval contract。T0701 负责 query embedding 到 `VectorStore.search()` 的 vector adapter，并透传 storage 已归一化的 similarity；T0702 以 `chunk_id` 合并两条 branch，缺失分支按 0 计分，用固定的 `0.3 * keyword_score + 0.7 * vector_score` 计算 `final_score`，过滤低于 0.30 的结果后取最终 Top-K；T0703 提供 shared-store 的 `retrieve()` facade，负责 concrete store、empty preflight 和 wiring。这里的已验证证据是 Mocked/injected service boundaries，不等于真实模型、Chroma 或 upload → query E2E 已完成。
+
+### P7-2. 1–2 分钟深入回答
+
+> 这条链路可以拆成三个 ownership 清晰的阶段。第一阶段 T0701 接收字符串 query，复用 batch-shaped embedding API，把一个 query 的向量传给 `VectorStore.search(collection, query_vector, top_k * 2)`；distance 到 `[0, 1]`、越大越相关的 similarity 语义由 storage owner 负责，T0701 只把它映射为 `vector_score`，避免 double normalization。
+>
+> 第二阶段 T0702 顺序调用 keyword 和 vector retriever，并为每个 branch 请求 expanded candidates。它用 `chunk_id` 作为 identity-preserving merge key，同一个 chunk 只形成一条 accumulator；只命中一条 branch 时另一条 score 是 `0.0`，双命中时保留各自 branch 的最高分和可用 payload。随后按 F011 固定常量计算 `final_score`，排序后保留 `final_score >= MIN_RELEVANCE_SCORE` 的候选，最后才切 `top_k`。权重是 module-internal constants，不是 constructor、QAService、API、环境变量或 runtime input，v1 不支持 dynamic weighting。
+>
+> 第三阶段 T0703 作为 composition facade 创建一个 `ChromaVectorStore`，先用 `get_chunk_count()` 处理 empty collection；数量为 0 时直接返回 `[]`，不会创建 retriever 或触发 embedding；missing collection 的 storage exception 则继续向上抛出。非空时，keyword/vector 两个 retriever 共享同一个 store，再交给 Hybrid。需要特别说明：T0804 当前直接构造 Hybrid path，不复用 T0703 facade；这不影响 Phase 7 facade 自身的 wiring contract。50/50 focused QA tests、78/78 full backend suite 和 compileall 证明了当前边界，但真实语义质量与 concrete dependency chain 仍由 T1202/后续集成验收负责。
+
+### P7-3. 高频追问
+
+**P7Q1. 为什么 keyword 和 vector retrieval 要并存？**
+
+- **推荐回答**：keyword branch 擅长 exact terminology、编号和代码符号；vector branch 擅长 paraphrase 和语义相近表达。两者先各自输出同尺度 score，再由 F011 组合，能兼顾可解释性与语义召回。
+- **回答边界**：没有真实 corpus benchmark，不能声称 3:7 已被质量实验最优，只能说它是冻结的 v1 contract。
+
+**P7Q2. 为什么 `vector_score` 直接等于 `similarity_score`？**
+
+- **推荐回答**：F008/VectorStore 已经拥有 distance → similarity 的转换和 `[0,1]` 语义；T0701 是 adapter，不应再次 min-max，否则会 double-normalize 并改变 score ownership。
+- **回答边界**：测试证明 pass-through 行为，不证明真实 embedding 的 semantic quality。
+
+**P7Q3. 为什么 merge key 是 `chunk_id`，不是 content？**
+
+- **推荐回答**：`chunk_id` 是文档切分后的稳定 identity。同一 chunk 即使两个 branch 的 payload 或 content 表现不同，也应该合并成一条 evidence；content 去重会把 identity 问题和文本相似问题混在一起。
+- **回答边界**：当前实现不会自动解决同一 `chunk_id` 对应冲突 payload 的业务一致性，metadata continuity 仍是 known gap。
+
+**P7Q4. 为什么权重固定为 0.3/0.7，不能由调用方传入？**
+
+- **推荐回答**：F011 最终决策是 `OPTION B — Frozen Internal Weights`。固定常量让 v1 contract 可解释、可回归；权重不属于 caller、constructor、QAService、API、环境变量或 application config，dynamic weighting 明确 deferred。
+- **回答边界**：早期材料中的可选 `weights` 只属于 remediation 前 interim snapshot，不能当作当前输入契约。
+
+**P7Q5. 为什么要先 filter 再 final Top-K？**
+
+- **推荐回答**：先切片会让低分候选占用名额，导致后面的高质量候选即使超过阈值也进不来。正确顺序是 merge → score → sort → `>= 0.30` filter → `top_k` slice。
+- **回答边界**：测试证明顺序；没有证明大规模 corpus 下的 latency 或 recall。
+
+**P7Q6. empty collection 和 missing collection 都没有结果，为什么不统一？**
+
+- **推荐回答**：empty 是合法但没有 evidence 的知识库，facade 返回 `[]` 并跳过无意义工作；missing 是 storage/resource error，需要保留异常让上层映射为相应错误。相同的“没有候选”不代表相同的系统语义。
+- **回答边界**：facade 测试使用 Mock store；不声称已经验证具体 Chroma exception type。
+
+**P7Q7. 为什么 T0703 是 module facade，不直接做 HTTP 或 QAService？**
+
+- **推荐回答**：facade 的职责是 retrieval composition：选择 concrete store、共享依赖、处理 empty preflight 和 delegation；HTTP validation、context/source、history、LLM 属于 Phase 8 的其他 owners。这样可以让 QA 层消费 stable retrieval contract，而不把 transport 和 ranking 耦合起来。
+- **回答边界**：当前 T0804 已直接走 Hybrid path，不复用 T0703 facade；这是当前 wiring fact，不应包装成统一入口已被全链路采用。
+
+**P7Q8. `top_k * 2` 为什么会出现两次？这是 bug 吗？**
+
+- **推荐回答**：T0702 为 fusion 扩大每个 branch 的候选空间，T0701 又按自身 vector retrieval contract 向 storage 请求 expanded candidates；它会增加 work，但为 v1 保留了更大的 merge/filter candidate pool，已在 Gate 记录为 accepted minor boundary。
+- **回答边界**：没有 latency/recall benchmark，不能声称这个倍增在真实 corpus 上是最优。
+
+**P7Q9. 50/50 focused 和 78/78 full tests 证明了什么？**
+
+- **推荐回答**：它们证明当前 Python service、QA composition 和 route-related observable behaviors 在 injected/patched boundary 下通过，另有 compileall 证明语法/编译检查通过。
+- **回答边界**：测试没有证明真实 BGE、Chroma persistence、DeepSeek/provider、upload → query E2E、frontend state 或 semantic answer quality；Mocked wiring 不能升级成 real integration。
+
+**P7Q10. metadata 为什么没有在 T0701 中强行补齐？**
+
+- **推荐回答**：T0701 当前的 public projection 只负责 vector result essentials，Hybrid 保留 F011 的六字段 shape，并对缺失 metadata 使用 `{}` fallback。强行在本 Task 读取 storage private payload 会越过 public interface，也会把 metadata ownership 偷渡进 retrieval adapter。
+- **回答边界**：如果 F012/F015 需要完整 metadata，应先更新明确的 contract 和 owner，再实现，不在 Phase 7 Learning Review 中偷偷扩展。
+
+### P7-4. Engineering Questions
+
+**EP7-1. `top_k * 2` 对规模和性能有什么影响？**
+
+- **推荐回答**：当前是常数倍扩大候选，但组合后 T0702 与 T0701 storage path 可能产生二次 over-fetch；影响包括 vector query work、merge memory 和排序成本。下一步应由真实 corpus benchmark 决定是否改成 branch-specific budget、一次扩展或更强的 ranking strategy。
+- **边界**：当前只有代码路径和小 fixture evidence，没有生产级 latency、recall 或 memory 数据。
+
+**EP7-2. 如果 vector branch 的 model/storage 调用失败，错误应该在哪里处理？**
+
+- **推荐回答**：T0701/Hybrid 不吞异常，保持 failure ownership 在 embedding/storage boundary；facade 也保留 missing collection exception。上层 QA/API 再按自身 contract 做 collection preflight、错误归一化和 HTTP mapping，不能让 Hybrid 默默返回空结果掩盖基础设施故障。
+- **边界**：具体 provider/Chroma exception mapping 的真实行为仍 deferred。
+
+**EP7-3. 未来能否用并行调用 keyword/vector 来降低延迟？**
+
+- **推荐回答**：可以作为 Future，但必须先定义 timeout、partial-result、cancellation 和 error propagation 语义。当前顺序执行符合 F011 允许范围，行为更直接、证据更小；不能只把代码换成 `asyncio.gather` 就宣称实现了安全并行。
+- **边界**：当前没有并发 benchmark 或 async implementation。
+
+**EP7-4. 如果未来要做 RRF 或 dynamic weighting，应该改哪里？**
+
+- **推荐回答**：先改 F011/SPEC contract 和 decision record，再在 Hybrid orchestration 层替换 fusion policy，并补充真实评估集、回归测试、配置 ownership 与可观测性。当前 v1 的 0.3/0.7 是冻结契约，Learning Review 不授权产品算法变更。
+- **边界**：RRF、dynamic weighting、reranker 都是 Future，不是当前 Phase 7 capability。
+
+### P7-5. 本 Phase 的诚实边界
+
+- 已实现：T0701 query embedding/vector projection、T0702 `chunk_id` fusion/filter/final Top-K、T0703 shared-store facade、empty preflight 与 missing-error propagation；F011 weights 已收敛为 module-internal `0.3/0.7`。
+- 已验证但有边界：focused `tests.test_qa` **50/50 PASS**、full backend discovery **78/78 PASS**、compileall PASS；Phase 7 assertions 主要是 injected/mock composition boundary，不能升级为真实 semantic integration。
+- 仍 deferred：真实 bge-small-zh-v1.5、concrete Chroma persistence、upload → ChromaDB → query E2E、semantic quality benchmark、metadata 完整贯通、nested over-fetch 的实际成本、frontend integration 与后续并发/可观测性演进。
+
+---
+
+## Phase 8 深度章 — RAG & QA（T0801–T0805 已实现 + Gate / Learning Review 完成）
+
+> 状态：T0801–T0805 均为 DONE；Phase Gate Review 裁定 **`PHASE_8_PASS — READY_FOR_PHASE_9`**；Phase Learning Review 于 2026-09-02 完成，当前证据于 2026-09-03 复核。
+> 代码教材 → [phase-08-rag-qa.md](../phase-08-rag-qa.md)；工程取舍、failure taxonomy 与规模边界 → [Phase 8 Engineering Review](../engineering-review/phase-08-engineering-review.md)。
+> 诚实边界：Phase 8 的 unit、composition 与 route-level Mocked evidence 已收口；真实 DeepSeek/model、concrete Chroma、upload → query E2E、semantic quality 与 frontend history lifecycle 仍由 T1202/后续 Phase 负责。
+
+### P8-1. 30 秒回答
+
+**面试官**：Phase 8 做了什么？
+
+**推荐回答（口语版）**：
+
+> Phase 8 把“检索到的 ranked chunks”变成可以被问答服务消费的完整链路：T0805 先校验请求并确认 collection 存在，T0804 做 collection preflight、Hybrid retrieval 和顺序编排；T0801 把 evidence 投影成受 `MAX_CONTEXT_CHARS` 约束的 context，同时生成 backend-owned sources；T0802 校验并截断最近 20 条 conversation history；T0803 用六原则 System Prompt、两条 message 和 bounded retry 调用 OpenAI-compatible DeepSeek adapter；最后 T0804 组装 service result，T0805 用 `QueryResponse` 和统一 error envelope 暴露 `/api/query`。核心边界是：context 给模型，sources 给客户端审计，history 是对话上下文，answer 不能反过来生成 source of truth。
+
+### P8-2. 1–2 分钟深入回答：从请求到可审计答案
+
+**面试官**：把一次 query 的控制流和边界讲清楚。
+
+**推荐回答**：
+
+> 我把 Phase 8 记成一条七段式 pipeline：**validated request → collection preflight → ranked evidence → bounded context/history → policy-preserving LLM adapter → backend-owned sources → typed HTTP response**。入口 `POST /api/query` 不直接依赖 FastAPI 默认 422，而是先对 `question`、`collection`、`top_k` 和 history 做显式校验，把项目的 `AppError` code 保留下来；missing collection 在 service 前返回 404，existing-but-empty collection 由 T0804 的 `get_chunk_count()` 返回 409 `COLLECTION_EMPTY`。
+>
+> retrieval 结果已经由 Phase 7 产生 `final_score`，T0801 再按 score 降序处理。context 分支使用 `[来源: file_name]` + content 和 separator，在 append 前检查完整 formatted chunk 是否超过 `MAX_CONTEXT_CHARS`，超限就 `break`，因此它是高分完整 chunk 的 prefix；sources 分支不读正文，只投影 `{file_id, file_name, chunk_id, relevance_score}`，所以被 context budget 排除的尾部 chunk 仍可出现在审计列表里，且同一文件的不同 `chunk_id` 不会被错误合并。
+>
+> history 是另一条独立分支：`process_history()` 先遍历并验证所有 message，再保留最近 20 条，格式化为 `User:` / `Assistant:` 行。API 层的 `ChatMessage` model 在 `query.py` 中通过 `message.model_dump()` 转成 plain dict，这个 normalization seam 让 Pydantic 类型停留在 HTTP boundary，而 T0804/T0802 继续消费稳定的 service-level dict contract。
+>
+> T0803 把 System Prompt 与已经准备好的 history/context/question 组装成 system + user 两条 API message；它显式设置 DeepSeek 参数，关闭 SDK 自带 retry，自己负责 timeout/network/429/5xx 的有限重试和错误映射。T0804 只负责编排和 result shape，不重复 builder；T0805 再通过 `QueryResponse.model_validate(result)` 锁定四字段响应。当前这些证据证明的是可注入边界、调用顺序和 contract behavior，不是模型真实遵循 grounding 的证明。
+
+### P8-3. 高频追问（10 题）
+
+**P8Q1. 为什么 context 和 sources 必须分成两条分支？**
+
+- **推荐回答**：context 是给 LLM 的纯文本，有长度预算和 prompt 消费者；sources 是 backend 根据真实 retrieval records 生成的结构化审计数据，需要保留 ID 和 score。让 LLM 生成 source 会把可审计 identity 交给不可确定的模型输出。
+
+**P8Q2. 超过 `MAX_CONTEXT_CHARS` 时为什么 `break`，不 `continue`？**
+
+- **推荐回答**：输入按 relevance 排序，F012 要求保留高分完整 chunk 的前缀。`continue` 会跳过一个高分 chunk 去填低分内容，改变 contract；当前实现宁可留下预算空洞，也不改变排序语义。
+
+**P8Q3. 同一个 `file_name` 出现多个 source 是 bug 吗？**
+
+- **推荐回答**：不是。F015 的 identity 是 `chunk_id`，同一文件的不同 chunk 是不同 evidence units；按文件名去重会丢掉分数、位置和可追踪性。
+
+**P8Q4. 为什么 history 要先全量校验再截断？**
+
+- **推荐回答**：否则一个最终会被窗口丢弃的 malformed old message 会被静默掩盖，API 和 service 对“输入是否合法”的判断不一致。先验证、后取 suffix 才是明确的防御边界。
+
+**P8Q5. 最近 20 条等于最近 10 轮吗？**
+
+- **推荐回答**：不等于。实现保证的是 message count，不保证 user/assistant 成对，也不是 token-aware truncation；F014 的 frontend ownership 和更复杂的会话策略仍是后续范围。
+
+**P8Q6. 为什么 `DeepSeekClient` 要注入 client、lazy 读取 key，并把 SDK `max_retries` 设成 0？**
+
+- **推荐回答**：注入让 tests 隔离网络；lazy key/client 让非 LLM 场景可以启动；单独关闭 SDK retry 后，attempt count、backoff 和 `AppError` mapping 只有一个 owner，避免双重重试。
+
+**P8Q7. empty knowledge base 和 empty retrieval result 有什么不同？**
+
+- **推荐回答**：`get_chunk_count() == 0` 是存储状态，必须在 retrieval/LLM 前返回 `COLLECTION_EMPTY`；collection 有内容但 relevance filter 后为 `[]` 是检索结果状态，仍可按当前 policy 调用 LLM。两者的 HTTP 语义不能合并。
+
+**P8Q8. `QAService` 为什么没有调用 T0703 的 `retrieve()` facade？**
+
+- **推荐回答**：当前 T0804 contract 直接注入 store 并组装 `HybridRetriever`，service seam 更容易注入和测试；T0703 facade 仍是独立 module-level entry point。未来统一入口前要先比较依赖注入、空库行为、result shape 和现有 tests，不能只做机械替换。
+
+**P8Q9. `message.model_dump()` 解决了什么问题？**
+
+- **推荐回答**：它是 API → service 的 normalization seam。HTTP request 可以使用有 schema 约束的 `ChatMessage`，下游仍只接收 plain dict，避免 Pydantic model 传播到 prompt builder 或 service contract，也保留 T0802 的二次 runtime validation。
+
+**P8Q10. 这些 tests 为什么不是 upload → Chroma → DeepSeek E2E？**
+
+- **推荐回答**：`test_qa` 主要注入 fake store/retriever/LLM 并 patch `OpenAI`/sleep；`test_query` 使用真实 FastAPI `TestClient`，但 patch storage/service。它们证明 wiring、status、error envelope 和 retry behavior；没有证明真实 embedding、Chroma persistence、provider response 或 upload-to-query 数据贯通。
+
+### P8-4. Engineering Questions（4 题）
+
+**EP8-1. 为什么 retry 放在 adapter，而不是 SDK 或 QAService？**
+
+- **推荐回答**：provider exception 的分类只在 adapter 最接近，`QAService` 不应知道 429、5xx 或 SDK response shape；关闭 SDK retry 后 adapter 能统一上限、backoff 和 machine-readable error code。代价是 adapter 要维护这套策略，未来可替换成共享 resilience component。
+
+**EP8-2. 如果 corpus 放大 100 倍，先看哪里？**
+
+- **推荐回答**：先 benchmark。当前 context 组装是字符级预算，retrieval 和 provider latency 才是主要外部成本；更大语料会暴露 full retrieval、token-aware budget、LLM latency/cost 和 source payload 的压力。background retrieval、reranker 或 token budget 都是后续 engineering decision，不是当前能力。
+
+**EP8-3. “无相关结果”为什么没有在 T0804 硬编码 fallback answer？**
+
+- **推荐回答**：v1 把 no-information wording 交给 System Prompt/provider，T0803 原样返回 answer，T0804 原样组装 result。硬编码 fallback 会改变 F013 policy，应该先由产品/engineering contract 决定。
+
+**EP8-4. Phase 8 的最重要可替换点在哪里？**
+
+- **推荐回答**：LLM adapter 是最清晰的 provider seam；context/source/history converters 也是纯函数 seam。替换模型只应影响 adapter 参数、response extraction 和 error mapping，不应侵入 retrieval identity、source ownership 或 HTTP envelope。
+
+### P8-5. 本 Phase 的诚实边界
+
+- **已实现**：context/source projection、history validation/truncation/formatting、DeepSeek adapter、QAService orchestration、`POST /api/query` request/response/error boundary。
+- **已验证但有边界**：Phase 8 checkpoint **60/60 PASS**；当前 checkout **78/78 PASS**，后续 18 个是 T0901–T0903 file-management/upload tests。证据类型是 unit、composition 和 route-level Mocked tests。
+- **仍 deferred**：真实 DeepSeek/model API、sentence-transformers/embedding runtime、concrete Chroma persistence、upload → ChromaDB → query E2E、semantic answer/source quality 与 frontend history lifecycle；这些边界已在 [Phase 8 Engineering Review](../engineering-review/phase-08-engineering-review.md) 中记录，仍由 T1202/后续 Phase 负责。
+
+---
+
+## Phase 9 深度章 — File Management API（T0901–T0903 已实现 + Gate / Learning Review 完成）
+
+> 状态：T0901–T0903 均为 DONE；Phase Gate Review 裁定 **`PHASE_9_PASS — READY_FOR_PHASE_10`**；Phase Learning Review 于 2026-09-04 完成。Phase 9 Engineering Review 仍是独立待办。
+> 代码教材 → [phase-09-file-management.md](../phase-09-file-management.md)；当前阶段地图 → [Project Map](../project-map/dx-rag-project-map.md)。
+> 诚实边界：当前有 route-level **MOCKED** evidence 和一条使用真实 FastAPI/Chroma/filesystem/keyword 的 **SUBSTITUTED** smoke；后者从手工 persisted chunks 开始，不是完整 upload → ingest → list → preview → delete → re-upload E2E。
+
+### P9-1. 30 秒回答
+
+**面试官**：Phase 9 做了什么？
+
+**推荐回答（口语版）**：
+
+> Phase 9 补上了知识库文件生命周期的管理侧：T0901 用 chunk metadata 的 `file_id` 聚合出文件列表，T0902 从已持久化的 chunks 按 `chunk_index` 重建最多 5000 字符的诊断性 preview，T0903 以 `(collection_name, file_id)` 为 identity，按 raw file → ChromaDB → keyword-index dirty mark 的顺序做不可逆级联删除。核心设计是把 `file_id` 当稳定 identity、把 `file_name` 当 display value，并明确区分 missing collection、empty collection 和 missing file。当前 contract 已通过 Phase Gate；验证上我会诚实区分 10 个 route-level Mocked tests、78/78 backend full suite，以及一条绕过 ingestion 的 concrete substituted smoke，完整跨 feature E2E 由 T1203 负责。
+
+### P9-2. 1–2 分钟深入回答：从文件 identity 到三存储清理
+
+**面试官**：把一次文件管理请求的控制流、数据来源和边界讲清楚。
+
+**推荐回答**：
+
+> 我把 Phase 9 记成 **Identity → Projection → Orchestration**。identity 是 `(collection_name, file_id)`：collection 是 namespace，file_id 是稳定文件身份，file_name 只由服务端从 persisted metadata 找出来用于展示和构造安全的 raw-file target。
+>
+> 对 list，route 先用 `list_collections()` 做 collection preflight，再调用 T0107 的 `get_files()`。storage 根据 chunk metadata 按 file_id 聚合，API 用 `FileItem.model_validate()` 和 `FileListResponse` 把内部 record 投影成公开 DTO。因此 existing-but-empty collection 是 200 加 `files=[]`，而不存在的 collection 是 404 `COLLECTION_NOT_FOUND`；我不会把“没有数据”和“资源不存在”合并。
+>
+> 对 preview，route 同样先确认 collection，再用 `(collection_name, file_id)` 调 T0108 的 `get_chunks_by_file()`。API 防御性地按 `chunk_index` 排序，用 `\n\n` 拼接 persisted chunk content，先计算完整 join 的 `total_chars`，最后做 5000 字符 slice，并把实际返回长度写入 `preview_chars`。这表达的是“当前入库文本的诊断视图”，不是重新解析 PDF、OCR、重新 embedding，也不是原始文档的精确页面 renderer。
+>
+> 对 delete，route 先从同一个 file-level view 找到 file_name；如果 collection 或 file_id 不存在，必须在任何副作用前返回对应的 404。找到后 `_delete_raw_file()` 做 path boundary guard 并删除 raw file，`delete_by_file()` 删除 Chroma 的该 file chunks/vectors/metadata，最后让 keyword index dirty，交给后续查询 lazy rebuild。这个顺序是可预测的，但三个存储目标没有共享 transaction 或自动 compensation，所以 Chroma 或 index 在中途失败时可能留下 residual state；这是当前 v1 的已知边界，不会在面试中包装成 exactly-once cleanup。
+
+### P9-3. 高频追问（12 题）
+
+**P9Q1. 为什么文件列表从 chunk metadata 派生，而不是单独建 `FileRecord` table？**
+
+- **推荐回答**：v1 已经把 file_id、file_name、file_size、ingestion_status 等字段放在每个 chunk 的 metadata 中；从同一 source of truth 聚合可以避免 uploads 目录、文件表和 Chroma 状态漂移。代价是 full metadata read amplification；如果规模证据出现，再通过 SPEC/API decision 引入 metadata index 或独立表。
+
+**P9Q2. `file_id`、`file_name`、`chunk_id`、`chunk_index` 分别是什么？**
+
+- **推荐回答**：`file_id` 是文件级稳定 identity；`file_name` 是 display/path value；`chunk_id` 是 evidence unit 的存储和检索 identity；`chunk_index` 只负责同一文件内的原始顺序。用 file_name 去重或删除会把展示字段误当成身份字段。
+
+**P9Q3. missing collection 和 empty collection 为什么必须不同？**
+
+- **推荐回答**：missing collection 代表 namespace 不存在，返回 404 `COLLECTION_NOT_FOUND`；empty collection 代表资源存在但还没有可见 file metadata，list 返回 200 `files=[]`。这个差异影响前端 empty state、错误提示和后续操作是否允许。
+
+**P9Q4. 为什么 preview 读取 persisted chunks，而不是重新打开 uploads 文件？**
+
+- **推荐回答**：SPEC 要展示“当前已入库文本”。重新解析会重新触发 parser/OCR/embedding 等 pipeline，并可能和实际检索内容漂移；chunk-based preview 直接观察 retrieval 使用的 persisted content。代价是 overlap、heading-path artifacts 和 chunk boundary 会保留。
+
+**P9Q5. `total_chars` 和 `preview_chars` 如何避免误导？**
+
+- **推荐回答**：`total_chars` 在完整 chunk join 后计算，表示 persisted preview source 的总字符数；`preview_chars` 是 slice 后实际 response content 的长度。`total_chars` 不是原始 PDF/DOCX 的字符数，也不等于 token 数。
+
+**P9Q6. storage 已经按顺序返回 chunks，为什么 API 还要 sort？**
+
+- **推荐回答**：API contract 不应依赖某一个 adapter 或 mock 恰好保持顺序；defensive sort 把 `chunk_index` ordering invariant 放在最终 assembly boundary。代价是每个文件多一次 O(n log n) 排序，但换 storage 实现时更稳。
+
+**P9Q7. 为什么 delete 先 `get_files()` 找 file_name，不能让客户端传文件名？**
+
+- **推荐回答**：客户端只应提交稳定的 file_id；服务端从 persisted metadata 得到 file_name，再经过 `resolve()`、parent check 和 filename guard 构造删除 target。这样把 identity、display value 和 filesystem authority 分开，降低任意路径输入的风险。
+
+**P9Q8. delete 的顺序是什么？keyword index 为什么只 dirty mark？**
+
+- **推荐回答**：顺序是 raw file → Chroma file data → keyword index dirty mark。删除后立即同步重建会把昂贵工作塞进 DELETE latency；dirty mark 让后续 query 成为 rebuild owner。代价是短时间内需要明确 stale-cache lifecycle 和失败处理。
+
+**P9Q9. Chroma 删除失败但磁盘已删，系统会怎样？**
+
+- **推荐回答**：当前没有跨存储 transaction 或 compensation，因此可能出现 raw file 已不存在、Chroma chunks 仍残留、keyword index 仍可见或 dirty 状态未更新的 residual state。现阶段只做明确顺序与 error boundary；验证矩阵、重试/补偿和 reconciliation 属于 T1203 / 后续 Engineering Review。
+
+**P9Q10. 10 个 route-level tests 能证明什么？**
+
+- **推荐回答**：3 个 list、4 个 preview、3 个 delete tests 使用真实 FastAPI `TestClient` 和 route registration，但 patch 了 store/filesystem/index seams；它们证明 binding、response shape、preflight、error mapping、ordering/truncation 和 side-effect order，不证明 concrete Chroma persistence 或 upload-to-delete E2E。
+
+**P9Q11. concrete substituted smoke 比 Mocked tests 多证明了什么？**
+
+- **推荐回答**：它使用真实 FastAPI route、真实 ChromaDB、真实 filesystem 和真实 keyword index，并从手工 persisted chunks 开始，能观察真实 list/preview/delete 的 storage result 和清理结果。但它绕过了 upload/parse/embed/ingest，因此只能叫 SUBSTITUTED，不能叫完整 E2E。
+
+**P9Q12. 下一步怎样完成文件管理的系统级验证？**
+
+- **推荐回答**：由 T1203 按 contract 补 upload → list → preview → delete → re-upload，路径 traversal/absolute/symlink、cross-KB isolation、raw file already missing 和更完整的失败场景；每项先定义 fixture、side-effect oracle 和 evidence label，再决定是否需要 compensation design。不能因为 Phase 9 Gate PASS 就提前宣称这些已经验证。
+
+### P9-4. Engineering Questions（4 题）
+
+**EP9-1. 这个 Phase 最重要的 trade-off 是什么？**
+
+- **推荐回答**：用 chunk metadata 派生 file view，减少 v1 的独立 metadata store 和同步路径；换来 list 的全量 aggregation、metadata read amplification，以及对 metadata 完整性的依赖。这是单机、受控规模下的简单性选择，不是所有规模的最终架构。
+
+**EP9-2. 如果 corpus 放大 100 倍，先看哪里？**
+
+- **推荐回答**：先用 benchmark 分解 `get_files()` 的 metadata IO、preview 的全 chunk read/join、Chroma delete 和 keyword rebuild latency，再决定 pagination、file-level index、metadata store、background cleanup 或 bounded preview read。当前没有 benchmark 证据，所以这些只能标为 Future。
+
+**EP9-3. 为什么不在本 Phase 直接做 distributed transaction 或 compensation？**
+
+- **推荐回答**：三个目标是 filesystem、ChromaDB 和 in-memory keyword lifecycle，当前没有共享 transaction coordinator；贸然加入补偿会扩大 T0903 scope，还需要定义重试、幂等、恢复优先级和残留 reconciliation。v1 先冻结可预测顺序并诚实暴露 partial-failure boundary，后续由独立 engineering decision 处理。
+
+**EP9-4. path safety 应该怎样谈才不夸大？**
+
+- **推荐回答**：当前代码 inspection 显示了 `PureWindowsPath(...).name`、`Path.resolve()`、parent containment check 和 `missing_ok=True` 的 defense-in-depth；但本轮没有专门的 traversal/absolute/symlink test matrix。面试时说“有 runtime guard，系统级验证 deferred”，而不是说“路径安全已经被 E2E 证明”。
+
+### P9-5. 本 Phase 的诚实边界
+
+- **已实现**：`GET /api/files`、`GET /api/files/{file_id}/preview`、`DELETE /api/files/{file_id}`；`file_id` identity；empty/missing error distinction；Pydantic response models；raw/Chroma/keyword delete orchestration。
+- **已验证但有边界**：focused **10/10 PASS**、backend full discovery **78/78 PASS**、`compileall` PASS；证据包含 route-level Mocked tests，以及一条使用真实依赖但从手工 persisted chunks 起步的 SUBSTITUTED smoke。
+- **仍 deferred**：literal upload → ingestion → list → preview → delete → re-upload E2E、真实 parser/OCR/embedding 贯通、path safety matrix、cross-KB isolation、mid-cascade compensation、frontend file manager，以及独立 Phase 9 Engineering Review。
+- **不要虚构 STAR**：当前没有已闭环的文件删除 incident、生产数据修复或恢复案例；可以讲设计推演和验证计划，但不能把推演包装成事故经验。
+
+---
+
 ## 附录：面试前的自查清单
 
 - [ ] 3 分钟介绍能脱稿讲顺（对着计时器练 3 遍）
@@ -1092,5 +1395,8 @@
 - [ ] 能画出 `_indexes` / `_chunks` / `_dirty_collections` 三份状态，并说明 class-level cache 与 instance-level VectorStore 的边界
 - [ ] 能解释 13 个 Phase 6 unit tests 各自证明什么，以及为什么它们不等于真实 upload → ChromaDB → query E2E
 - [ ] 能区分 Phase 6 keyword branch、T0701 vector adapter、T0702 service-level hybrid fusion/filter、T0703 已实现的 `retrieve()` facade、T0804 service orchestration 与 T0805 已接线但仍缺真实依赖 E2E 的 HTTP boundary
+- [ ] 能用一句话讲清 Phase 9：`file_id` identity → metadata/file-content projection → raw/Chroma/keyword cleanup orchestration，并区分 empty、missing 与 residual state
+- [ ] 能解释 Phase 9 的 10 个 route-level Mocked tests、78/78 full suite 与 concrete SUBSTITUTED smoke 各自证明什么，以及为什么仍不能叫 upload-to-reupload E2E
+- [ ] 能主动说出 Phase 9 的 deferred boundary：T1203 跨 feature 流程、path traversal/absolute/symlink、cross-KB isolation、partial-failure compensation 与 frontend file manager
 - [ ] 每个"已实现"的说法都能定位到代码文件；每个"已设计"的说法都标注 Phase 编号
 - [ ] 被问"为什么"时，答案里有"规模假设"（v1 是单机、万级文档、可信网络——决策都有前提）
