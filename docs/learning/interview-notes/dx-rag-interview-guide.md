@@ -1,7 +1,7 @@
 # DX-RAG 面试指南（项目介绍 + 技术亮点 + 高频面试题）
 
 > 本文档把 DX-RAG 项目转译成"面试语言"：如何用 3 分钟讲清楚项目、如何亮出技术亮点、如何应对高频追问。
-> **诚实原则**：所有内容基于真实代码与 SPEC/TASKS。项目当前实现到 Phase 0-9 的已完成切片（基础工程 + 向量存储 + Embedding + 文档摄取管道 + 知识库管理 API + 文件上传 API + Keyword Retrieval + T0701 VectorRetriever + T0702 HybridRetriever + T0703 `retrieve()` wiring facade + T0801–T0805 RAG/QA slices + T0901 file list + T0902 chunk-based preview + T0903 cascade delete）；Phase 6 已取得 PHASE_6_PASS 并完成 Learning Review；Phase 7 已取得 `PHASE_7_PASS — CLOSED` 并完成 Gate 与 Learning Review；Phase 8 已取得 `PHASE_8_PASS — READY_FOR_PHASE_9` 并完成 Learning Review；Phase 9 已取得 `PHASE_9_PASS — READY_FOR_PHASE_10` 并完成 Learning Review（2026-09-04）；Phase 5 Gate Review 裁定 PHASE_5_FAIL 后 F-1/F-2 已修复，Re-review 待执行。真实 provider/Chroma/upload E2E、前端集成与 Phase 10-12 仍是后续范围。**面试话术中注意区分“已实现”与“已验证”**——把设计或 Mocked evidence 讲成真实 E2E 是面试大忌，本文档在关键处标注了诚实话术。
+> **诚实原则**：所有内容基于真实代码与 SPEC/TASKS。项目当前实现到 Phase 0-10 的已完成切片（基础工程 + 向量存储 + Embedding + 文档摄取管道 + 知识库管理/上传/文件管理 API + Keyword/Vector/Hybrid Retrieval + T0801–T0805 RAG/QA slices + T1001 typed API client + T1002 controlled navigation shell）；Phase 6–10 均已有 Gate 结论，其中 Phase 10 为 `PHASE_10_PASS — READY_FOR_PHASE_11`，并于 2026-09-04 完成 Learning Review；Phase 5 Gate Review 裁定 PHASE_5_FAIL 后 F-1/F-2 已修复，Re-review 待执行。真实 provider/Chroma/upload E2E、Phase 11 业务组件接入、browser-to-FastAPI E2E 与 Phase 12 仍是后续范围。**面试话术中注意区分“已实现”与“已验证”**——把设计或 Mocked evidence 讲成真实 E2E 是面试大忌，本文档在关键处标注了诚实话术。
 
 ---
 
@@ -25,7 +25,7 @@
 
 **③ 我的工作（约 45 秒）**
 
-> “我独立完成了这个项目的完整周期：首先是产品设计——写了 2800 多行的 SPEC 规格文档，把 17 个功能模块的接口契约、数据模型、错误码目录、验收标准全部冻结下来；然后是分 13 个 Phase、55 个 Task 的工程实现，目前 Phase 0 到 9 已完成，其中 Phase 9 包含 T0901 file list、T0902 persisted-chunk preview、T0903 按 `file_id` 的 cascade delete；前面还完成了 Phase 8 的 T0801 context/source assembly、T0802 history processing、T0803 DeepSeek client、T0804 QA Service orchestration、T0805 `/api/query` endpoint slices——包括配置管理、统一错误体系、VectorStore 抽象层、Embedding 服务、文档摄取管道、知识库管理与上传 API，以及 mixed-language tokenizer、倒排索引、lazy/dirty 全量重建、normalized keyword score、query embedding → vector_score adapter、按 chunk_id 的 hybrid fusion/filter、`retrieve()` shared-store facade、MAX_CONTEXT_CHARS 边界、backend-owned source projection、history validation/truncation/formatting、F013 六原则 System Prompt、OpenAI-compatible client、bounded retry、错误归一化、collection preflight、空库/空检索结果分流、service result 组装、request validation、collection existence、response model 与统一错误 envelope；项目用 Gate Review 和学习复盘做阶段收口。这个过程中我重点解决了几个问题，下面挑三个讲。”
+> “我独立完成了这个项目的完整周期：首先是产品设计——写了 2800 多行的 SPEC 规格文档，把 17 个功能模块的接口契约、数据模型、错误码目录、验收标准全部冻结下来；然后是分 13 个 Phase、55 个 Task 的工程实现，目前 Phase 0 到 10 已完成。Phase 10 把后端契约翻译成 typed API client，并用 `MenuKey`、`Record` 和 controlled state 搭出四工作区 frontend shell；Phase 9 完成 file list、persisted-chunk preview 和按 `file_id` cascade delete；Phase 8 完成 context/source assembly、history processing、DeepSeek client、QA Service 与 `/api/query` endpoint。更早还完成了配置管理、统一错误体系、VectorStore 抽象层、Embedding、摄取管道、知识库与上传 API，以及 mixed-language tokenizer、倒排索引、vector adapter、hybrid fusion/filter 与 retrieval facade；项目用 Gate Review 和学习复盘做阶段收口。这个过程中我重点解决了几个问题，下面挑三个讲。”
 
 **④ 技术挑战 + 解决方案（约 45 秒）**
 
@@ -35,7 +35,7 @@
 
 **⑤ 收尾（约 15 秒，可选）**
 
-> “项目还在继续，T0701 的向量检索 adapter、T0702 的按 chunk_id 加权融合与 relevance filter、T0703 的 `retrieve(query, collection, top_k)` 统一 retrieval facade、T0801 的 context/source assembly、T0802 的 history validation/truncation/formatting、T0803 的 DeepSeek client、System Prompt、message assembly、retry/error mapping、T0804 的 QAService preflight/retrieval/context-history/LLM/source orchestration、T0805 的 `/api/query` request validation/collection existence/response model/unified error envelope，以及 T0901–T0903 的 file list、persisted-chunk preview、cascade delete 已完成；Phase 9 的 Gate 与 Learning Review 已收口，但真实 provider/Chroma/upload E2E、Frontend integration、T1203 跨 feature 文件管理验证与后续 Phase 仍在后续。如果你对某个模块的实现细节感兴趣，我可以展开讲摄取管道的三态回滚、上传接口的失败清理与 15 场景验证、知识库重命名的两层补偿，或者 Phase 9 如何用同一 `file_id` 串起 metadata projection、preview reconstruction 与跨存储 cleanup。”
+> “项目还在继续，retrieval、RAG/QA、file management，以及 Phase 10 的 typed API client 与 controlled navigation shell 已完成；Phase 10 的 Gate 与 Learning Review 已收口。下一步是 Phase 11 的知识库、文件和问答业务组件接入；真实 provider/Chroma/upload E2E、browser-to-FastAPI E2E、T1203 跨 feature 验证仍在后续。如果你对某个模块的实现细节感兴趣，我可以展开讲摄取管道的三态回滚、检索分数语义、文件管理的跨存储 cleanup，或者前端如何用两个边界隔离 transport semantics 与 UI composition。”
 
 ### 话术设计要点（为什么这么讲）
 
@@ -51,7 +51,7 @@
 
 ---
 
-## 第二部分：技术亮点（18 个）
+## 第二部分：技术亮点（19 个）
 
 > 每个亮点一句话概括 + 为什么值得说 + 对应代码位置。面试时根据面试官背景挑 3-5 个展开。
 
@@ -187,13 +187,21 @@
 
 **展开点**：[qa.py](../../../backend/app/services/qa.py) 的 `tokenize()` / `KeywordRetriever`；[keyword_index.py](../../../backend/app/services/keyword_index.py) 的 shared invalidation seam；13 个 unit tests 覆盖 SPEC examples、lazy build、0.6 score、mixed-language match、top_k 与 dirty rebuild。诚实边界：tests 使用 Mock VectorStore，真实 upload → ChromaDB → query E2E 仍归 Phase 12。
 
+### 亮点 19：typed transport boundary + controlled UI shell（前端边界亮点）
+
+**一句话**：T1001 把 base URL、JSON/error parsing、multipart 规则和领域类型集中在 typed API client；T1002 再用由配置推导的 `MenuKey`、`Record<MenuKey, ...>` 与单一 `useState` 建立 controlled navigation shell，让 Phase 11 业务组件只需插入稳定边界。
+
+**为什么值得说**：这不是“先画一个页面”，而是先冻结两个可独立演进的 seam：HTTP transport semantics 只在 client 内翻译，菜单选择与内容投影只在 shell 内编排。它降低了后续组件重复处理 status code、错误 envelope、字符串 key 漂移和状态分叉的概率。
+
+**展开点**：[api-client.ts](../../../frontend/lib/api-client.ts)、[types.ts](../../../frontend/lib/types.ts)、[SideMenu.tsx](../../../frontend/components/SideMenu.tsx) 与 [page.tsx](../../../frontend/app/page.tsx)。诚实边界：Gate 验证了 production build、5/5 mocked-fetch contract probes 和四菜单真实浏览器交互；尚无 repository-owned frontend regression suite，也没有 browser-to-FastAPI E2E。
+
 ---
 
 ## 第三部分：高频面试题（34 题）
 
 > 分类：项目理解（Q01-Q08）/ 架构设计（Q09-Q16）/ RAG（Q17-Q26）/ 工程问题（Q27-Q34）。
 > 每题四个部分：**面试官问题**（怎么问）/ **优秀回答**（怎么答）/ **进一步追问**（面试官大概率接着问什么）/ **回答方向**（追问怎么接）。
-> ⚠️ 标注 `[设计]` 的题目主要涉及 Phase 7-12：回答时用"设计上是……，实现排在 Phase X"的诚实话术。Phase 6 keyword retrieval、T0701 vector adapter、T0702 service-level hybrid、T0703 `retrieve()` facade、T0801 context/source assembly、T0802 history processing、T0803 DeepSeek client、T0804 QA orchestration 与 T0805 HTTP endpoint 已实现；真实 provider/Chroma E2E、Frontend integration 与后续 Phase 仍只讲已冻结设计或 deferred verification。
+> ⚠️ 标注 `[设计]` 的题目主要涉及尚未完成的 Phase 11-12：回答时用“设计上是……，实现排在 Phase X”的诚实话术。Phase 6–9 的 retrieval/RAG/file-management slices，以及 Phase 10 typed API client 与 controlled shell 已实现；真实 provider/Chroma E2E、Phase 11 业务组件接入和 browser-to-FastAPI E2E 仍只讲已冻结设计或 deferred verification。
 
 ---
 
@@ -597,7 +605,7 @@
 
 **面试官**：项目有测试吗？怎么保证质量？
 
-**优秀回答**：三层验证：① **单元层**——每个模块跑最小相关验证；T0801–T0805 的 Phase 8 checkpoint 为 60/60 PASS：5 个 T0801 context/source tests + 4 个 T0802 history tests + 12 个 T0803 DeepSeek client tests + 4 个 T0804 QAService orchestration tests + 10 个 T0805 `QueryEndpointTests`，另有既有 retrieval tests；当前 checkout full suite 为 78/78 PASS，后续 18 个测试属于已完成的 T0901–T0903 file-management/upload slice。前者使用 Mock(spec=VectorStore)、injected embedder、injected LLM client 与 patched `OpenAI`/`time.sleep`，后者使用真实 FastAPI `TestClient` 但 patched storage/service，隔离真实存储、模型和等待边界；② **契约层**——API / service contract 对照 SPEC，验证字段、状态码、score、message shape、response envelope 与 retry lifecycle，不自己发明；③ **验收层**——按 AC 报告 PASS / DEFERRED，Phase 5 的 15 场景端点脚本和 Phase 6/8 Gate 都明确记录 real、mock 与 E2E 边界。诚实边界：v1 没有覆盖全项目的统一 CI；这些 unit/route tests 不等于真实 bge-small-zh-v1.5、真实 DeepSeek API、真实 Chroma persistence、upload → ChromaDB → query E2E、T0703 facade 的 concrete-store lifecycle、Hybrid 的 metadata 完整贯通、Frontend history lifecycle、二次 vector recall 成本与检索质量评估。**流程价值**：Gate Review + Learning Review 让证据强度和教学结论都被单独校准。
+**优秀回答**：三层验证：① **单元/构建层**——后端按模块跑 focused tests，并有当前 checkout full suite；Phase 10 运行 production `npm run build`，完成 compile、lint/type check 与 4/4 static generation；② **契约层**——API / service contract 对照 SPEC，验证字段、状态码、score、message shape、response envelope 与 retry lifecycle；T1001 的 5/5 probes 使用 mocked fetch，验证 success/error/network/invalid-payload 等 transport branches；③ **验收层**——按 AC 报告 PASS / DEFERRED，Phase 10 用真实浏览器验证四菜单切换、URL 不漂移、640px 与约 360px 响应式及 console 0 error。诚实边界：Mocked route/client tests 不等于真实 provider、Chroma persistence 或 browser-to-FastAPI E2E；当前也没有 repository-owned frontend regression suite。**流程价值**：Gate Review + Learning Review 让证据强度和教学结论都被单独校准。
 
 **进一步追问**：如果重来，你会先写测试还是先写实现？
 
@@ -1274,7 +1282,7 @@
 
 ## Phase 9 深度章 — File Management API（T0901–T0903 已实现 + Gate / Learning Review 完成）
 
-> 状态：T0901–T0903 均为 DONE；Phase Gate Review 裁定 **`PHASE_9_PASS — READY_FOR_PHASE_10`**；Phase Learning Review 于 2026-09-04 完成。Phase 9 Engineering Review 仍是独立待办。
+> 状态：T0901–T0903 均为 DONE；Phase Gate Review 裁定 **`PHASE_9_PASS — READY_FOR_PHASE_10`**；Phase Learning Review 与 [Phase 9 Engineering Review](../engineering-review/phase-09-engineering-review.md) 均于 2026-09-04 完成。
 > 代码教材 → [phase-09-file-management.md](../phase-09-file-management.md)；当前阶段地图 → [Project Map](../project-map/dx-rag-project-map.md)。
 > 诚实边界：当前有 route-level **MOCKED** evidence 和一条使用真实 FastAPI/Chroma/filesystem/keyword 的 **SUBSTITUTED** smoke；后者从手工 persisted chunks 开始，不是完整 upload → ingest → list → preview → delete → re-upload E2E。
 
@@ -1372,8 +1380,88 @@
 
 - **已实现**：`GET /api/files`、`GET /api/files/{file_id}/preview`、`DELETE /api/files/{file_id}`；`file_id` identity；empty/missing error distinction；Pydantic response models；raw/Chroma/keyword delete orchestration。
 - **已验证但有边界**：focused **10/10 PASS**、backend full discovery **78/78 PASS**、`compileall` PASS；证据包含 route-level Mocked tests，以及一条使用真实依赖但从手工 persisted chunks 起步的 SUBSTITUTED smoke。
-- **仍 deferred**：literal upload → ingestion → list → preview → delete → re-upload E2E、真实 parser/OCR/embedding 贯通、path safety matrix、cross-KB isolation、mid-cascade compensation、frontend file manager，以及独立 Phase 9 Engineering Review。
+- **仍 deferred**：literal upload → ingestion → list → preview → delete → re-upload E2E、真实 parser/OCR/embedding 贯通、path safety matrix、cross-KB isolation、mid-cascade compensation 与 frontend file manager；完整工程分析见 [Phase 9 Engineering Review](../engineering-review/phase-09-engineering-review.md)。
 - **不要虚构 STAR**：当前没有已闭环的文件删除 incident、生产数据修复或恢复案例；可以讲设计推演和验证计划，但不能把推演包装成事故经验。
+
+---
+
+## Phase 10 深度章 — Frontend Foundation（T1001–T1002 已实现 + Gate / Learning Review 完成）
+
+> 状态：**T1001 typed API client 与 T1002 App Shell 已实现；Gate 结论为 `PHASE_10_PASS — READY_FOR_PHASE_11`；Phase Learning Review 已于 2026-09-04 完成**。
+> 详细代码教材 → [../phase-10-frontend-foundation.md](../phase-10-frontend-foundation.md)；完整工程分析 → [Phase 10 Engineering Review](../engineering-review/phase-10-engineering-review.md)。Phase 11 业务组件和 browser-to-FastAPI E2E 仍 deferred。
+
+### P10-1. 30 秒回答
+
+**面试官**：Phase 10 的前端基础具体做了什么？
+
+**推荐回答（口语版）**：
+
+> 我先建立了两个稳定边界。下面是 typed API client，统一 base URL、领域类型、JSON 解析、错误 envelope 和 multipart 上传；上面是 controlled App Shell，用菜单配置推导 `MenuKey`，由一个 `useState` 驱动选中态、标题和内容。这样 Phase 11 只需要把真实业务组件插进 shell，并通过 client 调后端，不需要在每个组件里重复翻译 HTTP 语义。Gate 已验证 production build、mocked-fetch contract probes 和真实浏览器菜单/响应式行为，但还没有 browser-to-FastAPI E2E。
+
+### P10-2. 1–2 分钟深入回答：从后端 contract 到可插拔 UI shell
+
+Phase 10 可以理解为“双插座底板”：业务组件向下插入 API client，获得稳定的 domain result 或统一错误；向上插入 App Shell，获得稳定的导航位置与工作区。这里同时约束三类 contract：domain data contract 定义前后端共享字段；transport contract 处理 URL、method、body、status 与 malformed payload；composition contract 保证菜单 key、选中态和内容映射穷尽一致。
+
+关键工程选择是让“翻译发生在边界”。`fetch` 的 network failure 与 HTTP error 在 client 内归一化，组件不解析 error envelope；菜单 key 从 `as const` 配置推导，`Record<MenuKey, ...>` 让新增菜单但漏内容成为 TypeScript 错误；一个 controlled state 同时派生 selected key、heading 和 workspace，避免三份状态互相漂移。代价是 `key={activeKey}` 会在切换时 remount 工作区，Phase 11 若需要保留草稿或会话，需要明确提升状态、缓存组件或调整 composition 策略。
+
+### P10-3. 高频追问（8 题）
+
+**P10Q1. 为什么不让每个 React 组件直接 `fetch`？**
+
+- **推荐回答**：集中 client 可以把 base URL、headers、序列化、error envelope 和领域类型变成单一 contract owner。组件只处理业务成功/失败，不重复实现 transport semantics，也更容易统一替换鉴权、超时或 runtime validation。
+
+**P10Q2. TypeScript interface 是否保证运行时 JSON 正确？**
+
+- **推荐回答**：不能。interface 在编译后被擦除，只约束调用方和实现代码；服务端、代理或恶意输入仍可能返回错误 shape。当前 client 对 JSON 与 error shape 做了基础 guard，更完整的 runtime schema validation 可在边界用 Zod 或生成式 client 增强。
+
+**P10Q3. `fetch` 为什么要分别处理 network failure 和 HTTP failure？**
+
+- **推荐回答**：DNS、断网等会 reject；404/500 通常仍 resolve，需要检查 `response.ok`。把两类失败混为一谈会让非 2xx 被误当成功，或丢失后端结构化 error code。
+
+**P10Q4. 上传文件为什么不手写 `Content-Type: multipart/form-data`？**
+
+- **推荐回答**：浏览器会为 `FormData` 自动生成包含 boundary 的 header；手写通常遗漏或错配 boundary，使服务端无法解析 multipart body。client 应拥有这个 transport detail。
+
+**P10Q5. 为什么从菜单配置推导 `MenuKey`，并用 `Record`？**
+
+- **推荐回答**：配置是事实源；literal union 防止任意字符串，`Record<MenuKey, Workspace>` 强制每个合法菜单都有内容映射。它类似后端 enum 加 exhaustive mapping，把缺项提前到 compile time。
+
+**P10Q6. 为什么当前不用 Redux 或 router？**
+
+- **推荐回答**：Phase 10 只有页面内四工作区切换，一个 local state 足够；过早引入全局 store 或路由会增加同步面。若 Phase 11 出现可分享 URL、跨页返回或多组件共享复杂状态，再由具体需求升级。
+
+**P10Q7. `key={activeKey}` 有什么风险？**
+
+- **推荐回答**：key 变化会 remount subtree，局部 state、未提交表单和 effect lifecycle 都会重置。它可用于明确隔离工作区，但若要保留会话或草稿，需要改变 ownership，而不是偶然依赖当前行为。
+
+**P10Q8. Phase 10 的验证为什么不能统称 E2E？**
+
+- **推荐回答**：production build 是 REAL static/build evidence；mocked fetch probes 证明 client 分支，不证明真实后端；浏览器点击证明真实 UI composition 和 responsive behavior，但没有连接 FastAPI。只有浏览器到真实服务与依赖的完整链路才是对应的 E2E。
+
+### P10-4. Engineering Questions（4 题）
+
+**EP10-1. API contract 扩大后怎样防止手写类型漂移？**
+
+- **推荐回答**：先在边界增加 runtime schema validation；当 endpoint 数量和变更频率上升，再从 OpenAPI 生成 types/client，并在 CI 检查 schema diff。当前规模下手写层更透明，但 owner 和升级阈值必须明确。
+
+**EP10-2. 什么时候应该引入 router 或 global state？**
+
+- **推荐回答**：当状态需要 URL deep-link、浏览器 back/forward、跨页面生命周期或多远端组件共享时再引入。判断依据是状态的 owner 与生命周期，不是组件数量本身。
+
+**EP10-3. Phase 11 如何接入而不绕过现有边界？**
+
+- **推荐回答**：业务组件只 import domain types/client functions，不直接拼 URL 或解析 envelope；App Shell 只负责选择和承载，不拥有业务请求细节。为每个新 workspace 分别验证 client contract、component state 和 browser flow。
+
+**EP10-4. Root layout 使用 client component 的取舍是什么？**
+
+- **推荐回答**：它让 Ant Design provider/theme 与 shell 组合直接，但扩大 client boundary，可能牺牲部分 server-component 优势。后续若首屏、bundle 或 SEO 指标要求提高，可把 provider 缩到最小 client island；当前不能在没有 measurement 的情况下宣称性能问题已发生。
+
+### P10-5. 本 Phase 的诚实边界
+
+- **已实现**：typed domain contracts、集中 API client、base URL normalization、统一错误翻译、multipart 规则、四工作区 controlled shell、responsive layout。
+- **已验证但有边界**：production build PASS；T1001 mocked-fetch probes **5/5 PASS**；T1002 四菜单真实浏览器交互 **4/4 PASS**，640px 与约 360px 无水平溢出，console 0 error。
+- **仍 deferred**：Phase 11 真实业务组件、browser-to-FastAPI E2E、repository-owned frontend regression suite 与真实后端依赖贯通；完整工程边界见 [Phase 10 Engineering Review](../engineering-review/phase-10-engineering-review.md)。
+- **不要虚构 STAR**：本 Phase 没有已闭环的线上前端事故；可以讲边界设计、trade-off 与验证分层，不能包装成生产 incident。
 
 ---
 
@@ -1398,5 +1486,8 @@
 - [ ] 能用一句话讲清 Phase 9：`file_id` identity → metadata/file-content projection → raw/Chroma/keyword cleanup orchestration，并区分 empty、missing 与 residual state
 - [ ] 能解释 Phase 9 的 10 个 route-level Mocked tests、78/78 full suite 与 concrete SUBSTITUTED smoke 各自证明什么，以及为什么仍不能叫 upload-to-reupload E2E
 - [ ] 能主动说出 Phase 9 的 deferred boundary：T1203 跨 feature 流程、path traversal/absolute/symlink、cross-KB isolation、partial-failure compensation 与 frontend file manager
+- [ ] 能画出 Phase 10 的两个边界与三类 contract：typed API client / controlled shell；domain data / transport / composition
+- [ ] 能区分 Phase 10 的 production build、5/5 mocked-fetch probes、4/4 真实浏览器交互各自证明什么，以及为什么仍不是 browser-to-FastAPI E2E
+- [ ] 能说明 Phase 11 如何通过既有 client/shell 插入真实组件，并主动指出 `key` remount 对表单草稿与会话状态的风险
 - [ ] 每个"已实现"的说法都能定位到代码文件；每个"已设计"的说法都标注 Phase 编号
 - [ ] 被问"为什么"时，答案里有"规模假设"（v1 是单机、万级文档、可信网络——决策都有前提）

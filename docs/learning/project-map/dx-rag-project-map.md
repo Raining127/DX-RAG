@@ -6,7 +6,7 @@
 **当前状态快照**（以 `docs/TASKS.md` 为准，2026-09-04）：
 - SPEC.md v1.6 **FROZEN**，Blocking Questions = 0
 - Phase 0–5 ✅ DONE（工程地基 + 向量存储 + 嵌入 + 文档管道 + 知识库管理 API + 文件上传 API；Phase 5：Gate Review 裁定 PHASE_5_FAIL → F-1/F-2 修复完成 → Re-review 待执行；Learning Pass / ER / Learning Review 已完成）
-- Phase 6 ✅ COMPLETE（T0601–T0602 DONE；PHASE_6_PASS；Learning Review 完成，2026-08-27）；Phase 7 ✅ COMPLETE（T0701–T0703 DONE；`PHASE_7_PASS — CLOSED`；Engineering Review 与 Phase Learning Review 完成，2026-09-03）；Phase 8 ✅ COMPLETE（T0801–T0805 DONE；`PHASE_8_PASS — READY_FOR_PHASE_9`；Learning Review 完成，2026-09-02；当前证据复核完成 2026-09-03；Engineering Review 完成，2026-09-04）；Phase 9 ✅ COMPLETE（T0901–T0903 DONE；`PHASE_9_PASS — READY_FOR_PHASE_10`；Phase Learning Review 完成，2026-09-04；Engineering Review 独立待办）；Phase 10–12 ⬜ TODO
+- Phase 6 ✅ COMPLETE（T0601–T0602 DONE；PHASE_6_PASS；Learning Review 完成，2026-08-27）；Phase 7 ✅ COMPLETE（T0701–T0703 DONE；`PHASE_7_PASS — CLOSED`；Engineering Review 与 Phase Learning Review 完成，2026-09-03）；Phase 8 ✅ COMPLETE（T0801–T0805 DONE；`PHASE_8_PASS — READY_FOR_PHASE_9`；Learning Review 完成 2026-09-02；Engineering Review 完成 2026-09-04）；Phase 9 ✅ COMPLETE（T0901–T0903 DONE；`PHASE_9_PASS — READY_FOR_PHASE_10`；Engineering Review 与 Phase Learning Review 完成，2026-09-04）；Phase 10 ✅ COMPLETE（T1001–T1002 DONE；`PHASE_10_PASS — READY_FOR_PHASE_11`；Engineering Review 与 Phase Learning Review 完成，2026-09-04）；Phase 11–12 ⬜ TODO
 
 ---
 
@@ -343,14 +343,23 @@ Answer + Citation（answer 不含内联引用标记；sources 由后端从检索
 | 输出 | T0901 已提供文件列表（metadata 聚合）；T0902 已提供 persisted chunk 拼接预览（≤5000 字符，诊断性视图）；T0903 已提供 raw file → ChromaDB file data → keyword-index dirty mark 的级联删除；Phase Learning Review 已收口统一 identity、data flow、证据边界与 self-test chain |
 | 为什么存在 | 知识库的"生命周期后半段"：入库不是终点，还需要维护和清理 |
 
-### Phase 10-11 — Frontend（前端产品）⬜ TODO
+### Phase 10 — Frontend Foundation（前端地基）✅ COMPLETE（T1001–T1002 DONE；Gate PASS；Learning Review 完成 2026-09-04）
 
 | 维度 | 内容 |
 |------|------|
-| 解决什么问题 | 用户不能对着 curl 用系统——需要知识库管理、上传、问答、文件管理四个界面 |
-| 输入 | 用户操作（点击、拖拽文件、输入问题） |
-| 输出 | 单页应用：SideMenu 切换 + 四个功能组件 + 集中式 API Client + 对话历史（React state） |
-| 为什么存在 | 产品体验层。v1 约束：不引入 Redux/Zustand、无独立路由、无暗色模式——用 React 内置能力解决单页切换 |
+| 解决什么问题 | 后端 contracts 还不能直接被 UI 稳定消费；真实功能组件也需要统一 shell 和 navigation seam |
+| 输入 | Section 6 API contracts + 用户菜单点击 |
+| 输出 | typed API client + normalized `ApiError` + ConfigProvider + responsive SideMenu + 四个 placeholder slots |
+| 为什么存在 | 为 Phase 11 提供“双插座底板”：T1001 统一 HTTP boundary，T1002 统一 UI composition boundary |
+
+### Phase 11 — Frontend Features（前端产品功能）⬜ TODO
+
+| 维度 | 内容 |
+|------|------|
+| 解决什么问题 | 把 Phase 10 placeholders 替换为知识库管理、上传、问答、文件管理真实界面 |
+| 输入 | 用户操作 + Phase 10 API client 与 content slots |
+| 输出 | 四个功能组件、组件内 loading/success/empty/error state、对话 history lifecycle |
+| 为什么存在 | Phase 10 只建边界与骨架；用户可完成真实业务操作仍属于 Phase 11 |
 
 ### Phase 12 — Integration & Acceptance（集成验收）⬜ TODO
 
@@ -377,4 +386,4 @@ Phase 0 (地基) ──┬──→ Phase 1 (VectorStore) ──┬──→ Pha
 
 > **Readme 导航**：[docs/learning/README.md](../README.md)（Phase 学习地图）· [SPEC.md](../../SPEC.md)（产品规格）· [TASKS.md](../../TASKS.md)（任务状态）
 > **工程决策分析**：[engineering-review/](../engineering-review/)（Phase 0-6 的设计决策与规模分析 + Phase 7 T0701–T0703 增量评审及 Gate closure record）
-> **面试准备**：[interview-notes/](../interview-notes/)（3 分钟介绍 + 高频问题 + Phase 4/5/6/7/8/9 深度章；Phase 9 Learning Review 已完成，精选 file-management candidates 已晋升到 Phase 9 深度章）
+> **面试准备**：[interview-notes/](../interview-notes/)（3 分钟介绍 + 高频问题 + Phase 4/5/6/7/8/9/10 深度章；Phase 10 Learning Review 已完成，精选 frontend-foundation candidates 已晋升）

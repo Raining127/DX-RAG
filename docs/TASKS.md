@@ -2282,7 +2282,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T1001 — Centralized API Client & TypeScript Types
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement the centralized API client module and TypeScript type definitions matching all backend API contracts.
 
@@ -2335,7 +2335,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T1002 — Root Layout, SideMenu & Main Page Shell
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement the application shell: Ant Design ConfigProvider, left SideMenu navigation, and main content area with component switching.
 

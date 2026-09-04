@@ -2,7 +2,7 @@
 
 > **Phase 状态**：✅ COMPLETE（T0901、T0902、T0903 DONE；Phase Gate Review：`PHASE_9_PASS — READY_FOR_PHASE_10`；Phase Learning Review：2026-09-04）
 >
-> **本文档状态**：T0901 + T0902 + T0903 Task Learning Pass、Phase Gate Review 与 Phase Learning Review 均已完成。本文保留 Task 级代码精读与历史 checkpoint，并新增跨 Task 的 Phase mental model、验证边界、自测链与后续边界；Phase 9 Engineering Review 仍是独立待办。
+> **本文档状态**：T0901 + T0902 + T0903 Task Learning Pass、Phase Gate Review、Phase Learning Review 与独立 [Phase 9 Engineering Review](./engineering-review/phase-09-engineering-review.md) 均已完成。本文保留 Task 级代码精读与历史 checkpoint，并新增跨 Task 的 Phase mental model、验证边界、自测链与后续边界。
 >
 > **配套文档**：[Phase 1 VectorStore](./phase-01-vectorstore.md) · [Project Map](./project-map/dx-rag-project-map.md) · [DX-RAG Interview Guide](./interview-notes/dx-rag-interview-guide.md)
 
@@ -13,7 +13,7 @@ T0901、T0902 与 T0903 组成 Phase 9 的三个 File Management API slice：T09
 | Layer | Canonical home | 本 Phase / 文档怎么处理 |
 |---|---|---|
 | Layer 1 — Technical Learning | 本文 | 解释 route、schema、storage adapter 的 data flow、Python/FastAPI 学习点、验证边界与 self-test |
-| Layer 2 — Engineering Review | `engineering-review/phase-09-engineering-review.md`（当前尚未建立） | 本文只保留短的 engineering implication，不生成完整 ADR、failure taxonomy 或规模分析 |
+| Layer 2 — Engineering Review | [phase-09-engineering-review.md](./engineering-review/phase-09-engineering-review.md)（2026-09-04 完成） | 完整 ADR、failure taxonomy、规模分析、Known Gaps 与 review closure |
 | Layer 3 — Interview Preparation | [Interview Guide](./interview-notes/dx-rag-interview-guide.md) | Task 级只保留短 Interview Candidates；Phase Learning Review 后的完整 Phase 9 话术与高频追问归档在 Interview Guide |
 | Task / Phase 状态 | [`docs/TASKS.md`](../TASKS.md) · [Learning workflow](./templates/phase-learning-pass-workflow.md) | TASKS 是任务状态 source of truth；本次 Phase Learning Review 只更新学习文档，不修改 TASKS、SPEC 或应用代码 |
 
@@ -698,7 +698,7 @@ delete 与 list/preview 不同：它会修改三个状态持有者。第一步�
 
 ## 8. Engineering Review 摘要
 
-Phase 9 Engineering Review 当前尚未建立，本节不代替独立 ADR。T0901/T0902/T0903 的短结论有六点：
+Phase 9 Engineering Review 已独立完成；本节不复制完整 ADR，详细 failure taxonomy、规模分析与 Known Gaps 见 [工程评审](./engineering-review/phase-09-engineering-review.md)。T0901/T0902/T0903 的短结论有六点：
 
 1. **Single source of truth**：从 chunk metadata 派生列表，避免 `uploads/` 目录与 Chroma 状态漂移；FAILED ingestion 没有 chunks，因此自然不出现在列表。
 2. **Defense in depth**：API 先做 collection existence check，随后用 `FileItem` 和 `FileListResponse` 做 shape validation；两层分别解决 resource identity 与 payload shape。
@@ -833,7 +833,7 @@ Phase 9 的三个 Task 已完成独立 Task Learning Pass，且 Phase Gate Revie
 - 本文第 4 节保留 T0901/T0902/T0903 的 code reading、Task-level verification 和短候选题，方便按 Task 回看实现。
 - 本节提供跨 Task 的统一 mental model、ownership、failure boundary 与证据分类，避免在三个 Task 中重复同一套 Phase 级解释。
 - [Interview Guide](./interview-notes/dx-rag-interview-guide.md) 新增 Phase 9 深度章，承载 30 秒回答、1–2 分钟 data flow、高频追问和诚实边界；本文不生成 STAR，因为当前没有已闭环 incident。[PROJECT FACT]
-- Phase 9 Engineering Review 仍未建立；本次 Learning Review 不代替独立的 ADR、failure taxonomy、规模 benchmark 或 compensation decision。[FUTURE]
+- Phase 9 Engineering Review 已独立完成；本文不复制其 ADR、failure taxonomy、规模分析或 compensation decision，详见 [工程评审](./engineering-review/phase-09-engineering-review.md)。[PROJECT FACT]
 
 ### 12.6 Phase-level self-test chain
 
@@ -853,7 +853,7 @@ Phase 9 的三个 Task 已完成独立 Task Learning Pass，且 Phase Gate Revie
 
 ### 12.7 收口结论
 
-Phase 9 Learning Review 完成。当前可对外准确表述为：**文件列表、persisted-chunk preview、按 `file_id` 的级联删除 API 已实现并通过 Phase Gate；路由级 contract 与一条绕过 ingestion 的 concrete substituted smoke 已验证；完整跨 feature E2E、路径安全矩阵、跨 KB 隔离和 partial-failure compensation 仍由 T1203 / 后续 Engineering Review 负责。**[PROJECT FACT]
+Phase 9 Learning Review 完成。当前可对外准确表述为：**文件列表、persisted-chunk preview、按 `file_id` 的级联删除 API 已实现并通过 Phase Gate；路由级 contract 与一条绕过 ingestion 的 concrete substituted smoke 已验证；完整跨 feature E2E、路径安全矩阵、跨 KB 隔离和 partial-failure compensation 仍由 T1203 / 后续 engineering decision 负责。**[PROJECT FACT]
 
 ## 自测题与动手练习
 

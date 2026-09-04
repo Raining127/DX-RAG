@@ -297,23 +297,31 @@ Phase 只有取得标准化 `PHASE_X_PASS — READY_FOR_PHASE_Y` verdict 后，�
 **当前学习产物**:
 
 - 📖 **Technical Learning**: [phase-09-file-management.md](./phase-09-file-management.md)（T0901–T0903 Task 精读 + Phase-level mental model、data flow、ownership、evidence boundary 与 self-test chain）
-- 🔍 **Engineering Review**: Phase 9 Engineering Review 尚未建立；T0901–T0903 只保留短 engineering implication
+- 🔍 **Engineering Review**: [engineering-review/phase-09-engineering-review.md](./engineering-review/phase-09-engineering-review.md)（T0901–T0903：identity/source-of-truth、不可逆级联顺序、path safety、failure taxonomy、规模分析与 Known Gaps；2026-09-04）
 - 🎤 **Interview Preparation**: [Interview Guide](./interview-notes/dx-rag-interview-guide.md) 已收录 Phase 9 深度章；本文仍保留 Task-level candidates，避免和项目级 answer bank 重复
 
 ---
 
 ### Phase 10 — Frontend Foundation
 
-**状态**: ⬜ NOT STARTED
+**状态**: ✅ COMPLETE（T1001、T1002 DONE；`PHASE_10_PASS — READY_FOR_PHASE_11`；Phase Learning Review 完成 2026-09-04）
 
-**Tasks**: T1001–T1002
+**Tasks**: T1001 ✅ | T1002 ✅
 
-**未来主要学习主题**:
+**当前学习产物**:
 
-- 集中式 API Client 设计
-- TypeScript 类型定义与后端 Pydantic Schema 对齐
-- Ant Design 全局配置与 Layout 搭建
-- React state 控制单页应用（无 Router）
+- 📖 **Technical Learning**: [phase-10-frontend-foundation.md](./phase-10-frontend-foundation.md)（T1001–T1002 + Phase Learning Review：typed HTTP boundary、UI composition boundary、三类契约、统一 cross-Task mental model、Gate-calibrated evidence 与贯通 self-test）
+- 🔍 **Engineering Review**: [engineering-review/phase-10-engineering-review.md](./engineering-review/phase-10-engineering-review.md)（T1001–T1002：typed transport boundary、runtime validation gap、controlled shell、client/remount lifecycle、failure taxonomy 与 scale analysis；2026-09-04）
+- 🎤 **Interview Preparation**: candidates 已完成筛选并晋升到 [Interview Guide 的 Phase 10 深度章](./interview-notes/dx-rag-interview-guide.md#phase-10-深度章--frontend-foundationt1001t1002-已实现--gate--learning-review-完成)
+
+**当前与未来主要学习主题**:
+
+- 集中式 API Client 设计（T1001 ✅）
+- TypeScript 类型定义与后端 Pydantic Schema 对齐（T1001 ✅）
+- 统一 error normalization 与 compile-time/runtime contract 边界（T1001 ✅）
+- Ant Design 全局配置与 Layout 搭建（T1002 ✅）
+- React controlled state 驱动单页区域切换、无 Router（T1002 ✅）
+- responsive zero-width Sider 与 accessibility semantics（T1002 ✅；自动化回归尚未建立）
 
 ---
 
@@ -379,18 +387,22 @@ Phase 定位 / 为什么需要这个模块 / 核心设计决策（Decision-Conte
 - [phase-06-engineering-review.md](./engineering-review/phase-06-engineering-review.md) — Keyword Retrieval（T0601–T0602 增量评审完成；含历史 PHASE_6_PASS Gate 记录）
 - [phase-07-engineering-review.md](./engineering-review/phase-07-engineering-review.md) — Vector & Hybrid Retrieval（T0701–T0703 增量评审 + `PHASE_7_PASS — CLOSED` Gate record；Phase Learning Review 已完成）
 - [phase-08-engineering-review.md](./engineering-review/phase-08-engineering-review.md) — RAG & QA（T0801–T0805：Context/Source、History、DeepSeek adapter、QA orchestration、`/api/query`；ADR / failure taxonomy / scale analysis；2026-09-04）
+- [phase-09-engineering-review.md](./engineering-review/phase-09-engineering-review.md) — File Management API（T0901–T0903：metadata projection、persisted preview、irreversible cascade delete、path safety / partial failure / scale analysis；2026-09-04）
+- [phase-10-engineering-review.md](./engineering-review/phase-10-engineering-review.md) — Frontend Foundation（T1001–T1002：typed API client、controlled App Shell、runtime/interaction evidence、failure taxonomy 与 scale analysis；2026-09-04）
 
 ### 面试指南
 
 **文档**: [interview-notes/dx-rag-interview-guide.md](./interview-notes/dx-rag-interview-guide.md)
 
 - 第一部分：3 分钟项目介绍（背景/架构/我的工作/挑战/解决方案，含诚实话术）
-- 第二部分：17 个技术亮点（每个含一句话概括 + 展开点 + 代码位置）
+- 第二部分：19 个技术亮点（每个含一句话概括 + 展开点 + 代码位置）
 - 第三部分：34 道高频面试题（项目理解/架构设计/RAG/工程问题四类，每题含 面试官问题/优秀回答/进一步追问/回答方向）
 - Phase 4 深度章（T0401–T0404 已实现）：30 秒回答 / 1-2 分钟深入 / SPEC_CONFLICT STAR / 18 道高频追问 + 8 道工程深问
 - Phase 5 深度章（T0501–T0503 已实现，含 Gate Review 修复中状态）：30 秒回答 / 1-2 分钟深入 / 验证驱动修复 STAR / 12 道高频追问 + 4 道工程深问
 - Phase 7 深度章（T0701–T0703 已实现；Gate `PHASE_7_PASS — CLOSED`；Learning Review 完成）：30 秒回答 / 1–2 分钟深入 / 10 道高频追问 + 4 道工程深问 / 诚实验证边界
 - Phase 8 深度章（T0801–T0805 已实现；Gate PASS；Learning Review 完成）：30 秒回答 / 1-2 分钟深入 / 10 道高频追问 + 4 道工程深问 / 诚实验证边界
+- Phase 9 深度章（T0901–T0903 已实现；Gate PASS；Learning Review 完成）：30 秒回答 / 1–2 分钟深入 / 高频追问 + 工程深问 / 跨存储删除边界
+- Phase 10 深度章（T1001–T1002 已实现；Gate PASS；Learning Review 完成）：30 秒回答 / 1–2 分钟深入 / 8 道高频追问 + 4 道工程深问 / 前端验证证据分级
 - 附录：面试前自查清单
 
 ### Phase 学习模板（Phase 4-12 用）
