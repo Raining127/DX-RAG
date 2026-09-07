@@ -278,7 +278,7 @@ Phase 8 focused evidence 的组成是：T0801 5 个 context/source tests、T0802
 - **`MOCKED composition`**：T0804 注入 Mock `VectorStore`、`HybridRetriever`、`DeepSeekClient`，证明 preflight、调用顺序、空库/空检索分叉和 result shape，不证明 concrete dependency compatibility。
 - **`MOCKED route-level`**：T0805 使用真实 FastAPI `TestClient`，但 patch `ChromaVectorStore` 与 `QAService`，证明 request/status/envelope/delegation，不证明 Chroma、embedding、provider 或 upload workflow。
 - **`STATIC/CODE-LEVEL`**：System Prompt 六原则、lazy key、global error handler、schema fields 和 retry conditions 可由源码检查；不能由此推出模型 semantic compliance。
-- **`DEFERRED / NOT_AVAILABLE`**：真实 DeepSeek API、真实 bge-small-zh-v1.5、concrete Chroma persistence、literal upload → ingest → retrieval → query、frontend history lifecycle、semantic answer quality、recall/latency benchmark 均未在本轮获得证据。
+- **Phase 8 checkpoint 的 `DEFERRED / NOT_AVAILABLE`**：当时真实DeepSeek、真实BGE、concrete Chroma composition、frontend lifecycle与quality benchmark均未获证据。Phase 12后续已补REAL BGE基础验证和temp Chroma/substituted provider composition；live DeepSeek、完整frontend lifecycle及recall/latency benchmark仍未完成。
 
 测试运行时出现 Starlette 关于 `httpx`/`TestClient` 的 deprecation warning，但没有测试失败；依赖升级不属于本次 Engineering Review 的授权范围。
 

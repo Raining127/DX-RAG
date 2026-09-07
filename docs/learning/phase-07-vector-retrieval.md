@@ -2,11 +2,13 @@
 
 > **Phase 状态**：✅ COMPLETE（T0701、T0702、T0703 已完成；Phase 7 Gate `PHASE_7_PASS — CLOSED`；Phase Learning Review 已完成，2026-09-03）
 >
-> **本文档状态**：T0701 Task Learning Pass 完成（2026-08-28）；T0702 Task Learning Pass 完成（2026-08-31）；T0703 Task Learning Pass 完成（2026-08-31）；Phase Learning Review 完成（2026-09-03）。本次 consolidation 将三个 Task 的碎片化说明提升为统一 mental model、跨 Task data flow、self-test chain 与验证边界；真实 BGE/Chroma/upload → query E2E 仍为 deferred。本文件保留 Technical Learning 与 Phase-level 学习总结，不替代 Engineering Review 的 ADR 与规模分析。
+> **本文档状态**：T0701 Task Learning Pass 完成（2026-08-28）；T0702 Task Learning Pass 完成（2026-08-31）；T0703 Task Learning Pass 完成（2026-08-31）；Phase Learning Review 完成（2026-09-03）。该 Phase 7 closure checkpoint 将三个 Task 的碎片化说明提升为统一 mental model、跨 Task data flow、self-test chain 与验证边界；真实 BGE/Chroma/upload → query E2E 在该 checkpoint 为 deferred，后续状态见下方 T1202 注记。本文件保留 Technical Learning 与 Phase-level 学习总结，不替代 Engineering Review 的 ADR 与规模分析。
 >
 > **配套文档**：[Phase 7 Engineering Review / Gate record](./engineering-review/phase-07-engineering-review.md) · [DX-RAG Interview Guide](./interview-notes/dx-rag-interview-guide.md)
 
-本章只记录当前 checkout 中已经存在的 vector retrieval、hybrid retrieval 与统一 retrieval facade 学习内容。T0702 已在 `qa.py` 中实现 `HybridRetriever`、weighted fusion、chunk identity merge、relevance filter 与最终 Top-K；T0703 又增加了 `retrieve(query, collection, top_k)`，把 concrete `ChromaVectorStore`、两个 retriever 和 HybridRetriever 串成一个 service-level entry point。T0801 已提供无外部 I/O 的 context/source assembly，T0802 已提供 history validation、recent-window truncation 与 formatting，T0803 已提供独立的 DeepSeek client/System Prompt/retry adapter，T0804 已把这些边界编排成 `QAService` service result，T0805 已把 QAService 接到 `POST /api/query`；真实 provider/Chroma/upload E2E 与前端集成仍未验证。看到“未来”时，均表示 `[FUTURE] / Not implemented in v1`，不是当前代码已经拥有的能力。[PROJECT FACT]
+> **后续证据同步（Phase 12 remediation，2026-09-07）**：Phase 7收口时deferred的upload → real temp Chroma → real Keyword/Vector/Hybrid → query composition已由T1202 isolated matrix以46/46 checks执行通过；随后独立REAL BGE probe又验证官方固定revision的512维输出、norm、singleton与受控中文同义排序。DeepSeek provider、完整browser与production ranking benchmark仍未验证。详见 [Phase 12 Technical Learning](./phase-12-integration-acceptance.md)。本注记只同步后续证据，不改写Phase 7历史checkpoint。
+
+本章记录 vector retrieval、hybrid retrieval 与统一 retrieval facade 学习内容。T0702 已在 `qa.py` 中实现 `HybridRetriever`、weighted fusion、chunk identity merge、relevance filter 与最终 Top-K；T0703 又增加了 `retrieve(query, collection, top_k)`，把 concrete `ChromaVectorStore`、两个 retriever 和 HybridRetriever 串成一个 service-level entry point。T0801 已提供无外部 I/O 的 context/source assembly，T0802 已提供 history validation、recent-window truncation 与 formatting，T0803 已提供独立的 DeepSeek client/System Prompt/retry adapter，T0804 已把这些边界编排成 `QAService` service result，T0805 已把 QAService 接到 `POST /api/query`；在这些历史 checkpoints 中，真实 provider/Chroma/upload E2E 与前端集成仍未验证，当前后续证据边界以紧邻的 T1202 注记为准。看到“未来”时，均表示 `[FUTURE] / Not implemented in v1`，不是当前代码已经拥有的能力。[PROJECT FACT]
 
 ## 0. 三层文档边界
 
@@ -897,7 +899,7 @@ Phase 6 的 `keyword_score` 与 T0701 的 `vector_score` 是进入 F011 的两�
 | Top-K validation | 防止超范围 top_k 进入计算或 storage | `[FUTURE]`；当前 class 没有专门 guard | T0703/API boundary |
 | Dynamic weighting | 支持按请求或运行时改变融合比例 | v1 明确不支持；weights 固定为 0.3/0.7 | 未来产品决策，不属于当前 gap |
 | Parallel branch scheduling | 在不改变错误/timeout 语义的前提下降低 wall-clock latency | `[FUTURE]`；当前顺序 keyword → vector | Phase 7/QA orchestration |
-| Real semantic AC | 使用真实 bge-small-zh-v1.5、VectorStore 与数据验证 paraphrase match | `[FUTURE]` / DEFERRED；当前只有 Mock adapter evidence | 集成验证 / Phase 12 T1202 |
+| Real semantic AC | 使用真实 bge-small-zh-v1.5、VectorStore 与数据验证 paraphrase match | **REAL / PASS**：Phase 12 remediation受控中文同义查询在临时Chroma中目标排名第一 | `verify_bge_model.py`；更大benchmark仍Future |
 | Full upload → Chroma → query E2E | 验证 ingest、persistence、retrieval 的真实链路 | `[FUTURE]` / DEFERRED | Phase 12/T1202 范围 |
 | Payload/schema validation | 防止非法 `chunk_id`、score 或 payload shape 进入融合 | 当前 Hybrid 依赖上游 contract，未实现专门 validation | 后续 service/API boundary，需先有明确 contract |
 | Embedding failure policy | 明确 retry、timeout 或 provider fallback | 当前沿用 F007 `AppError` propagation | 需要产品/架构决策，不能在 T0701 猜测 |

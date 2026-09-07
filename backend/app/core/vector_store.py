@@ -146,7 +146,7 @@ class VectorStore(ABC):
         Args:
             collection: Target collection name.
             chunks: List of chunk text strings.
-            embeddings: Corresponding embedding vectors (384-dim).
+            embeddings: Corresponding embedding vectors (512-dim).
             metadatas: Corresponding metadata dicts (SPEC F008 Metadata Schema).
 
         Returns:
@@ -167,7 +167,7 @@ class VectorStore(ABC):
 
         Args:
             collection: Collection name to search.
-            query_vector: Query embedding vector (384-dim).
+            query_vector: Query embedding vector (512-dim).
             top_k: Maximum number of results to return.
 
         Returns:
@@ -405,7 +405,7 @@ class ChromaVectorStore(VectorStore):
     ) -> List[str]:
         """Persist chunks, embeddings, and metadata into a ChromaDB collection.
 
-        Each chunk is stored with its 384-dim embedding and its 9-field
+        Each chunk is stored with its 512-dim embedding and its 9-field
         metadata dict (SPEC F008 Metadata Schema).  ``chunk_id`` from the
         metadata is used as the ChromaDB document id — chunk_id is the
         immutable chunk identity (SPEC Section 7.1).
@@ -431,7 +431,7 @@ class ChromaVectorStore(VectorStore):
         Args:
             collection: Target collection name.
             chunks: List of chunk text strings.
-            embeddings: Corresponding embedding vectors (384-dim).
+            embeddings: Corresponding embedding vectors (512-dim).
             metadatas: Corresponding metadata dicts (SPEC F008 Metadata Schema).
 
         Returns:
@@ -494,7 +494,7 @@ class ChromaVectorStore(VectorStore):
 
         Args:
             collection: Collection name to search.
-            query_vector: Query embedding vector (384-dim).
+            query_vector: Query embedding vector (512-dim).
             top_k: Maximum number of results to return.
 
         Returns:

@@ -115,7 +115,7 @@ def run_probe(tmp_root: Path) -> int:
     # SPEC F007 vector width; one shared list is reused for every chunk
     # since T0503 never queries — only persistence side effects are under
     # test.
-    vector = [0.1] * 384
+    vector = [0.1] * embedding_mod.EMBEDDING_DIMENSION
 
     def fake_encode(chunks):
         return [vector] * len(chunks)

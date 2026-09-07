@@ -2,11 +2,13 @@
 
 > **Phase 状态**：✅ COMPLETE（Technical Learning / Gate / Learning Review 收口范围：T0801、T0802、T0803、T0804、T0805 DONE；Phase Gate Review `PHASE_8_PASS — READY_FOR_PHASE_9`；Phase Learning Review 完成 2026-09-02，本次证据复核完成 2026-09-03；Engineering Review 仍为独立文档责任）
 >
-> **本文档状态**：T0801–T0805 Task Learning Pass + Phase Learning Review 完成（2026-09-02）；当前证据复核完成（2026-09-03）。本文已把五个 Task 的 code mechanics、数据流、验证边界和 self-test 收口为一个 Phase mental model；真实 provider/Chroma/upload E2E、semantic quality 与前端 history lifecycle 仍保留为 deferred boundary，不因学习收口或本次复核而被写成已验证。
+> **本文档状态**：T0801–T0805 Task Learning Pass + Phase Learning Review 完成（2026-09-02）；Phase 8证据复核完成（2026-09-03）。本文已把五个Task的code mechanics、数据流、验证边界和self-test收口为一个Phase mental model；真实provider/Chroma/upload E2E、semantic quality与前端history lifecycle在该Phase 8 checkpoint中保留为deferred boundary，后续状态见下方T1202注记。
 >
 > **配套文档**：[Phase 7 Technical Learning](./phase-07-vector-retrieval.md) · [DX-RAG Interview Guide](./interview-notes/dx-rag-interview-guide.md)
 
-本章记录当前已落地的 T0801 RAG Context/Source Assembly、T0802 Conversation History Processing、T0803 DeepSeek Chat Client、T0804 QA Service orchestration 与 T0805 POST `/api/query` endpoint。T0801 把 T0702/T0703-compatible ranked retrieval chunks 转成给 LLM 的 context text 与 backend-owned source records；T0802 把前端携带的 history 校验、截断并格式化为 prompt 可嵌入文本；T0803 提供带六原则 System Prompt、OpenAI-compatible DeepSeek client、system + user 两条 API message（user 内含三个 sections）、bounded retry 与错误映射的 LLM adapter；T0804 再把 collection preflight、hybrid retrieval、context/history 转换、LLM call 与 sources 组装成一个 service-level result；T0805 在 FastAPI API boundary 执行请求校验、collection existence check、QAService 调用与统一错误响应。真实 provider/Chroma/upload E2E 与前端集成仍未验证。[PROJECT FACT]
+> **后续证据同步（T1202，2026-09-07）**：Phase 8 收口时 deferred 的 upload/real temp Chroma → retrieval → context/history → QAService/DeepSeekClient → real query API composition 已由 T1202 isolated matrix 以46/46 checks执行通过；SentenceTransformer model与DeepSeek transport仍为deterministic substitutions，因此live provider/model semantics、browser history lifecycle与production quality仍未验证。详见 [Phase 12 Technical Learning](./phase-12-integration-acceptance.md)。本注记只同步后续证据，不改写Phase 8历史checkpoint。
+
+本章记录T0801 RAG Context/Source Assembly、T0802 Conversation History Processing、T0803 DeepSeek Chat Client、T0804 QA Service orchestration与T0805 POST `/api/query` endpoint。T0801把T0702/T0703-compatible ranked retrieval chunks转换为LLM context与backend-owned source records；T0802处理history；T0803提供System Prompt、OpenAI-compatible DeepSeek client、message assembly、retry与错误映射；T0804把collection preflight、retrieval、converters、LLM和sources组成service result；T0805在FastAPI boundary处理请求、collection existence、QAService调用与统一错误响应。在Phase 8 closure checkpoint中，真实provider/Chroma/upload E2E与前端集成仍未验证；当前后续证据边界以紧邻的T1202注记为准。[PROJECT FACT]
 
 ## 0. 三层文档边界
 

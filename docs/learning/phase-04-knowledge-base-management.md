@@ -1482,6 +1482,10 @@ T0404 正式验收**没有引入新的 Python 语法**——`fullmatch` / `match
 - **T0402/T0403 的诚实声明**：TASKS.md 两个 Task 的 Status 均为 DONE，实现代码存在且与 AC 描述的行为一致（逐行核对，上表 5 行）。但仓库中**没有本会话可查的端点级验证执行记录**（无测试脚本、无 74/74 式的实测记录留存）——所以 AC-F001-04/05/06 的表述是：**按 TASKS.md 记录为 DONE，验证细节不虚构**。真实发生的运行时证据只有两条：ER 预检阶段（实现前）的 ChromaDB 1.5.9 探针（PF-4：`modify` / `update` 原语行为确认）与本次代码审查。若需要面试级的确证，应在 Phase 12 或后续回归中补做真实端点验证。
 - 本文档未运行任何测试，也未创建任何测试脚本（学习任务约束）。
 
+#### 后续证据同步（T1204，2026-09-07）
+
+上面是Phase 4当时的诚实证据边界，不能倒写历史；它要求的后续端点确证现已由[T1204 final audit](../T1204-SPEC-ACCEPTANCE-AUDIT.md#f001-closure-detail)补齐。`verify_t1204_spec_acceptance.py`在隔离temp storage中经真实FastAPI、Chroma、filesystem与keyword cache执行create/list/duplicate/invalid/rename/delete，并在Chroma forward rename后注入uploads-directory failure：成功路径保持file/chunk IDs、content、非级联metadata与vector score，失败路径恢复完整old state且无new-name residue。T1204 focused probe本轮重跑29/29 PASS；其中F001只是该29项matrix的一组，不应写成“29条F001 AC”。Embedding model仍为deterministic substitute，详见[Phase 12 Technical Learning](./phase-12-integration-acceptance.md#44-t1204--full-spec-acceptance-criteria-audit)。
+
 ### 19.3 Learning Review Findings → 已迁往 Engineering Review
 
 T0401 的 4 条 Learning Review Findings 与 Pending Questions #28–31（延续 Phase 3 的 #1–27 编号）属于工程评审职责，已迁移至 [phase-04-engineering-review.md](./engineering-review/phase-04-engineering-review.md) 第 7.6 节。本文档只保留一句话结论：

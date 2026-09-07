@@ -561,7 +561,7 @@ def vector_search(self, query: str, top_k: int = 10) -> List[tuple[str, str, flo
     # 1. 加载嵌入模型（BGE 中文模型）
     model = get_model()
 
-    # 2. 将查询转为向量（384 维）
+    # 2. 将查询转为向量（512 维）
     query_vector = model.encode(query, normalize_embeddings=True).tolist()
 
     # 3. 在向量数据库中检索
@@ -577,7 +577,7 @@ def vector_search(self, query: str, top_k: int = 10) -> List[tuple[str, str, flo
 |-------|-----|------|
 | 相似度度量 | Cosine | 余弦相似度 |
 | 索引类型 | HNSW | 层次导航小世界图 |
-| 向量维度 | 384 | BGE 模型输出维度 |
+| 向量维度 | 512 | BGE 模型输出维度 |
 
 ### 5.4 加权融合策略
 

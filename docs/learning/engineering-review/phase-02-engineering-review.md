@@ -11,7 +11,7 @@
 | 维度 | 内容 |
 |------|------|
 | **业务目标** | 把自然语言文本变成"机器可比较"的向量——RAG 的"理解语义"能力来源 |
-| **技术目标** | 用最小代码实现 SPEC F007 的两个契约：Lazy Singleton 模型加载策略 + `encode_chunks` 批量编码（384 维、L2 归一化） |
+| **技术目标** | 用最小代码实现 SPEC F007 的两个契约：Lazy Singleton 模型加载策略 + `encode_chunks` 批量编码（512 维、L2 归一化） |
 | **系统位置** | AI/Data Layer 的"编码器"。上游只依赖 Phase 0（config 的 `EMBED_MODEL`、errors 的 `EMBEDDING_MODEL_ERROR` 错误码） |
 | **上游依赖** | Phase 0：`settings.EMBED_MODEL`（默认 `models/bge-small-zh-v1.5` 本地路径）、`AppError("EMBEDDING_MODEL_ERROR")` → HTTP 500 |
 | **下游消费者** | Phase 3 Ingest（`IngestService.process` 的 embed 步骤 —— **已实际发生**）、Phase 7 VectorRetriever（T0701 将用 `encode_chunks` 编码 query —— Future）、Phase 1 VectorStore（`add_texts`/`search` 的向量参数终于有真实来源） |
@@ -24,7 +24,7 @@
 
 **没有 Embedding Service，系统会卡死在哪：**
 
-1. **VectorStore 收不到合法输入**：Phase 1 的 `add_texts(embeddings=...)` 要求 384 维向量——没有编码器，Ingest 管道在 Chunk 之后无路可走，`search()` 的 query_embedding 也无从产生。
+1. **VectorStore 收不到合法输入**：Phase 1 的 `add_texts(embeddings=...)` 要求 512 维向量——没有编码器，Ingest 管道在 Chunk 之后无路可走，`search()` 的 query_embedding 也无从产生。
 2. **没有语义检索**：RAG 区别于普通搜索的核心就是"语义相似"而非"字符串相等"。Embedding 模型是语义的翻译官——"AI 的子领域"与"机器学习是人工智能的分支"字面零重合，但向量距离极近。
 3. **每个调用方各自加载模型会出大事故**：bge-small-zh-v1.5 约 100MB、加载需数秒、推理占内存——如果每次请求都 `SentenceTransformer(...)`，服务直接不可用。
 
@@ -154,9 +154,9 @@
 
 **Chosen Solution**: ① 模型文件放 `models/` 目录随仓库/部署包分发，配置项指向本地路径；② 模块边界处 `.tolist()`——离开 embedding 模块的数据全是标准 Python 类型。
 
-**Why**: ① **部署确定性**：模型版本与代码版本绑定（模型文件入库/入包），不依赖外部网络与 HF Hub 状态；② **序列化安全**：边界处类型归一化是数据契约的一部分——下游（VectorStore、ChromaDB）永远收到 `List[float]`；③ 性能无损失：`.tolist()` 是 O(384×N) 的内存拷贝，相比模型推理可忽略。
+**Why**: ① **部署确定性**：模型版本与代码版本绑定（模型文件入库/入包），不依赖外部网络与 HF Hub 状态；② **序列化安全**：边界处类型归一化是数据契约的一部分——下游（VectorStore、ChromaDB）永远收到 `List[float]`；③ 性能无损失：`.tolist()` 是 O(512×N) 的内存拷贝，相比模型推理可忽略。
 
-**Trade-off**: ① 模型文件使仓库/部署包变大（100MB+），需 git-lfs 或独立存储；② 模型升级 = 重新分发文件，而非改一行配置；③ `.tolist()` 产生一次性内存峰值（384 维 × 全量 chunk 数的 Python float 列表）。
+**Trade-off**: ① 模型文件使仓库/部署包变大（100MB+），需 git-lfs 或独立存储；② 模型升级 = 重新分发文件，而非改一行配置；③ `.tolist()` 产生一次性内存峰值（512 维 × 全量 chunk 数的 Python float 列表）。
 
 **Future Improvement**（Future / Not implemented in v1）: 大批量编码时分批（batching）以控制内存峰值；模型版本化管理（模型文件 + 版本元数据）。
 
@@ -169,11 +169,11 @@ Phase 2 完成后，系统新增的能力与依赖关系：
 | 新增能力 | 谁开始依赖它 | 未来 Phase 谁使用 |
 |---------|------------|-----------------|
 | `get_model()`（进程级 bge 单例） | `encode_chunks` 内部 | 无外部调用者（有意为之） |
-| `encode_chunks()`（384 维 L2 归一化向量批量生成） | Phase 3 Ingest（`IngestService.process` 的 embed 步骤 —— **已实际发生**） | Phase 7 VectorRetriever（T0701 query 编码 —— Future） |
+| `encode_chunks()`（512 维 L2 归一化向量批量生成） | Phase 3 Ingest（`IngestService.process` 的 embed 步骤 —— **已实际发生**） | Phase 7 VectorRetriever（T0701 query 编码 —— Future） |
 | 向量契约兑现：`List[List[float]]` | Phase 1 VectorStore 的 `add_texts`/`search` 参数第一次有真实生产者 | Phase 7（检索侧的兑现时刻） |
 | 加载失败语义：`EMBEDDING_MODEL_ERROR` → 500 | Phase 3（Ingest 直接让该异常传播 → ingestion FAILED —— **已实际发生**） | Phase 5 Upload API（500 错误响应） |
 
-**关键洞察**：Phase 2 的契约设计有两条"隐藏消费者链"：① **与 Phase 1 的向量维度耦合**——bge-small-zh-v1.5 固定 384 维，ChromaDB collection 中所有向量必须同维；若换模型，已入库向量全部作废或需重算（v1 无模型版本管理，这是"换模型 = 重建库"的隐性代价）；② **与 Phase 1 的度量耦合**（决策 4）——L2 归一化 + cosine 是配套设计，改任何一边都要同步想另一边。
+**关键洞察**：Phase 2 的契约设计有两条"隐藏消费者链"：① **与 Phase 1 的向量维度耦合**——bge-small-zh-v1.5 固定 512 维，ChromaDB collection 中所有向量必须同维；若换模型，已入库向量全部作废或需重算（v1 无模型版本管理，这是"换模型 = 重建库"的隐性代价）；② **与 Phase 1 的度量耦合**（决策 4）——L2 归一化 + cosine 是配套设计，改任何一边都要同步想另一边。
 
 ---
 
@@ -210,7 +210,7 @@ Phase 2 完成后，系统新增的能力与依赖关系：
 - ✅ 惰性加载：管理类请求（KB CRUD、文件删除）零模型开销
 - ⚠️ **首次请求冷启动**：第一个触发 embedding 的请求要等模型加载（数秒级）——v1 无预热
 - ⚠️ **无显式 batch 大小控制**：`encode_chunks` 一次编码**文件全量 chunks**（Ingest 调用方传入全部）——大文件（万级 chunk）时 GPU/内存峰值不可控。SPEC 未要求 batching，v1 文件规模下可接受
-- ⚠️ CPU 推理默认路径：本地部署无 GPU 时，384 维小模型 CPU 推理可接受，但批量大时延迟线性增长
+- ⚠️ CPU 推理默认路径：本地部署无 GPU 时，512 维小模型 CPU 推理可接受，但批量大时延迟线性增长
 
 ### 安全
 
@@ -257,7 +257,7 @@ Phase 2 完成后，系统新增的能力与依赖关系：
 
 **可能出现的瓶颈**：
 
-- 单模型服务吞吐上限：384 维小模型单卡数千 QPS 是上限，亿级 chunk 的批量任务需要集群
+- 单模型服务吞吐上限：512 维小模型单卡数千 QPS 是上限，亿级 chunk 的批量任务需要集群
 - 模型与向量库的维度强耦合放大：换更大模型（更高质量）需要全量重算 + 全库重建——亿级规模下这是天价迁移
 - 无 embedding 缓存：相同/相似文本重复编码浪费算力
 

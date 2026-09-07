@@ -66,11 +66,11 @@ embedding.py（77 行）—— Phase 2 对外接口 = 2 个函数
 ┌────────────────────────▼────────────────────────────────┐
 │ encode_chunks()      T0202 · 开机器                      │
 │   List[str] → 空检查 → .encode(normalize) → .tolist()    │
-│   → List[List[float]]（384 维，L2 归一化）               │
+│   → List[List[float]]（512 维，L2 归一化）               │
 └─────────────────────────────────────────────────────────┘
 ```
 
-**数据边界链（5 站）**：`文本 str 列表 → numpy (n, 384) → Python list[list[float]] → add_texts 的 embeddings / search 的 query_vector`——numpy 在第 2→3 站被 `.tolist()` 翻译掉，绝不跨出模块边界（第 14 节）。
+**数据边界链（5 站）**：`文本 str 列表 → numpy (n, 512) → Python list[list[float]] → add_texts 的 embeddings / search 的 query_vector`——numpy 在第 2→3 站被 `.tolist()` 翻译掉，绝不跨出模块边界（第 14 节）。
 
 **资产接力**：T0201 留下 `_model` + `get_model()`，T0202 是它们的唯一消费方（第 12 节）；Phase 1 留下的两个"空参数"由此获得来源（第 15 节）。
 
@@ -85,16 +85,16 @@ Phase 1 的 `VectorStore` 里有两个方法的参数一直"悬空"：
 ```python
 # vector_store.py — Phase 1 的契约（第 129–134 行）
 def add_texts(self, collection, chunks, embeddings, metadatas) -> List[str]:
-    """... embeddings: Corresponding embedding vectors (384-dim)."""
+    """... embeddings: Corresponding embedding vectors (512-dim)."""
 
 # vector_store.py — Phase 1 的契约（第 149–153 行）
 def search(self, collection, query_vector, top_k) -> List[VectorSearchResult]:
-    """... query_vector: Query embedding vector (384-dim)."""
+    """... query_vector: Query embedding vector (512-dim)."""
 ```
 
-`embeddings` 和 `query_vector` 都是 384 维浮点向量，但 Phase 1 结束时**没有任何代码能生产它们**——docstring 一律写"由调用方提供"（第 56 节：add_texts 是搬运工）。
+`embeddings` 和 `query_vector` 都是 512 维浮点向量，但 Phase 1 结束时**没有任何代码能生产它们**——docstring 一律写"由调用方提供"（第 56 节：add_texts 是搬运工）。
 
-**Phase 2 就是"向量生产车间"**：把文本变成 384 维向量，让 Phase 1 的这两个参数第一次有真实来源。
+**Phase 2 就是"向量生产车间"**：把文本变成 512 维向量，让 Phase 1 的这两个参数第一次有真实来源。
 
 ### 车间只有两个工序：先装机器，再生产
 
@@ -103,7 +103,7 @@ Phase 2 只有两个 Task，分工极其清晰：
 | Task | 干什么 | 类比 | 状态 |
 |------|--------|------|------|
 | T0201 | 加载 embedding 模型，缓存为单例 | **装机器**（把机床安装好、通电） | ✅ DONE |
-| T0202 | `encode_chunks(chunks)` 生成向量 | **开机器生产**（投料 → 产出 384 维向量） | ✅ DONE |
+| T0202 | `encode_chunks(chunks)` 生成向量 | **开机器生产**（投料 → 产出 512 维向量） | ✅ DONE |
 
 > 更新：上段"T0201 完成时（也就是现在）……还没有人开它"记录的是 T0201 刚完成时的状态。T0202 已完成后，**机器的第一个操作者是 `encode_chunks`**——`get_model()` 有了调用方（[embedding.py:77](../../backend/app/services/embedding.py#L77)）。但 `encode_chunks` 本身仍无调用方（正常——Phase 3 的 ingest 管道才是第一个消费者，见第 15 节）。
 
@@ -115,11 +115,11 @@ SPEC F007 指定的模型：
 |------|-----|
 | 模型 | `bge-small-zh-v1.5`（BAAI 的中文语义 embedding 模型） |
 | 本地路径 | `models/bge-small-zh-v1.5/`（相对 backend 运行目录） |
-| 维度 | 384（每段文本 → 384 个 float） |
+| 维度 | 512（每段文本 → 512 个 float） |
 | 归一化 | L2 normalize（`normalize_embeddings=True`） |
 | 运行时 | [sentence-transformers](https://www.sbert.net/) ≥ 2.2.2（requirements.txt 已声明，Phase 0 就加好了） |
 
-> **模型目录不在仓库里**。`backend/` 下只有 `app/`、`chroma_db/`、`requirements.txt`，没有 `models/`。模型文件（约 90+ MB）需要单独放到 `backend/models/bge-small-zh-v1.5/` 才能真实运行。这正是"懒加载"策略的前提之一——如果启动时就必须加载模型，模型缺失会直接导致服务起不来。
+> **Phase 12 remediation 更新（2026-09-07）**：模型权重已按官方 Hugging Face revision `7999e1d3359715c523056ef9478215996d62a620` 下载到本地忽略目录 `backend/models/bge-small-zh-v1.5/` 并真实加载验证；模型权重不进入 Git。历史上该目录缺失时的 lazy-load 分析仍成立。
 
 ### 为什么"装机器"要单独成一个 Task
 
@@ -128,7 +128,7 @@ SPEC F007 指定的模型：
 - **T0201 的技术问题**：什么时候加载？加载几次？加载失败怎么办？（生命周期管理）
 - **T0202 的技术问题**：怎么调用 encode？空列表怎么办？返回什么形状？（数据转换）
 
-把它们拆开，每个 Task 的验证也独立：T0201 验证"第二次调用是同一个实例"（AC-F007-02），T0202 验证"3 个 chunks → 3 个 384 维向量"（AC-F007-01）。
+把它们拆开，每个 Task 的验证也独立：T0201 验证"第二次调用是同一个实例"（AC-F007-02），T0202 验证"3 个 chunks → 3 个 512 维向量"（AC-F007-01）。
 
 ---
 
@@ -380,7 +380,7 @@ T0201 只 raise 一次，但"模型加载失败 → 客户端收到 500"是一�
 Phase 1 里 `add_texts` / `search` 的向量参数写的是"由调用方提供"。T0201 完成后，这条供应线的**第一段**接上了：
 
 ```text
-文本 chunks ──(T0202 encode_chunks)──▶ 384 维向量 ──(Phase 3 ingest)──▶ add_texts(embeddings=...)
+文本 chunks ──(T0202 encode_chunks)──▶ 512 维向量 ──(Phase 3 ingest)──▶ add_texts(embeddings=...)
 用户问题   ──(T0202 encode_chunks)──▶ query_vector  ──(Phase 7/8 检索)─▶ search(query_vector=...)
                     ▲
                     │ 两台机器共用一台：get_model() 返回的同一个单例
@@ -388,7 +388,7 @@ Phase 1 里 `add_texts` / `search` 的向量参数写的是"由调用方提供"�
 
 - T0201 提供 `get_model()`——**机器本体**；
 - T0202 已提供 `encode_chunks()`——**操作机器的函数**（`get_model().encode(chunks, normalize_embeddings=True).tolist()`，SPEC F007 已写明调用式；实现精读见第 12–14 节）；
-- Phase 1 的 `VectorStore` **一行都不用改**——它在 Phase 1 写死契约时，参数形状（`List[List[float]]`，384 维）就与 F007 对齐了。这就是"先定契约、后接实现"的红利，和 9G 说的一模一样。
+- Phase 1 的 `VectorStore` 保持同一抽象接口；Phase 12 已将错误的 384 维文字合同按官方模型输出统一修订为 `List[List[float]]`、512 维，并在 Embedding 边界增加维度守卫。
 
 **Phase 1 学习过的"搬运工"原则在这里对称出现**：add_texts 不管向量怎么来（只负责搬），get_model 不管向量怎么用（只负责提供机器）。每层只管自己边界内的事。
 
@@ -402,7 +402,7 @@ Phase 1 里 `add_texts` / `search` 的向量参数写的是"由调用方提供"�
 
 | SPEC F007 Define | 实现对照 |
 |------------------|---------|
-| 输入 chunks / 输出 384 维向量 | **T0202 的范围**，T0201 不涉及（docstring 已声明越界）✓ |
+| 输入 chunks / 输出 512 维向量 | **T0202 的范围**，T0201 不涉及（docstring 已声明越界）✓ |
 | 包含：模型懒加载 | `get_model()` 首次调用才构造模型 ✓ |
 | 包含：单例缓存 | `_model` 模块级变量 + `if _model is None` ✓ |
 | 包含：L2 归一化 | 在 T0202 的 encode 参数里（`normalize_embeddings=True`），T0201 只是"机器支持" ✓ |
@@ -426,7 +426,7 @@ Phase 1 里 `add_texts` / `search` 的向量参数写的是"由调用方提供"�
 ### AC 对照（诚实版）
 
 - **AC-F007-02（模型缓存）**：`get_model()` 的 `if _model is None` 结构上保证第二次调用复用同一实例——**代码审查可确认**，但仓库中没有可执行的自动化测试（见第 7 节）。
-- **AC-F007-01（3 chunks → 3 个 384 维向量）**：属于 T0202，本 Task 不验证。
+- **AC-F007-01（3 chunks → 3 个 512 维向量）**：属于 T0202，本 Task 不验证。
 
 ### 一处"实现比 SPEC 更细"的观察
 
@@ -446,7 +446,7 @@ T0201 的验证条目（TASKS.md）：
 | 第二次调用立即返回同一实例 | 同一进程内再调一次；或用 `get_model() is get_model()`（应返回 True） | 同上 |
 | 模型目录缺失 → 首次 encode 时抛错 | 不放置模型目录，调用 get_model() → 应抛出 AppError，`code == "EMBEDDING_MODEL_ERROR"`，`http_status == 500` | 无需模型目录（故意缺失即可） |
 
-**第三条可以在没有模型的环境里验证**——它验证的正是"失败路径"。前两条需要先放置真实的 bge-small-zh-v1.5 模型目录（不在仓库中，需单独准备）。
+**第三条可以在没有模型的环境里验证**——它验证的正是"失败路径"。前两条需要真实模型目录；Phase 12 remediation现已在本机忽略目录准备固定revision并由专项脚本验证。
 
 ---
 
@@ -537,7 +537,7 @@ FastAPI 的同步 endpoint 在线程池中运行。如果两个请求**同时**�
 ### Pending Questions（只记录，不修复）
 
 1. **仓库无自动化测试**：AC-F007-02（模型缓存）仅靠代码结构确认，无可执行测试（与 Phase 1 的 9I-2 一致，不虚构 PASS）。
-2. **模型目录不在仓库**：`backend/models/bge-small-zh-v1.5/` 需单独准备（未在 .gitignore 显式声明 `models/`，如需忽略本地模型目录建议后续确认）。
+2. **模型目录不进入 Git**：Phase 12 remediation 已将官方模型下载到 `backend/models/bge-small-zh-v1.5/`，并由 `.gitignore` 显式忽略；部署仍需用受控下载/制品流程准备同一 revision。
 3. **首载失败的重试语义**：SPEC 未明确"失败后下次调用是否重试"——实现选择了重试（`_model` 保持 None）。这是合理默认，但严格说属于实现选择而非 SPEC 规定。
 
 ---
@@ -552,9 +552,9 @@ FastAPI 的同步 endpoint 在线程池中运行。如果两个请求**同时**�
 
 | 要求 | 一句话 |
 |------|--------|
-| `encode_chunks(chunks: List[str]) -> List[List[float]]` | 输入文本列表，输出 384 维向量列表 |
+| `encode_chunks(chunks: List[str]) -> List[List[float]]` | 输入文本列表，输出 512 维向量列表 |
 | 调用 `get_model().encode(chunks, normalize_embeddings=True)` | 复用 T0201 的单例 |
-| 返回 Python list 形状的 384 维向量 | 靠 `.tolist()` 转换（见第 14 节） |
+| 返回 Python list 形状的 512 维向量 | 靠 `.tolist()` 转换（见第 14 节） |
 | 空列表 → 空列表（非错误） | `if not chunks: return []` |
 
 **Out of Scope 检查**（T0202 明确不做的三件事，逐条对照代码）：不加 batch 大小限制（一次全量交给模型）、不加 GPU 配置、不加进度回调——77 行里都没有，越界干净。
@@ -569,7 +569,7 @@ FastAPI 的同步 endpoint 在线程池中运行。如果两个请求**同时**�
 
 ```python
 def encode_chunks(chunks: List[str]) -> List[List[float]]:
-    """Convert text chunks to 384-dim L2-normalized vectors (SPEC F007).
+    """Convert text chunks to 512-dim L2-normalized vectors (SPEC F007).
 
     Uses the singleton model from ``get_model()``; the model itself
     performs L2 normalization (``normalize_embeddings=True``) and the
@@ -579,7 +579,7 @@ def encode_chunks(chunks: List[str]) -> List[List[float]]:
         chunks: List of chunk text strings.
 
     Returns:
-        One 384-dim vector per chunk as List[List[float]].  Empty input
+        One 512-dim vector per chunk as List[List[float]].  Empty input
         returns an empty list — not an error (SPEC F007 error table).
 
     Raises:
@@ -594,7 +594,7 @@ def encode_chunks(chunks: List[str]) -> List[List[float]]:
 
 **① docstring（第 59–74 行）—— 又是浓缩契约**
 
-- 第一段说明数据形状："384 维、L2 归一化、经 `.tolist()` 转成**纯 Python float**"——"plain Python float"这个措辞是关键（为什么强调，见第 14 节）。
+- 第一段说明数据形状："512 维、L2 归一化、经 `.tolist()` 转成**纯 Python float**"——"plain Python float"这个措辞是关键（为什么强调，见第 14 节）。
 - Returns 段直接引用 SPEC 的错误表："Empty input returns an empty list — not an error"。
 - Raises 段只列 EMBEDDING_MODEL_ERROR——**encode 本身没有新错误**，它可能抛的错都来自 get_model（模型加载）。这说明错误契约的继承关系：T0202 没有给错误目录增加任何条目。
 
@@ -620,13 +620,13 @@ Python 的 `not` 把对象转成布尔：**空容器（空 list / dict / str）�
 
 ```python
 get_model()                                    # ① SentenceTransformer 实例（T0201 的单例）
-    .encode(chunks, normalize_embeddings=True) # ② numpy.ndarray，形状 (n, 384)
+    .encode(chunks, normalize_embeddings=True) # ② numpy.ndarray，形状 (n, 512)
     .tolist()                                  # ③ Python 原生 list[list[float]]
 ```
 
 **第 1 层 `get_model()`**：第 5 节说过——返回 T0201 缓存的单例。encode_chunks 不关心模型是否已加载、怎么加载，那是 T0201 的边界。
 
-**第 2 层 `.encode(chunks, normalize_embeddings=True)`**：模型推理。返回的是 **numpy 数组（ndarray）**，形状 `(n, 384)`——n 个 chunk，每个 384 维。
+**第 2 层 `.encode(chunks, normalize_embeddings=True)`**：模型推理。返回的是 **numpy 数组（ndarray）**，形状 `(n, 512)`——n 个 chunk，每个 512 维。
 
 - **normalize_embeddings=True 的位置值得注意**：它在这里（编码时）传入，而不是 T0201 构造模型时传入（`SentenceTransformer(settings.EMBED_MODEL)` 没带任何参数）。说明 L2 归一化是 **encode 的选项**，不是模型固有属性——"装机器"时不绑定，"生产"时按需开启。SPEC F007 的调用式就是这么写的，实现逐字对齐。
 - **L2 归一化做了什么**：把每个向量缩放到长度为 1（各维平方和开根号 = 1）。效果是让所有向量处在同一个"单位球面"上，cosine 相似度计算更稳定——Phase 1 的 `search` 用 cosine 距离（建库时写死的 `hnsw:space=cosine`），归一化让 cosine 距离和 dot product 等价。
@@ -642,7 +642,7 @@ get_model()                                    # ① SentenceTransformer 实例�
 
 TS 类比：`Array.from(f32Array)` 或 `[...f32Array]` 把 `Float32Array` 转成 `number[]`——下游 API 只要 `number[]`，类型系统替你挡，Python 没有这个保护，靠纪律 + 文档契约。
 
-**形状核对（AC-F007-01 的形状部分）**：输入 3 个 chunk → encode 返回 `(3, 384)` 的 ndarray → tolist 后是 3 个长度为 384 的 list。`List[List[float]]` 的外层长度 = chunk 数，内层长度 = 384。
+**形状核对（AC-F007-01 的形状部分）**：输入 3 个 chunk → encode 返回 `(3, 512)` 的 ndarray → tolist 后是 3 个长度为 512 的 list。`List[List[float]]` 的外层长度 = chunk 数，内层长度 = 512。
 
 ---
 
@@ -653,7 +653,7 @@ TS 类比：`Array.from(f32Array)` 或 `[...f32Array]` 把 `Float32Array` 转成
 ```text
                     ┌──────────────── Phase 2 的边界 ────────────────┐
 文本 chunks          │  encode_chunks(chunks)                        │   List[List[float]]
-（Phase 3 解析切分产出）│   └─ get_model().encode(..., normalize=True) │  （384 维，L2 归一化）
+（Phase 3 解析切分产出）│   └─ get_model().encode(..., normalize=True) │  （512 维，L2 归一化）
                     │        .tolist()                                │
                     └───────────────────┬────────────────────────────┘
                                         │
@@ -681,13 +681,13 @@ TS 类比：`Array.from(f32Array)` 或 `[...f32Array]` 把 `Float32Array` 转成
 |-----------|---------|------|
 | `model.encode(chunks, normalize_embeddings=True).tolist()` | [embedding.py:77](../../backend/app/services/embedding.py#L77) | 逐字对应 ✓ |
 | chunks 为空列表 → 返回空列表（非错误） | 第 75–76 行 `if not chunks` | ✓ |
-| 每个向量 384 维 | 由 bge-small-zh-v1.5 模型保证（代码不硬编码 384） | ✓ |
+| 每个向量 512 维 | 由 bge-small-zh-v1.5 模型输出，且代码以 `EMBEDDING_DIMENSION=512` 显式守卫 | ✓ |
 | L2 normalize | `normalize_embeddings=True`（第 77 行） | ✓ |
 | 错误：任何加载失败 → 500 EMBEDDING_MODEL_ERROR | 继承自 get_model（第 73 行 docstring 声明） | ✓ |
 
 ### AC 对照（诚实版）
 
-- **AC-F007-01（3 chunks → 3 个 384 维向量，L2 norm ≈ 1.0）**：形状（n → (n, 384) → n×384 嵌套 list）与归一化参数传递可**代码审查确认**；"norm ≈ 1.0"的数值验证需要真实模型目录 + 可执行环境——仓库中无自动化测试、无模型目录，**不虚构 PASS**（与第 7 节、第 11 节一致的立场）。
+- **AC-F007-01（3 chunks → 3 个 512 维向量，L2 norm ≈ 1.0）**：Phase 12 remediation 已通过真实本地模型验证形状与 norm，并由 focused unit test覆盖维度不匹配错误；证据脚本为 `backend/scripts/verify_bge_model.py`。
 - **AC-F007-02（模型缓存）**：encode_chunks 每次调用都走 `get_model()`，复用同一实例——结构确认 ✓。
 - **空列表 → 空列表**：无需模型即可验证（`encode_chunks([])` 在第 75 行直接返回，不触模型）——这条 AC 的验证成本最低，因为实现把空检查放在了"碰模型之前"。
 
@@ -695,7 +695,7 @@ TS 类比：`Array.from(f32Array)` 或 `[...f32Array]` 把 `Float32Array` 转成
 
 | 条目 | 手工验证 | 依赖 |
 |------|---------|------|
-| 3 chunks → 3 个 384 维向量 | `python -c "from app.services.embedding import encode_chunks; vs = encode_chunks(['你好','世界','测试']); print(len(vs), [len(v) for v in vs])"` | 需模型目录 |
+| 3 chunks → 3 个 512 维向量 | `python -c "from app.services.embedding import encode_chunks; vs = encode_chunks(['你好','世界','测试']); print(len(vs), [len(v) for v in vs])"` | 本地模型 revision 已记录；也可运行 `python scripts/verify_bge_model.py` |
 | L2 norm ≈ 1.0 | 对结果向量算平方和开根号 | 需模型目录 + 手工计算 |
 | 空列表 → 空列表 | `encode_chunks([]) == []` | **无需模型** |
 | 模型单例复用 | 连续两次 encode 观察第二次速度 / `get_model() is get_model()` | 需模型目录 |
@@ -704,7 +704,7 @@ TS 类比：`Array.from(f32Array)` 或 `[...f32Array]` 把 `Float32Array` 转成
 
 ## 17. Phase 2 总复习卡（全 Phase）
 
-**一句话**：77 行 = 装机器（懒加载单例 get_model）+ 开机器（一行链式编码 encode_chunks）——文本列表进来，`List[List[float]]`（384 维、L2 归一化）出去，错误统一为 `EMBEDDING_MODEL_ERROR`（HTTP 500）。
+**一句话**：Embedding 模块负责装机器（懒加载单例 get_model）和开机器（encode_chunks）——文本列表进来，`List[List[float]]`（512 维、L2 归一化）出去，维度漂移或加载失败统一为 `EMBEDDING_MODEL_ERROR`（HTTP 500）。
 
 **5 个关键词**：懒加载、单例、真值判断（`if not chunks`）、链式调用（`.encode().tolist()`）、契约兑现。
 
@@ -724,7 +724,7 @@ TS 类比：`Array.from(f32Array)` 或 `[...f32Array]` 把 `Float32Array` 转成
 2. `TYPE_CHECKING` + 字符串标注让 `import embedding` 零成本；重依赖只在 `get_model` 首次调用时加载，且永不重复加载。（第 3 节片段 2）
 3. 加载失败 → `AppError("EMBEDDING_MODEL_ERROR")` → HTTP 500；失败后 `_model` 保持 None，**下次调用会重试**。（第 4 节）
 4. `if not chunks` 判空发生在触碰模型**之前**；"空进空出"是数据管道哲学，不是错误。（第 13 节）
-5. 一行链式调用三层：单例 → numpy `(n, 384)` → `.tolist()` 转 Python float。（第 14 节）
+5. 编码链：单例 → numpy `(n, 512)` → `.tolist()` 转 Python float → 512 维守卫。（第 14 节）
 6. numpy float32 ≠ Python float——类型翻译在模块边界内完成，与 Phase 1 的 distance→similarity 同一哲学。（第 14 节）
 7. `normalize_embeddings=True` 是 encode 的参数（生产选项），不是模型构造参数；归一化让 cosine 检索更稳。（第 14 节）
 8. 一台机器服务两个方向（入库 + 查询），同一语义空间是数学必需；Phase 1 契约一行没改。（第 15 节）
@@ -790,7 +790,7 @@ TS 类比：`Array.from(f32Array)` 或 `[...f32Array]` 把 `Float32Array` 转成
 
 > 本阶段学习过程中发现的待确认点（只记录，不修复）。T0201 的 4 条见第 11 节，以下是 T0202 新增的：
 
-1. **仓库无自动化测试**（延续 11-1）：AC-F007-01 的数值验证（L2 norm ≈ 1.0）无法在无模型目录的环境中执行；本文件只做代码结构确认，不虚构 PASS。
+1. **Phase 12已补自动化证据**：`tests.test_embedding`覆盖512维合同与mismatch guard，`scripts/verify_bge_model.py`以固定revision真实验证L2 norm≈1、singleton和临时Chroma语义排序；模型权重本身仍不进入Git。
 2. **`None` 入参返回 `[]`**：实现顺带兼容（`not None` → True），SPEC F007 只规定了"空列表 → 空列表"。宽松处理是良性的，但严格说属于实现选择而非 SPEC 规定。
 3. **空字符串 chunk 会被编码**：`[""]` 是非空列表，`if not chunks` 不拦截——空字符串会被当作普通文本交给模型（可能得到全零/异常向量）。SPEC 未定义此边界；"不产出空 chunk"的责任落在 Phase 3 的文本清洗/切分管道。
 4. **归一化位置**：归一化在 encode 层开启（而非模型构造时），与 SPEC 调用式一致——但值得记住："归一化"是编码选项，模型对象本身不绑定。
@@ -808,4 +808,4 @@ TS 类比：`Array.from(f32Array)` 或 `[...f32Array]` 把 `Float32Array` 转成
 
 ---
 
-> **Phase 2 收官**：T0201 + T0202 全部完成（embedding.py 共 77 行，越界干净，错误链路完整）。机器（`get_model` 懒加载单例）与生产函数（`encode_chunks`）就位，向量契约（`List[List[float]]`，384 维，L2 归一化）兑现。`encode_chunks` 尚无调用方——Phase 3（T0301–T0308）的 ingest 管道将是第一个消费者：届时文本 chunks 由解析/切分产出，向量经 `add_texts` 写入 ChromaDB，检索链（Phase 6–8）随之接通。本文档已按 Phase 2 Learning Review 整理：第 0 节全景速览 → 第 1–11 节 T0201 → 第 12–16 节 T0202 → 第 17–19 节收尾整合。下一步学习 Phase 3 Document Processing Pipeline。
+> **Phase 2 收官（经 Phase 12 规格冲突修订）**：T0201 + T0202 已完成。机器（`get_model` 懒加载单例）与生产函数（`encode_chunks`）就位，向量契约现统一为 `List[List[float]]`、512 维、L2 归一化，并已用官方本地模型获得 REAL 证据。模型升级仍要求受控重建既有向量库。

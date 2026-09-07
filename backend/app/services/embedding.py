@@ -27,6 +27,11 @@ if TYPE_CHECKING:
 # Module-level singleton cache — None until the first successful load.
 _model: Optional["SentenceTransformer"] = None
 
+# BAAI/bge-small-zh-v1.5 publishes 512-dimensional sentence embeddings.
+# Keep this contract explicit so a mismatched local model cannot silently
+# create an incompatible Chroma collection.
+EMBEDDING_DIMENSION = 512
+
 
 def get_model() -> "SentenceTransformer":
     """Return the process-level bge-small-zh-v1.5 model singleton.
@@ -56,7 +61,7 @@ def get_model() -> "SentenceTransformer":
 
 
 def encode_chunks(chunks: List[str]) -> List[List[float]]:
-    """Convert text chunks to 384-dim L2-normalized vectors (SPEC F007).
+    """Convert text chunks to 512-dim L2-normalized vectors (SPEC F007).
 
     Uses the singleton model from ``get_model()``; the model itself
     performs L2 normalization (``normalize_embeddings=True``) and the
@@ -66,7 +71,7 @@ def encode_chunks(chunks: List[str]) -> List[List[float]]:
         chunks: List of chunk text strings.
 
     Returns:
-        One 384-dim vector per chunk as List[List[float]].  Empty input
+        One 512-dim vector per chunk as List[List[float]].  Empty input
         returns an empty list — not an error (SPEC F007 error table).
 
     Raises:
@@ -74,4 +79,11 @@ def encode_chunks(chunks: List[str]) -> List[List[float]]:
     """
     if not chunks:
         return []
-    return get_model().encode(chunks, normalize_embeddings=True).tolist()
+    vectors = get_model().encode(
+        chunks, normalize_embeddings=True
+    ).tolist()
+    if len(vectors) != len(chunks) or any(
+        len(vector) != EMBEDDING_DIMENSION for vector in vectors
+    ):
+        raise AppError("EMBEDDING_MODEL_ERROR")
+    return vectors

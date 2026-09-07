@@ -89,7 +89,7 @@
 ┌────────────────────────────────────────────────────────────────────────────┐
 │  ChromaDB（磁盘目录 chroma_db/）                                              │
 │   每个知识库 = 一个 Collection（hnsw:space=cosine，建库时写死）                  │
-│   每条 chunk = documents 文本 + embeddings（384 维）+ 9 字段 metadata           │
+│   每条 chunk = documents 文本 + embeddings（512 维）+ 9 字段 metadata           │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -265,7 +265,7 @@ Document（用户上传的文档，如"员工手册.pdf"）
    ↓  切成小块                         [后续 Task 实现：Phase 3]
 Chunk（文本片段，如"第 3 页第 2 段"）
    ↓  转成数字向量                      [后续 Task 实现：Phase 2]
-Embedding（384 维数字数组，如 [0.12, -0.03, ...]）
+Embedding（512 维数字数组，如 [0.12, -0.03, ...]）
    ↓  写入                             [后续 Task 实现：T0104]
 VectorStore
    ↓  持久化                           [后续 Task 实现：T0102]
@@ -276,7 +276,7 @@ Vector Database（ChromaDB，落盘到 chroma_db/）
 
 想象用户提问："年假怎么申请？"
 
-1. 后端把这个句子也转换成一个 384 维数字数组（query vector）
+1. 后端把这个句子也转换成一个 512 维数字数组（query vector）
 2. 到数据库里找出**数字上最接近**的那些 chunk（这就是"向量检索"）
 3. 把这些 chunk 原文拼成上下文，交给 DeepSeek 生成回答
 
@@ -651,7 +651,7 @@ new VectorStore(); // TS: 编译错误 / Python: TypeError
 
         Args:
             collection: Collection name to search.
-            query_vector: Query embedding vector (384-dim).
+            query_vector: Query embedding vector (512-dim).
             top_k: Maximum number of results to return.
 
         Returns:
@@ -662,7 +662,7 @@ new VectorStore(); // TS: 编译错误 / Python: TypeError
 **🟢 Python 语法怎么读**
 
 - 参数列表**换行书写**，每个参数占一行——纯格式习惯，Python 对缩进敏感但不要求这样写。
-- `query_vector: List[float]` — 参数类型是"浮点数列表"（≈ `number[]`）。384 维向量就是 384 个 float 的列表。
+- `query_vector: List[float]` — 参数类型是"浮点数列表"（≈ `number[]`）。512 维向量就是 512 个 float 的列表。
 - `top_k: int` — 返回结果的最大条数（≈ `limit`）。
 - `-> List[VectorSearchResult]` — 返回类型：一串 `VectorSearchResult` 对象（片段 2 定义的模型）。
 - docstring 里的公式就是片段 1 里的同一条公式，这里再次强调：**返回 similarity_score，绝不返回 raw distance**。
@@ -928,7 +928,7 @@ DX-RAG 中，`_collection` 不可访问**不是** Python 命名习惯决定的�
 | `@abstractmethod`                     | `abstract` 方法修饰符                         | "子类必须实现这个方法"                       |
 | `from abc import ABC, abstractmethod` | `import { ... } from "abc"`（但 abc 是 Python 内置标准库，无需安装） | 引入抽象机制                             |
 | `class X(Parent):`                    | `class X extends Parent {}`              | 继承（Phase 0 已见，这里继承 `ABC`）          |
-| `List[float]`                         | `number[]`                               | 384 维向量 = 384 个 float 的列表          |
+| `List[float]`                         | `number[]`                               | 512 维向量 = 512 个 float 的列表          |
 | `List[List[float]]`                   | `number[][]`                             | 一批向量（`add_texts` 的 embeddings 参数）  |
 | `List[ChunkRecord]`                   | `ChunkRecord[]`                          | 返回自定义 Pydantic 模型列表                |
 | `-> None`                             | `: void`                                 | 操作型方法不返回值，失败靠抛异常                   |
@@ -2470,7 +2470,7 @@ class ChromaVectorStore extends VectorStore {
     ) -> List[str]:
         """Persist chunks, embeddings, and metadata into a ChromaDB collection.
 
-        Each chunk is stored with its 384-dim embedding and its 9-field
+        Each chunk is stored with its 512-dim embedding and its 9-field
         metadata dict (SPEC F008 Metadata Schema).  ``chunk_id`` from the
         metadata is used as the ChromaDB document id.
         ...
@@ -2530,7 +2530,7 @@ class ChromaVectorStore extends VectorStore {
 
 ```text
 chunks     = ["文本片段1", "文本片段2", "文本片段3"]     # List[str]
-embeddings = [[0.1, -0.2, ...], [...], [...]]           # List[List[float]]，每个 384 维
+embeddings = [[0.1, -0.2, ...], [...], [...]]           # List[List[float]]，每个 512 维
 metadatas  = [{"chunk_id": "a1...", ...}, {...}, {...}]  # List[Dict]，每个 9 字段（F008）
                        ↓ ids = [meta["chunk_id"] for meta in metadatas]
 ids       = ["a1...", "b2...", "c3..."]                 # 提取出来的名单
@@ -3022,7 +3022,7 @@ ChromaDB 返回的结果本来就按 distance 升序（最相似在前），换�
 | 问题    | 答案                                       |
 | ----- | ---------------------------------------- |
 | 它是什么  | `ChromaVectorStore` 的第 6 个真实方法（Data Operations 组第二个） |
-| 输入    | `collection: str` + `query_vector: List[float]`（384 维）+ `top_k: int` |
+| 输入    | `collection: str` + `query_vector: List[float]`（512 维）+ `top_k: int` |
 | 输出    | `List[VectorSearchResult]`——按 similarity_score 降序 |
 | 为什么需要 | RAG 检索链路的存储层一步："找出最相似的几个片段"（Phase 7/8）   |
 | 谁调用它  | 目前无人调用；将来 VectorRetriever（Phase 7）       |
@@ -3485,7 +3485,7 @@ keyword index（内存倒排索引）──→ 不在 T0106 领地，归调用�
 from app.core.vector_store import ChromaVectorStore
 store = ChromaVectorStore()
 store.create_collection("test-kb")
-# 用 add_texts 写入 file_a 5 条 + file_b 3 条（embeddings 需 384 维向量）
+# 用 add_texts 写入 file_a 5 条 + file_b 3 条（embeddings 需 512 维向量）
 n = store.delete_by_file("test-kb", file_id_a)
 assert n == 5
 assert store.get_chunk_count("test-kb") == 3          # 只剩 file_b（get_chunk_count 见 T0108）
@@ -4521,7 +4521,7 @@ get_chunks_by_file → get(where={file_id}, include=[...])    → _to_chunk_reco
 
 ### 9G. Phase 2 将建立在什么基础上（只做高层连接，不提前教授实现）
 
-- Phase 2（T0201–T0202）将产出 **384 维 embedding 向量** → `add_texts` 和 `search` 的向量参数将第一次有真实来源。Phase 1 里这两个参数一直标着"由调用方提供"——届时提供者就是 EmbeddingService。
+- Phase 2（T0201–T0202）将产出 **512 维 embedding 向量** → `add_texts` 和 `search` 的向量参数将第一次有真实来源。Phase 1 里这两个参数一直标着"由调用方提供"——届时提供者就是 EmbeddingService。
 - 模型将采用 **lazy singleton 加载**（不在服务启动时加载，首次使用时才加载并缓存）——这是 README 里 Phase 2 的学习主题，Python 的"单例"怎么写、模型如何缓存，Phase 2 再学。
 - 连接点只有这两个，且都通过 Phase 1 已经写死的接口发生——**Phase 1 的代码一行都不用改**，这就是"先定契约、后接实现"的红利。
 
@@ -4544,4 +4544,4 @@ get_chunks_by_file → get(where={file_id}, include=[...])    → _to_chunk_reco
 
 ---
 
-> **Phase 1 收官**：11 个方法全部真实实现（T0101–T0108），0 个占位。下一步学习 Phase 2 Embedding（T0201/T0202）——届时 `add_texts` 的 embeddings 参数将不再由"调用方提供"，而是 EmbeddingService 生成的 384 维向量。本文档已按 Phase 1 Learning Review 整理：Part 0 全景总览 → 第 1–119 节分 Task 实战 → Part 9 收尾整合。
+> **Phase 1 收官**：11 个方法全部真实实现（T0101–T0108），0 个占位。下一步学习 Phase 2 Embedding（T0201/T0202）——届时 `add_texts` 的 embeddings 参数将不再由"调用方提供"，而是 EmbeddingService 生成的 512 维向量。本文档已按 Phase 1 Learning Review 整理：Part 0 全景总览 → 第 1–119 节分 Task 实战 → Part 9 收尾整合。

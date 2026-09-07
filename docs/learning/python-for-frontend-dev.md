@@ -1955,7 +1955,7 @@ def get_model() -> "SentenceTransformer":
 - **numpy.float32 ≠ Python float**：numpy 数组里的标量是 C 层对象的包装，不是 Python 内置 float——JSON 序列化、Pydantic 校验、ChromaDB 存储都会拒绝或出错。
 - Python 没有类型系统替你在边界挡这些——靠**契约纪律**：`VectorStore.add_texts` 的签名写死 `List[List[float]]`，生产者必须自己转换成对的类型。
 
-**DX-RAG 中在哪里使用**：`encode_chunks` 的返回转换——384 维向量必须以 `List[List[float]]`（纯 Python float）交给 Phase 1 的 `add_texts` / `search`。类型翻译在 embedding 模块边界内完成，numpy 不泄漏到模块外（与 Phase 1 的 distance→similarity 边界翻译同一哲学）。
+**DX-RAG 中在哪里使用**：`encode_chunks` 的返回转换——512 维向量必须以 `List[List[float]]`（纯 Python float）交给 Phase 1 的 `add_texts` / `search`。类型翻译在 embedding 模块边界内完成，numpy 不泄漏到模块外（与 Phase 1 的 distance→similarity 边界翻译同一哲学）。
 
 ### 19.3 `List[List[float]]` —— 嵌套类型标注
 
@@ -1965,7 +1965,7 @@ def get_model() -> "SentenceTransformer":
 def encode_chunks(chunks: List[str]) -> List[List[float]]:
 ```
 
-**怎么读**：`List[X]` 在 Phase 0 学过（≈ `X[]`）。嵌套就是**套娃**：`List[List[float]]` = "list，其中每个元素又是 list，最内层是 float"——外层长度 = 条数（chunk 数），内层长度 = 每条的长度（384 维）。Python 的类型标注运行时同样不检查（Phase 0 学过），这里纯粹是契约文档。
+**怎么读**：`List[X]` 在 Phase 0 学过（≈ `X[]`）。嵌套就是**套娃**：`List[List[float]]` = "list，其中每个元素又是 list，最内层是 float"——外层长度 = 条数（chunk 数），内层长度 = 每条的长度（512 维）。Python 的类型标注运行时同样不检查（Phase 0 学过），这里纯粹是契约文档。
 
 **TypeScript / Node.js 类比**：`number[][]`——完全对应。TS 还能写得更细（如固定长度的 tuple），Python 类型系统做不到，但语义上够用。
 

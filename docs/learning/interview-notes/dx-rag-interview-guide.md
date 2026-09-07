@@ -253,11 +253,11 @@
 
 **面试官**：Embedding 模型为什么选 bge？
 
-**优秀回答**：① **中文能力**：bge 系列在中文语义检索基准（C-MTEB）上表现好，项目是中文企业文档场景；② **小模型低资源**：384 维、约 100MB，CPU 可推理，适合单机本地部署——不需要 GPU 也能跑；③ **离线部署**：模型文件放本地目录随项目分发，不依赖运行时联网下载。权衡是：small 版本语义精度不如 large 版本——v1 的取舍是"够用 + 快"，检索质量不足时第一优化项就是升级模型（但要全库重算向量，所以 SPEC 里模型维度是冻结的）。
+**优秀回答**：① **中文能力**：bge 系列在中文语义检索基准（C-MTEB）上表现好，项目是中文企业文档场景；② **小模型低资源**：512 维、约 100MB，CPU 可推理，适合单机本地部署——不需要 GPU 也能跑；③ **离线部署**：模型文件放本地目录随项目分发，不依赖运行时联网下载。权衡是：small 版本语义精度不如 large 版本——v1 的取舍是"够用 + 快"，检索质量不足时第一优化项就是升级模型（但要全库重算向量，所以 SPEC 里模型维度是冻结的）。
 
 **进一步追问**：模型升级要全库重算，你设计时怎么考虑这个问题的？
 
-**回答方向**：诚实回答：v1 没有模型版本管理——因为 SPEC 冻结了 384 维契约。这是我复盘时记下的已知扩展点：未来要在 metadata 加 embedding_model_version 字段，支持新旧模型共存和渐进式重建。**能主动说出自己设计的边界，比假装完美更可信**。
+**回答方向**：诚实回答：v1 没有模型版本管理——因为 SPEC 冻结了 512 维契约。这是我复盘时记下的已知扩展点：未来要在 metadata 加 embedding_model_version 字段，支持新旧模型共存和渐进式重建。**能主动说出自己设计的边界，比假装完美更可信**。
 
 ---
 
@@ -1002,7 +1002,7 @@
 
 > 状态：T0601/T0602 均为 DONE；Phase Gate Review 于 2026-08-27 裁定 **PHASE_6_PASS**；Phase Learning Review 于 2026-08-27 完成。
 > 代码教材 → [phase-06-keyword-retrieval.md](../phase-06-keyword-retrieval.md)；工程复盘 → [phase-06-engineering-review.md](../engineering-review/phase-06-engineering-review.md)。
-> 诚实边界：Phase 6 的 tokenizer、in-memory inverted index、lazy/dirty lifecycle 与 keyword score 已实现并通过 unit tests；T0701 vector adapter、T0702 service-level hybrid fusion/filter 与 T0703 `retrieve()` facade 已实现并通过各自的 Mock boundary unit tests；真实 bge-small-zh-v1.5 semantic match、metadata 完整贯通、concrete Chroma lifecycle 与真实 upload → ChromaDB → query E2E 仍属于后续 Phase / 集成验收范围。
+> 诚实边界：Phase 6/7历史checkpoint先以unit/Mock boundary验证；Phase 12随后补齐real temp Chroma composition，并以官方固定revision的真实bge-small-zh-v1.5完成512维、norm、singleton与受控中文semantic ranking。更大检索质量benchmark和DeepSeek provider仍未验证。
 
 ### P6-1. 30 秒回答
 
@@ -1086,7 +1086,7 @@
 
 - 已实现：mixed-language tokenizer、per-collection in-memory inverted index、lazy build、dirty/full rebuild、normalized keyword score、public-interface-only build、13 个 Phase 6 unit tests；Phase 7 的 T0701 vector adapter、T0702 chunk_id-based fusion/filter 与 T0703 `retrieve()` facade（empty preflight、shared store、error propagation）也已实现。
 - 已验证但有边界：AC-F009-01～04 的 unit behavior 与 AC-F009-05 的 seam/lifecycle unit path；测试使用 Mock VectorStore。
-- 尚未验证或未实现：真实 bge-small-zh-v1.5 semantic match、upload → ChromaDB → query E2E、T0703 facade 的 concrete-store lifecycle、T0805 route 的真实 provider/Chroma 集成、metadata 完整贯通、incremental/persistent index、multi-process coherence、concurrency lock、量化 retrieval-quality benchmark。
+- 尚未验证或未实现：真实DeepSeek provider回答质量、量化retrieval-quality benchmark、incremental/persistent index、multi-process coherence与concurrency lock。真实BGE受控semantic match、temp Chroma composition及metadata贯通已由Phase 12 remediation补证。
 
 ---
 
@@ -1094,7 +1094,7 @@
 
 > 状态：T0701–T0703 均为 DONE；Phase Gate Review 已关闭为 **`PHASE_7_PASS — CLOSED`**；Phase Learning Review 于 2026-09-03 完成。
 > 代码教材 → [phase-07-vector-retrieval.md](../phase-07-vector-retrieval.md)；工程与 Gate 记录 → [phase-07-engineering-review.md](../engineering-review/phase-07-engineering-review.md)。
-> 诚实边界：当前证据是 service-level unit/composition/static verification；真实 BGE、concrete Chroma、upload → query E2E、semantic quality benchmark 与 metadata 完整贯通仍 deferred。T0701/T0702 的 nested `top_k * 2` over-fetch 是已记录并接受的 v1 minor boundary。
+> 诚实边界：历史Phase 7证据是service-level unit/composition/static verification；Phase 12已补real BGE基础语义与temp Chroma/upload→query composition。统计性semantic quality benchmark与live DeepSeek仍deferred；T0701/T0702的nested `top_k * 2` over-fetch是已记录并接受的v1 minor boundary。
 
 ### P7-1. 30 秒回答
 
@@ -1155,7 +1155,7 @@
 **P7Q9. 50/50 focused 和 78/78 full tests 证明了什么？**
 
 - **推荐回答**：它们证明当前 Python service、QA composition 和 route-related observable behaviors 在 injected/patched boundary 下通过，另有 compileall 证明语法/编译检查通过。
-- **回答边界**：测试没有证明真实 BGE、Chroma persistence、DeepSeek/provider、upload → query E2E、frontend state 或 semantic answer quality；Mocked wiring 不能升级成 real integration。
+- **回答边界**：Phase 12已分别补真实BGE+临时Chroma证据和substituted upload→query composition，但仍没有证明live DeepSeek/provider、统计性semantic answer quality或完整frontend state；SUBSTITUTED wiring不能升级成provider REAL。
 
 **P7Q10. metadata 为什么没有在 T0701 中强行补齐？**
 
@@ -1188,7 +1188,7 @@
 
 - 已实现：T0701 query embedding/vector projection、T0702 `chunk_id` fusion/filter/final Top-K、T0703 shared-store facade、empty preflight 与 missing-error propagation；F011 weights 已收敛为 module-internal `0.3/0.7`。
 - 已验证但有边界：focused `tests.test_qa` **50/50 PASS**、full backend discovery **78/78 PASS**、compileall PASS；Phase 7 assertions 主要是 injected/mock composition boundary，不能升级为真实 semantic integration。
-- 仍 deferred：真实 bge-small-zh-v1.5、concrete Chroma persistence、upload → ChromaDB → query E2E、semantic quality benchmark、metadata 完整贯通、nested over-fetch 的实际成本、frontend integration 与后续并发/可观测性演进。
+- 仍deferred：live DeepSeek、统计性semantic quality benchmark、nested over-fetch实际成本、完整frontend integration与后续并发/可观测性演进。真实BGE基础排序、concrete temp Chroma、upload→query substituted composition与metadata贯通已在Phase 12获得对应级别证据。
 
 ---
 

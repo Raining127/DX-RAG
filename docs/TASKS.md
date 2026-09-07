@@ -1,6 +1,6 @@
 # DX-RAG Implementation Tasks
 
-> **Generated from**: SPEC.md v1.6 (FROZEN)
+> **Generated from**: SPEC.md v1.7 (FROZEN)
 > **Generated on**: 2026-08-11 | **Updated**: 2026-08-15 (v1.5 Rename Metadata Contract Resolution), 2026-08-18 (T0006 Health API coverage correction), 2026-08-27 (v1.6 metadata synchronization)
 > **Status**: READY FOR IMPLEMENTATION
 
@@ -8,7 +8,7 @@
 
 ## 1. Purpose
 
-This document decomposes the frozen SPEC.md v1.6 into dependency-ordered, implementation-ready Tasks suitable for Coding Agents.
+This document decomposes the frozen SPEC.md v1.7 into dependency-ordered, implementation-ready Tasks suitable for Coding Agents.
 
 Each Task defines a single coherent implementation outcome with explicit scope boundaries, dependencies, and verification criteria.
 
@@ -526,7 +526,7 @@ No Task is complete until all Completion Conditions are met.
 
 **Implementation Scope:**
 - `add_texts(collection, chunks, embeddings, metadatas) -> List[str]`
-- Each chunk gets: content, embedding vector (384d), and metadata dict
+- Each chunk gets: content, embedding vector (512d), and metadata dict
 - Metadata must include: chunk_id, file_id, file_name, collection_name, chunk_index, source_file, file_size, upload_time, ingestion_status (per SPEC Section 7.4 / F008 Metadata Schema)
 - Return list of chunk_ids (UUIDs) in same order
 - Ensure all 9 metadata fields are written to ChromaDB
@@ -732,7 +732,7 @@ No Task is complete until all Completion Conditions are met.
 
 **SPEC References:**
 - F007 (Embedding)
-- F007 Detail (Model Info — bge-small-zh-v1.5, 384d, L2 normalize)
+- F007 Detail (Model Info — bge-small-zh-v1.5, 512d, L2 normalize)
 - F007 Detail (Model Loading Strategy — lazy, singleton, no startup load)
 - F007 Detail (Error — model path not found → 500 EMBEDDING_MODEL_ERROR on first use)
 - Section 8.1 (`EMBED_MODEL` config)
@@ -772,11 +772,11 @@ No Task is complete until all Completion Conditions are met.
 
 **Status:** DONE
 
-**Goal:** Implement the `encode()` function that converts text chunks to 384-dimensional L2-normalized vectors.
+**Goal:** Implement the `encode()` function that converts text chunks to 512-dimensional L2-normalized vectors.
 
 **SPEC References:**
 - F007 Detail (Embedding Generation — `model.encode(chunks, normalize_embeddings=True).tolist()`)
-- F007 Determine (AC-F007-01 — 3 chunks → 3 vectors, 384d, L2 norm ≈ 1.0)
+- F007 Determine (AC-F007-01 — 3 chunks → 3 vectors, 512d, L2 norm ≈ 1.0)
 - F007 Detail (Error — empty chunks → empty list, not error)
 
 **Dependencies:**
@@ -785,7 +785,7 @@ No Task is complete until all Completion Conditions are met.
 **Implementation Scope:**
 - Function: `encode_chunks(chunks: List[str]) -> List[List[float]]`
 - Calls `get_model().encode(chunks, normalize_embeddings=True)`
-- Returns list of 384-dim vectors as Python lists
+- Returns list of 512-dim vectors as Python lists
 - Empty input list → return empty list (no error)
 - Large batch: encode all at once (Sentence Transformers handles batching)
 
@@ -798,7 +798,7 @@ No Task is complete until all Completion Conditions are met.
 - `backend/app/services/embedding.py` (same file as T0201)
 
 **Acceptance / Verification:**
-- AC-F007-01: 3 chunks → 3 vectors, each 384 dimensions, L2 norm ≈ 1.0
+- AC-F007-01: 3 chunks → 3 vectors, each 512 dimensions, L2 norm ≈ 1.0
 - Empty list → empty list (not error)
 - Model singleton reused across calls
 
@@ -2676,7 +2676,9 @@ No Task is complete until all Completion Conditions are met.
 
 ### T1201 — Ingestion Pipeline E2E Verification
 
-**Status:** TODO
+**Status:** BLOCKED
+
+**Phase 12 Gate remediation note (2026-09-07):** Original finding `SPEC_CONFLICT` identified that the retained official model `BAAI/bge-small-zh-v1.5` outputs 512 dimensions while the frozen baseline required 384. Product approved retaining the model and updating SPEC/implementation/acceptance to 512. The local model is now verified with REAL evidence (revision `7999e1d3359715c523056ef9478215996d62a620`), but live DashScope/Qwen-VL OCR remains `NOT_AVAILABLE` and unverified; therefore T1201 is not PASS/DONE.
 
 **Goal:** End-to-end verification of the complete ingestion pipeline: upload → parse → clean → chunk → embed → store, across all supported formats.
 
@@ -2731,7 +2733,9 @@ No Task is complete until all Completion Conditions are met.
 
 ### T1202 — Retrieval + QA Pipeline E2E Verification
 
-**Status:** TODO
+**Status:** BLOCKED
+
+**Phase 12 Gate remediation note (2026-09-07):** Original finding `SPEC_CONFLICT` identified the 384-vs-512 BGE contract mismatch. The approved decision keeps `BAAI/bge-small-zh-v1.5` and aligns the contract to 512. REAL local BGE + isolated Chroma semantic ranking now passes at the recorded revision, but live DeepSeek answer grounding, history/pronoun behavior, provider compatibility, and prompt-injection behavior remain `NOT_AVAILABLE` and unverified; therefore T1202 is not PASS/DONE.
 
 **Goal:** End-to-end verification of the retrieval and QA pipeline: keyword search, vector search, hybrid fusion, context assembly, LLM answer generation, and source citation.
 
@@ -2783,7 +2787,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T1203 — File Management & Security Cross-Feature Verification
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Verify file management operations, path traversal security, and cross-feature interactions (upload → list → preview → delete → re-upload).
 
@@ -2829,7 +2833,9 @@ No Task is complete until all Completion Conditions are met.
 
 ### T1204 — Full SPEC Acceptance Criteria Audit
 
-**Status:** TODO
+**Status:** BLOCKED
+
+**Phase 12 Gate remediation note (2026-09-07):** The original Gate `SPEC_CONFLICT` is remediated by the approved 512-dimensional BGE baseline, and BGE-specific evidence is now REAL. The full audit cannot be PASS while live DashScope OCR and live DeepSeek acceptance remain `NOT_AVAILABLE`; substituted provider evidence does not satisfy those literal acceptance boundaries. T1204 remains BLOCKED pending separately authorized provider verification.
 
 **Goal:** Complete audit of all mandatory Acceptance Criteria from SPEC Section 5 (Feature ACs) and Section 12 (Cross-feature ACs) to confirm every AC has a passing verification.
 
@@ -3090,14 +3096,14 @@ No v1 implementation Tasks exist for any of these items.
 - [x] File deletion/rollback behaviors have verification coverage (T0503, T1203)
 - [x] Security/path traversal behavior has verification coverage (T0501, T1203)
 - [x] All Tasks initially have Status = TODO
-- [x] SPEC.md is FROZEN (v1.6, Blocking Questions = 0)
-- [x] No Task requires modifying SPEC behavior
+- [x] SPEC.md is FROZEN (v1.7, Blocking Questions = 0)
+- [x] Authorized v1.7 correction resolved the original BGE `SPEC_CONFLICT`: retain `BAAI/bge-small-zh-v1.5`, use its official 512-dimensional output contract
 - [x] Deferred items listed in Section 22, no active Tasks for them
 
 ---
 
 > **Document End**
 >
-> **Generated from**: SPEC.md v1.6 (FROZEN, updated 2026-08-24)
+> **Generated from**: SPEC.md v1.7 (FROZEN, updated 2026-09-07)
 > **Task Count**: 55 implementation Tasks across 13 phases
 > **Status**: READY FOR IMPLEMENTATION

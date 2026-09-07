@@ -36,6 +36,9 @@ data/
 *.sqlite3
 chroma_db/
 
+# Local model snapshots (downloaded separately; never commit weights)
+backend/models/bge-small-zh-v1.5/
+
 # Jupyter
 .ipynb_checkpoints/
 

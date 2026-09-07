@@ -2373,3 +2373,11 @@ Phase Learning Review 完成。当前准确表述是：**Phase 11 四个 feature
 证据必须分层表述：production build 为 REAL/BUILD；Task smoke 部分使用真实 browser-to-FastAPI；F-1 focused re-review 为真实 production Next UI + isolated in-memory MOCKED API。Error-boundary crash injection、real QA success、slow-response race、全面 overlay/focus/a11y 与 repository-owned frontend regression suite 仍为 `NOT_AVAILABLE / DEFERRED`；并行 delete projection race 是已接受的 v1 MINOR boundary。
 
 该 Learning Review 当轮只更新 Technical Learning、README、Project Map 与 Interview Guide；未修改 `page.tsx`、`error.tsx`、components、API client、CSS、SPEC 或 TASKS，也未启动 Phase 12。Phase 11 Engineering Review 后续已于 2026-09-07 独立完成；仍未 commit/push。
+
+---
+
+## 79. 后续 Phase 12 证据同步（T1204，2026-09-07）
+
+本文件前文保留Phase 11各Learning Pass/Gate当时的证据边界，不倒写成“当时已验证”。T1204现已通过真实Next.js + Uvicorn/FastAPI browser path补齐六个focused runtime场景：四panel无刷新切换；QA Markdown、sources展开与`0.300`显示；KB切换清空两条history；empty-KB 409提示；deterministic 500与真实backend断开后的recovery UI；51 MiB文件前端拒绝、queue为空且backend文件数不变。当前production build与`validateUploadFile` runtime 5/5也PASS。
+
+准确边界仍是：browser backend替代SentenceTransformer model与DeepSeek answer/error，故这不是live-provider质量证书；FileManager preview/delete、KB CRUD、upload success/warning、render-crash ErrorBoundary、完整a11y/portal/focus与repository-owned browser regression suite仍未被T1204关闭。T1204 task-level audit PASS也不等于Phase 12 Gate PASS。完整fidelity与复核结果见[Phase 12 Technical Learning](./phase-12-integration-acceptance.md#446-browser-path补的是reacthttp行为不补provider质量)。

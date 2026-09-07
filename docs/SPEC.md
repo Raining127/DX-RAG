@@ -1,8 +1,8 @@
 # DX-RAG Development Specification (SPEC.md)
 
-> **版本**: v1.6
+> **版本**: v1.7
 > **状态**: **FROZEN**
-> **最后更新**: 2026-08-24
+> **最后更新**: 2026-09-07
 > **来源**: 基于《DX-RAG 项目说明书》及 Phase 1 Gap Analysis 决策结果整理，经 SPEC Freeze 修订
 > **定位**: Coding Agent 的唯一开发规格入口。所有实现判断以本文档为准。Blocking Open Questions = 0。
 
@@ -68,7 +68,7 @@
 - 逐页 PDF 处理（原生文本提取 + 图片页 Qwen-VL fallback）
 - 文本清洗（空行去除、编码统一）
 - 文本切分（Markdown 标题切分 + 递归字符切分，chunk_size=800, chunk_overlap=120）
-- BGE-small-zh-v1.5 向量嵌入（384 维，手动生成后写入 ChromaDB）
+- BGE-small-zh-v1.5 向量嵌入（512 维，手动生成后写入 ChromaDB）
 - 混合检索（关键词 30% + 向量 70%，统一归一化到 [0,1] 后加权融合）
 - DeepSeek Chat 答案生成（temperature=0.2, max_tokens=2048, stream=false）
 - 对话历史（前端维护，每次请求携带最近 20 条，后端不持久化）
@@ -220,7 +220,7 @@ QA Service
 | Backend | PyMuPDF | ^1.27.2 | PDF native text extraction + page rendering for OCR fallback |
 | Backend | OpenAI Python | ^1.1.0 | LLM API client (DeepSeek-compatible) |
 | Backend | dashscope | (latest compatible) | Qwen-VL API client |
-| Embedding | bge-small-zh-v1.5 | - | Chinese semantic embedding (384d) |
+| Embedding | bge-small-zh-v1.5 | - | Chinese semantic embedding (512d) |
 | LLM | DeepSeek Chat | - | Answer generation |
 | Vision | Qwen-VL-Plus | - | Image PDF OCR |
 
@@ -870,7 +870,7 @@ KB Rename 由业务层（KB Management API / Service）与存储层（VectorStor
 | **为什么存在** | 文本需要向量化才能进行语义相似度检索 |
 | **用户** | 系统内部（Ingest Service 管道） |
 | **输入** | chunks (List[str]) |
-| **输出** | embeddings (List[List[float]]), 每个向量 384 维 |
+| **输出** | embeddings (List[List[float]]), 每个向量 512 维 |
 | **包含** | 模型懒加载、单例缓存、L2 归一化 |
 | **不包含** | 多模型支持、GPU 加速配置、动态模型切换 |
 
@@ -879,7 +879,7 @@ KB Rename 由业务层（KB Management API / Service）与存储层（VectorStor
 **模型信息**:
 - 模型: `bge-small-zh-v1.5`
 - 本地路径: `models/bge-small-zh-v1.5/`
-- 维度: 384
+- 维度: 512
 - 归一化: L2 normalize (`normalize_embeddings=True`)
 
 **模型加载策略**:
@@ -907,7 +907,7 @@ embeddings = model.encode(chunks, normalize_embeddings=True).tolist()
 **AC-F007-01: 单次 Embedding 生成**
 - **Given**: 3 个 chunks
 - **When**: 系统生成 embeddings
-- **Then**: 返回 3 个向量，每个 384 维，已 L2 归一化（L2 norm ≈ 1.0）
+- **Then**: 返回 3 个向量，每个 512 维，已 L2 归一化（L2 norm ≈ 1.0）
 
 **AC-F007-02: 模型缓存**
 - **Given**: 模型首次加载后
@@ -2323,7 +2323,7 @@ ChunkRecord {
     collection_name: str   # Parent collection
     chunk_index: int       # 0-based sequence number within the file (not an ID)
     content: str           # Chunk text (≤ max_chunk_size)
-    embedding: List[float] # 384-dim L2-normalized vector (stored in ChromaDB)
+    embedding: List[float] # 512-dim L2-normalized vector (stored in ChromaDB)
     metadata: {
         chunk_id: str
         file_id: str
@@ -2835,6 +2835,7 @@ Coding Agent 在完成一个 Feature / Task 时，必须满足以下条件：
 > **v1.4 Patch**: 检索分数术语标准化（similarity_score/vector_score/keyword_score/final_score/relevance_score 分层边界固化）、Relevance Filter 排序与 AC-F011-02 修正、重试语义明确（初始请求 + 最多 2 次重试 = 3 次总尝试）、File API 身份统一为 file_id、File Preview chunk-based 语义澄清（含 overlap artifact 说明）、移除 UNSUPPORTED_PREVIEW_FORMAT、所有剩余 [PROPOSAL] 行为项固化为明确决策、KB 名称验证 canonical regex 固化、新增 File Preview AC 和 INVALID_FILE_NAME Security AC、配置文档措辞修正、API 错误契约按操作明确化。Blocking Open Questions 保持 0。
 > **v1.5 Patch**: Rename Metadata Contract Resolution — 澄清 `VectorStore.rename_collection` 语义，使 KB Rename 可在不暴露 Chroma private API、不新增 VectorStore public method 的前提下更新 persisted chunk 的 collection 引用（Chroma Collection 重命名 + chunk metadata 级联）。Blocking Open Questions 保持 0。
 > **v1.6 Patch**: KB Name Naming-Compatibility Resolution — F001 canonical regex 收紧为 `^[A-Za-z0-9][A-Za-z0-9_-]{1,48}[A-Za-z0-9]$`（移除中文字符允许；仍为 3-50 字符、字母/数字开头结尾），使 KB 名称与 ChromaDB Collection 名称存储约束一致。产品决策：v1 不引入 KB 名称→存储名称映射层，不因 ChromaDB 支持 `.` 而新增 `.` 支持。Blocking Open Questions 保持 0。
+> **v1.7 Patch**: BGE Embedding Dimension Contract Resolution — 原冻结规格将 `BAAI/bge-small-zh-v1.5` 写为 384 维，与官方模型真实 512 维输出冲突。经产品授权，保留该 BAAI 模型不变，将 F007、向量数据合同与验收基线统一为 512 维；不引入替代模型。已有非 512 维向量数据必须在受控迁移中重建，不得混写同一 Chroma collection。Blocking Open Questions 保持 0。
 
 ---
 
@@ -2865,19 +2866,19 @@ Coding Agent 在完成一个 Feature / Task 时，必须满足以下条件：
 
 ### Summary
 
-| Metric | v1.2 (Freeze) | v1.3 (FROZEN) | v1.4 (FROZEN) | v1.5 (FROZEN) |
-|--------|:---:|:---:|:---:|:---:|
-| Features with ⚠️ | 0 | 0 | 0 | **0** |
-| Total Open Questions | 0 Blocking, 3 Deferred | 0 Blocking, 3 Deferred | 0 Blocking, 3 Deferred | **0 Blocking, 3 Deferred** |
-| P0 Blocking Questions | 0 | 0 | 0 | **0** |
-| P1 Blocking Questions | 0 | 0 | 0 | **0** |
+| Metric | v1.2 (Freeze) | v1.3 (FROZEN) | v1.4 (FROZEN) | v1.5 (FROZEN) | v1.6 (FROZEN) | v1.7 (FROZEN) |
+|--------|:---:|:---:|:---:|:---:|:---:|:---:|
+| Features with ⚠️ | 0 | 0 | 0 | 0 | 0 | **0** |
+| Total Open Questions | 0 Blocking, 3 Deferred | 0 Blocking, 3 Deferred | 0 Blocking, 3 Deferred | 0 Blocking, 3 Deferred | 0 Blocking, 3 Deferred | **0 Blocking, 3 Deferred** |
+| P0 Blocking Questions | 0 | 0 | 0 | 0 | 0 | **0** |
+| P1 Blocking Questions | 0 | 0 | 0 | 0 | 0 | **0** |
 
 ---
 
 > **Document End**
 >
-> **版本**: v1.6
+> **版本**: v1.7
 > **状态**: **FROZEN**
-> **最后更新**: 2026-08-24 (v1.6 Patch: KB Name Naming-Compatibility Resolution — F001 canonical regex 收紧为 `^[A-Za-z0-9][A-Za-z0-9_-]{1,48}[A-Za-z0-9]$`，移除中文字符允许，使 KB 名称与 ChromaDB Collection 名称存储约束一致；v1 不引入名称映射层，不新增 `.` 支持)
-> **生成依据**: 《DX-RAG 项目说明书》v1.0 (2026年5月) + Phase 1 Gap Analysis + SPEC Freeze 13 项决策 (v1.2) + SPEC Freeze Patch 8 项修复 (v1.3) + SPEC Freeze Patch 14 项修复 (v1.4) + SPEC Freeze Patch Rename Metadata Contract Resolution (v1.5) + SPEC Freeze Patch KB Name Naming-Compatibility Resolution (v1.6)
-> **下一步**: Blocking Open Questions = 0。SPEC 保持 FROZEN（v1.6）。
+> **最后更新**: 2026-09-07 (v1.7 Patch: BGE Embedding Dimension Contract Resolution — 保留 `BAAI/bge-small-zh-v1.5`，将错误的 384 维合同统一更正为官方真实输出 512 维)
+> **生成依据**: 《DX-RAG 项目说明书》v1.0 (2026年5月) + Phase 1 Gap Analysis + SPEC Freeze 13 项决策 (v1.2) + SPEC Freeze Patch 8 项修复 (v1.3) + SPEC Freeze Patch 14 项修复 (v1.4) + SPEC Freeze Patch Rename Metadata Contract Resolution (v1.5) + SPEC Freeze Patch KB Name Naming-Compatibility Resolution (v1.6) + SPEC Freeze Patch BGE Embedding Dimension Contract Resolution (v1.7)
+> **下一步**: Blocking Open Questions = 0。SPEC 保持 FROZEN（v1.7）。

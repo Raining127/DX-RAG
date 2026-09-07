@@ -296,7 +296,7 @@ T0703 的三个 wiring tests 验证：
 
 测试类名 `RetrievalIntegrationTests` 不能改变证据等级：由于四个 constructor/依赖都被 patch 或替换，它们仍是 **Mocked composition tests**，不是 literal upload → ChromaDB → query integration。
 
-因此当前 verification classification 是 **unit-tested at injected/patched dependency boundary**，并有 T0805 的 route-level `TestClient` evidence。T0702 的 AC-F011-01～04、T0703 的 facade behavior、T0804 的 service orchestration behavior 与 T0805 的 request/status/envelope mapping 均有对应的 observable assertion，但测试没有证明 T0602/T0701/T0702 的真实串接、真实 Chroma persistence、真实 metadata、真实 bge-small-zh-v1.5、literal upload → query、真实 DeepSeek 或完整 HTTP QA integration。上述内容均为 **DEFERRED / not independently verified**，不能写成 real E2E PASS。
+因此在Phase 7 review checkpoint，verification classification是 **unit-tested at injected/patched dependency boundary**，并有T0805的route-level `TestClient` evidence；当时尚未证明真实Chroma/BGE/DeepSeek或literal upload→query。Phase 12后续已补REAL BGE基础证据与temp Chroma composition，但live DeepSeek仍`NOT_AVAILABLE`；不得把历史checkpoint或substituted provider evidence写成all-real E2E PASS。
 
 ## 8. Known Gaps & Pending Questions
 
@@ -372,7 +372,7 @@ The weights are fixed internal v1 constants. They are not caller-, runtime-, con
 - `BLOCKER`: 0.
 - `MAJOR`: 0.
 - Nested retrieval over-fetch remains `MINOR` with disposition `ACCEPTED_V1_BOUNDARY`; it is not fixed or escalated here.
-- Real BGE semantic retrieval, real ChromaDB retrieval E2E, and real semantic empty-KB verification remain `DEFERRED / T1202`.
+- Phase 7当时deferred的real Chroma composition已由T1202补证，REAL BGE受控semantic retrieval已由Phase 12 remediation补证；更大benchmark与live DeepSeek仍未完成。
 - The focused F011 closure did not require a full Phase 7 Gate re-review.
 
 ### 10.5 Closure state

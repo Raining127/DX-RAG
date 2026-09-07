@@ -8,6 +8,8 @@
 
 T0901、T0902 与 T0903 组成 Phase 9 的三个 File Management API slice：T0901 暴露 `VectorStore.get_files()` 派生列表，T0902 从 persisted chunks 重建 preview，T0903 删除 raw file、ChromaDB chunks/vectors/metadata 并 invalidate keyword index。列表的 source of truth 是 chunk metadata 的 `file_id` 聚合，preview 的 source of truth 是该 `file_id` 的 persisted chunk content，delete 则以 `(collection_name, file_id)` 定位并跨三个存储目标清理。[PROJECT FACT]
 
+> **T1203 后续证据同步（2026-09-07）**：Phase 12 已用真实 multipart upload、真实 temp filesystem、真实 ChromaDB 与真实 keyword cache贯通 upload→list→persisted preview→cascade delete→same-name re-upload，并以两个真实 KB 验证同名隔离；三种 SPEC traversal filename 均在 raw/Chroma 零副作用下被拒绝。T1203 matrix 43/43、focused files/upload `unittest` 18/18、完整 backend 78/78 PASS。仅 SentenceTransformer model 被替代，frontend 仅做 static source wiring；mid-cascade fault compensation、扩展 path fuzz/symlink 与 browser runtime 仍未验证。详见 [Phase 12 Technical Learning](./phase-12-integration-acceptance.md#43-t1203--file-management--security-cross-feature-verification)。本文后续“待 T1203”的文字若属于历史 Task/Review checkpoint，按当时证据保留；当前边界以本同步说明为准。[PROJECT FACT]
+
 ## 0. 三层文档边界
 
 | Layer | Canonical home | 本 Phase / 文档怎么处理 |
@@ -130,7 +132,7 @@ DELETE /api/files/{file_id}?collection_name=xxx
 | Keyword-index boundary | `invalidate_keyword_index(collection)` / T0602 seam | T0903 在 Chroma 删除后标记该 collection index dirty；下次 keyword search 再 rebuild |
 | Schema boundary | `FileItem`、`FileListResponse`、`FilePreviewResponse`、`FileDeleteResponse` | 把 list/preview/delete 的内部结果变成受 Pydantic response model 约束的 JSON |
 | HTTP downstream | `app.main` 的 `/api` prefix + global `AppError` handler | 对外形成 `/api/files`、`/api/files/{file_id}/preview`、`DELETE /api/files/{file_id}` 与统一错误 envelope |
-| Future consumers | Phase 10/11 frontend、T1203 integration verification | 消费列表、诊断性 preview 与删除结果；跨 feature lifecycle 仍待 T1203 |
+| Downstream consumers / verification | Phase 10/11 frontend、T1203 integration verification | frontend消费列表、诊断性preview与删除结果；T1203已完成真实跨feature lifecycle复验，browser runtime仍待后续 |
 
 T0901 在查询路径之外增加了一条“管理 read path”：它读取已经落盘的文件级派生视图，不改变向量、chunk 或 keyword index。存储层的 `get_files()` 已在 T0107 完成，T0901 的增量是 API adapter 和 route registration，而不是重新实现 storage aggregation。[PROJECT FACT]
 
@@ -749,11 +751,11 @@ Phase 9 Engineering Review 已独立完成；本节不复制完整 ADR，详细 
 |---|---|---|
 | Chunk-based file preview | 已从 `get_chunks_by_file()` 按 `chunk_index` 拼接，最多 5000 字符，不重解析原文件；这是诊断性 preview，overlap/heading artifacts 可能保留 | `[PROJECT FACT]`，T0902 DONE |
 | Cascade file delete | 已按 `file_id` 删除 raw file、Chroma chunks/vectors/metadata，并 invalidate keyword index；操作不可逆 | `[PROJECT FACT]`，T0903 DONE |
-| Cross-feature verification | upload → list → preview → delete → re-upload、跨 KB 隔离、安全路径验证 | `[FUTURE]`，T1203 |
+| Cross-feature verification | upload → list → preview → delete → re-upload、跨 KB 隔离、三种SPEC安全路径 | `[PROJECT FACT]`，T1203 43/43 PASS；仅model替代 |
 | Pagination / sorting contract | 当前无分页，文件顺序不构成独立 API contract | `[FUTURE]`，需先更新 SPEC/API 设计 |
 | Metadata read amplification | 每次 `get_files()` 全量读取 chunk metadata | `[FUTURE]`，规模证据出现后再评估索引或 metadata store |
 | Frontend File Manager | 当前只有 HTTP list slice，没有列表 UI、loading/empty/error 状态 | `[FUTURE]`，Phase 10–11 |
-| Mid-cascade failure / compensation | 磁盘、ChromaDB、keyword index 之间没有共享 transaction；当前 route 不做自动补偿 | `[FUTURE]`，需独立 Engineering Review / T1203 证据 |
+| Mid-cascade failure / compensation | 磁盘、ChromaDB、keyword index 之间没有共享 transaction；当前 route 不做自动补偿 | `[FUTURE]`，需独立 Engineering Review / fault-injection证据；T1203未覆盖 |
 
 ## 12. Phase Learning Review 收口（2026-09-04）
 
@@ -824,7 +826,7 @@ Phase 9 的三个 Task 已完成独立 Task Learning Pass，且 Phase Gate Revie
 - **PROJECT-WIDE**：backend full unittest discovery 为 **78/78 PASS**；`compileall` 通过。全量通过说明当前 checkout 的测试集合没有回归，但不改变单项测试的 Mocked 性质。
 - **SUBSTITUTED**：Gate Review 另有一次 concrete smoke，使用真实 FastAPI route、真实 ChromaDB、真实 filesystem 与真实 keyword index，但通过手工写入 persisted chunks 构造 fixture；它证明 list/preview/delete 在已持久化数据上的 concrete seam 和清理结果，不是 literal upload → parse → embed → ingest → list → preview → delete → re-upload E2E。
 - **NOT_AVAILABLE**：当前环境没有 `pytest` 模块，因此没有把 pytest 当作通过证据，也没有临时安装依赖。
-- **DEFERRED**：T1203 继续负责跨 feature upload→list→preview→delete→re-upload、path traversal/absolute/symlink、cross-KB isolation 与更完整的删除验证；mid-cascade compensation 仍是 future engineering work。[PROJECT FACT]
+- **SUBSEQUENT EVIDENCE**：T1203 已完成跨 feature upload→list→preview→delete→re-upload、SPEC点名的三种 path traversal 与 cross-KB isolation；matrix 43/43 PASS。absolute/encoded/Unicode/symlink扩展矩阵、browser runtime与mid-cascade compensation仍是 future engineering work。[PROJECT FACT]
 
 “真实”在这里必须拆开说：`SUBSTITUTED` smoke 比纯 route mock 更接近 concrete storage，但它仍然绕过了 upload/ingestion pipeline；这正是 evidence label 要防止的 overclaim。[ENGINEERING KNOWLEDGE]
 
@@ -853,7 +855,7 @@ Phase 9 的三个 Task 已完成独立 Task Learning Pass，且 Phase Gate Revie
 
 ### 12.7 收口结论
 
-Phase 9 Learning Review 完成。当前可对外准确表述为：**文件列表、persisted-chunk preview、按 `file_id` 的级联删除 API 已实现并通过 Phase Gate；路由级 contract 与一条绕过 ingestion 的 concrete substituted smoke 已验证；完整跨 feature E2E、路径安全矩阵、跨 KB 隔离和 partial-failure compensation 仍由 T1203 / 后续 engineering decision 负责。**[PROJECT FACT]
+Phase 9 Learning Review 的历史结论已完成；结合后续 T1203，当前可对外准确表述为：**文件列表、persisted-chunk preview、按 `file_id` 的级联删除 API 已实现并通过 Phase 9 Gate；路由级 contract、绕过 ingestion 的 concrete smoke，以及真实 upload→list→preview→delete→re-upload、三种SPEC路径拒绝和跨KB隔离均已有证据。partial-failure compensation、扩展path fuzz/symlink与browser runtime仍待后续 engineering decision。**[PROJECT FACT]
 
 ## 自测题与动手练习
 
@@ -924,9 +926,10 @@ Phase 9 read model
   Lengths     total_chars = full persisted join; preview_chars = returned content length
   Semantics   diagnostic persisted-chunk view; overlap/heading artifacts may remain
   Ownership   storage reads/deletes; API validates/assembles/orchestrates/serializes
-  Evidence    3 list + 4 preview + 3 delete route-level MOCKED tests; one concrete SUBSTITUTED smoke with real FastAPI/Chroma/filesystem/keyword; no upload-to-reupload E2E
+  P9 close    3 list + 4 preview + 3 delete MOCKED tests; one concrete SUBSTITUTED smoke; upload-to-reupload E2E当时尚无
   Semantics   delete is irreversible; keyword index invalidation marks dirty for next rebuild
-  Deferred    cross-feature E2E (T1203), path-safety/failure compensation tests, pagination/UI, exact rendering
+  Subsequent  T1203 cross-feature E2E + literal path matrix + cross-KB isolation: 43/43 PASS
+  Deferred    extended path/symlink + failure compensation, pagination/browser UI, exact rendering
 ```
 
 > **T0901 Learning Pass 记录（2026-09-03）**：本章记录了 `GET /api/files` 的 route contract、collection preflight、T0107 派生 file view、Pydantic response boundary、router registration、empty/missing distinction 与 3 个 route-level Mocked tests。

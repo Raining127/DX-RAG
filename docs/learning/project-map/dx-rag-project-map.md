@@ -4,9 +4,9 @@
 > 不深入代码细节——代码级的逐行精读请阅读对应的 `phase-XX-*.md` 学习笔记，工程决策分析请阅读 `engineering-review/`。
 
 **当前状态快照**（以 `docs/TASKS.md` 与最新 Gate verdict 为准，2026-09-07）：
-- SPEC.md v1.6 **FROZEN**，Blocking Questions = 0
+- SPEC.md v1.7 **FROZEN**，Blocking Questions = 0（保留`BAAI/bge-small-zh-v1.5`，官方输出合同统一为512维）
 - Phase 0–5 ✅ DONE（工程地基 + 向量存储 + 嵌入 + 文档管道 + 知识库管理 API + 文件上传 API；Phase 5：Gate Review 裁定 PHASE_5_FAIL → F-1/F-2 修复完成 → Re-review 待执行；Learning Pass / ER / Learning Review 已完成）
-- Phase 6 ✅ COMPLETE（T0601–T0602 DONE；PHASE_6_PASS；Learning Review 完成，2026-08-27）；Phase 7 ✅ COMPLETE（T0701–T0703 DONE；`PHASE_7_PASS — CLOSED`；Engineering Review 与 Phase Learning Review 完成，2026-09-03）；Phase 8 ✅ COMPLETE（T0801–T0805 DONE；`PHASE_8_PASS — READY_FOR_PHASE_9`；Learning Review 完成 2026-09-02；Engineering Review 完成 2026-09-04）；Phase 9 ✅ COMPLETE（T0901–T0903 DONE；`PHASE_9_PASS — READY_FOR_PHASE_10`；Engineering Review 与 Phase Learning Review 完成，2026-09-04）；Phase 10 ✅ COMPLETE（T1001–T1002 DONE；`PHASE_10_PASS — READY_FOR_PHASE_11`；Engineering Review 与 Phase Learning Review 完成，2026-09-04）；Phase 11 ✅ COMPLETE（T1101–T1105 DONE；`PHASE_11_PASS — READY_FOR_PHASE_12`；Phase Learning Review 与 Engineering Review 完成 2026-09-07）；Phase 12 ⬜ TODO
+- Phase 6 ✅ COMPLETE（T0601–T0602 DONE；PHASE_6_PASS；Learning Review 完成，2026-08-27）；Phase 7 ✅ COMPLETE（T0701–T0703 DONE；`PHASE_7_PASS — CLOSED`）；Phase 8 ✅ COMPLETE（T0801–T0805 DONE；`PHASE_8_PASS — READY_FOR_PHASE_9`）；Phase 9 ✅ COMPLETE（T0901–T0903 DONE；`PHASE_9_PASS — READY_FOR_PHASE_10`）；Phase 10 ✅ COMPLETE（T1001–T1002 DONE；`PHASE_10_PASS — READY_FOR_PHASE_11`）；Phase 11 ✅ COMPLETE（T1101–T1105 DONE；`PHASE_11_PASS — READY_FOR_PHASE_12`）；Phase 12 🔴 GATE REMEDIATION（原`PHASE_12_FAIL — FIX_REQUIRED`；T1201/T1202/T1204 BLOCKED，T1203 DONE；BGE冲突已修复，providers仍未验收）
 
 ---
 
@@ -46,7 +46,7 @@ v1 的部署假设是**本地/可信内网**（无认证体系），所以典型
 
 **普通关键词搜索**：`AI 的子领域` 的字符和 `机器学习是人工智能的分支` 没有任何字面重合 → 命中 0 条。失败。
 
-**向量语义搜索（SPEC 目标行为）**：Embedding 模型应理解 `AI ≈ 人工智能`、`子领域 ≈ 分支` → 两个句子在 384 维向量空间里距离很近 → 命中。T0701 当前已实现 query embedding → `VectorStore.search()` → `vector_score` adapter，但真实 bge-small-zh-v1.5 + Chroma semantic match 仍 DEFERRED。
+**向量语义搜索（SPEC 目标行为）**：Embedding 模型应理解 `AI ≈ 人工智能`、`子领域 ≈ 分支` → 两个句子在 512 维向量空间里距离很近 → 命中。T0701 已实现 query embedding → `VectorStore.search()` → `vector_score` adapter；Phase 12 remediation 已用真实 bge-small-zh-v1.5 + 临时 Chroma 验证该中文同义查询将目标文档排在第一位。
 
 普通搜索的局限可以归纳为：
 
@@ -140,7 +140,7 @@ Ingest Service（Phase 3 ✅ 已实现）:
       └─ 多格式 → 纯文本字符串
     → clean_text：去空行、去行首尾空格
     → chunk_text：Markdown 标题切分 + 递归字符切分（800 字符 / 120 重叠）
-    → encode_chunks：bge-small-zh-v1.5 → 384 维 L2 归一化向量
+    → encode_chunks：bge-small-zh-v1.5 → 512 维 L2 归一化向量
     → VectorStore.add_texts：chunks + embeddings + 9 字段 metadata → ChromaDB
     │
     ▼
@@ -218,7 +218,7 @@ Clean（去行首尾空格、去空行、合并连续空白行）
     ↓
 Chunk（Markdown 标题切分 + 递归切分；800 字符 / 120 重叠；每个 chunk 一个 UUID）
     ↓
-Embedding（bge-small-zh-v1.5 → 384 维，L2 归一化）
+Embedding（bge-small-zh-v1.5 → 512 维，L2 归一化）
     ↓
 Vector Store（ChromaDB collection = 知识库；content + vector + 9 字段 metadata）
     ↓
@@ -284,7 +284,7 @@ Answer + Citation（answer 不含内联引用标记；sources 由后端从检索
 |------|------|
 | 解决什么问题 | 文本无法直接做数学运算，必须转成向量才能计算语义相似度 |
 | 输入 | chunks（List[str]） |
-| 输出 | 384 维 L2 归一化向量（List[List[float]]），懒加载单例模型 |
+| 输出 | 512 维 L2 归一化向量（List[List[float]]），懒加载单例模型 |
 | 为什么存在 | 语义搜索的前提。没有 Embedding，VectorStore 里存的只是字符串，"AI 的子领域"永远找不到"机器学习的分支" |
 
 ### Phase 3 — Document Processing Pipeline（文档处理管道）✅ DONE
@@ -361,14 +361,16 @@ Answer + Citation（answer 不含内联引用标记；sources 由后端从检索
 | 输出 | 四个功能组件 + persistent panels + Home-owned shared collection source + feature-local transaction state + selection/history reconciliation |
 | 为什么存在 | Phase 10 只建边界与骨架；Phase 11 把 API contracts 变成可操作 UI，并用 F-1 Gate remediation 收口跨组件 freshness |
 
-### Phase 12 — Integration & Acceptance（集成验收）⬜ TODO
+### Phase 12 — Integration & Acceptance（集成验收）🔴 GATE REMEDIATION
 
 | 维度 | 内容 |
 |------|------|
 | 解决什么问题 | 各 Phase 单元验证通过 ≠ 系统整体工作——需要跨 Feature 的端到端验证 |
-| 输入 | 全部 11 个 Phase 的产出 |
-| 输出 | 摄取 E2E 验证 + 检索/QA E2E 验证 + 文件管理/安全验证 + 全量 AC 审计报告 |
-| 为什么存在 | SPEC Section 12 的 60+ 条跨 Feature AC 是"系统算完成"的最终判据 |
+| 输入 | Phase 0–11 的全部实现产出 |
+| 输出 | 三条isolated broad probes、REAL BGE专项probe与T1204审计账本；T1201/T1202/T1204因live provider evidence缺失保持BLOCKED |
+| 为什么存在 | SPEC Section 5的65次Feature AC + Section 12的39次Cross-feature AC共同构成mandatory audit分母；去重后为85个ID |
+
+> 当前证据：REAL BGE revision `7999e1d3359715c523056ef9478215996d62a620`已通过完整性、512维、norm、singleton和临时Chroma中文同义排序4/4；T0503/T1201/T1202/T1203/T1204 broad probes分别56/56、81/81、46/46、43/43、29/29，完整backend 81/81。Broad probes中的Qwen/DeepSeek仍是SUBSTITUTED，live DashScope/DeepSeek均NOT_AVAILABLE且未调用；因此原100% audit声明已撤回，Phase Gate仍FAIL。详见 [Phase 12 Technical Learning](../phase-12-integration-acceptance.md)。
 
 ### 4.1 依赖全景
 
