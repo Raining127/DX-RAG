@@ -327,17 +327,23 @@ Phase 只有取得标准化 `PHASE_X_PASS — READY_FOR_PHASE_Y` verdict 后，�
 
 ### Phase 11 — Frontend Features
 
-**状态**: ⬜ NOT STARTED
+**状态**: ✅ COMPLETE（T1101–T1105 DONE；`PHASE_11_PASS — READY_FOR_PHASE_12`；Phase Learning Review 与 Engineering Review 完成 2026-09-07）
 
-**Tasks**: T1101–T1105
+**Tasks**: T1101 ✅ | T1102 ✅ | T1103 ✅ | T1104 ✅ | T1105 ✅
 
-**未来主要学习主题**:
+**当前学习产物**:
 
-- KnowledgeBaseManager 组件（loading/empty/success/error 四态）
-- File Upload 组件（Ant Design Upload.Dragger + 前端校验）
-- QA Panel 组件（React Markdown 渲染 + 对话历史管理）
-- File Manager 组件（表格 + 预览 + 删除）
-- Cross-component patterns（KB 切换清空 history 等）
+- 📖 **Technical Learning**: [phase-11-frontend-features.md](./phase-11-frontend-features.md)（Task Learning Pass + Phase Learning Review：一条 shared collection spine、四个 feature-local state machines、selection reconciliation、stale-commit guards、error layers 与诚实 evidence ledger）
+- 🔍 **Engineering Review**: [engineering-review/phase-11-engineering-review.md](./engineering-review/phase-11-engineering-review.md)（shared collection owner、feature-local state machines、mutation/owner failure taxonomy、upload→files freshness、scale analysis 与 Known Gaps；2026-09-07）
+- 🎤 **Interview Preparation**: 精选 candidates 与 F-1 Gate remediation 闭环已晋升到 [Phase 11 深度章](./interview-notes/dx-rag-interview-guide.md#phase-11-learning-review)
+
+**当前与未来主要学习主题**:
+
+- KnowledgeBaseManager 组件（T1101 ✅：loading/empty/success/error 四态 + collection CRUD）
+- File Upload 组件（T1102 ✅：Ant Design Upload.Dragger + 前端校验 + outcome states）
+- QA Panel 组件（T1103 ✅：React Markdown、Backend-owned sources、20-message history、KB switch reset + stale-response guard）
+- File Manager 组件（T1104 ✅：typed table + persisted-chunk preview + immutable-ID cascade delete）
+- Cross-component patterns（T1105 + Gate remediation ✅：persistent panels、Home-owned collection source、mutation revision、rename/delete fallback、KB-bound history 与 route error boundary）
 
 ---
 
@@ -389,13 +395,14 @@ Phase 定位 / 为什么需要这个模块 / 核心设计决策（Decision-Conte
 - [phase-08-engineering-review.md](./engineering-review/phase-08-engineering-review.md) — RAG & QA（T0801–T0805：Context/Source、History、DeepSeek adapter、QA orchestration、`/api/query`；ADR / failure taxonomy / scale analysis；2026-09-04）
 - [phase-09-engineering-review.md](./engineering-review/phase-09-engineering-review.md) — File Management API（T0901–T0903：metadata projection、persisted preview、irreversible cascade delete、path safety / partial failure / scale analysis；2026-09-04）
 - [phase-10-engineering-review.md](./engineering-review/phase-10-engineering-review.md) — Frontend Foundation（T1001–T1002：typed API client、controlled App Shell、runtime/interaction evidence、failure taxonomy 与 scale analysis；2026-09-04）
+- [phase-11-engineering-review.md](./engineering-review/phase-11-engineering-review.md) — Frontend Features（T1101–T1105：shared collection owner、feature-local state、identity reconciliation、cross-feature freshness / concurrency gaps 与 scale analysis；2026-09-07）
 
 ### 面试指南
 
 **文档**: [interview-notes/dx-rag-interview-guide.md](./interview-notes/dx-rag-interview-guide.md)
 
 - 第一部分：3 分钟项目介绍（背景/架构/我的工作/挑战/解决方案，含诚实话术）
-- 第二部分：19 个技术亮点（每个含一句话概括 + 展开点 + 代码位置）
+- 第二部分：20 个技术亮点（每个含一句话概括 + 展开点 + 代码位置）
 - 第三部分：34 道高频面试题（项目理解/架构设计/RAG/工程问题四类，每题含 面试官问题/优秀回答/进一步追问/回答方向）
 - Phase 4 深度章（T0401–T0404 已实现）：30 秒回答 / 1-2 分钟深入 / SPEC_CONFLICT STAR / 18 道高频追问 + 8 道工程深问
 - Phase 5 深度章（T0501–T0503 已实现，含 Gate Review 修复中状态）：30 秒回答 / 1-2 分钟深入 / 验证驱动修复 STAR / 12 道高频追问 + 4 道工程深问
@@ -403,6 +410,7 @@ Phase 定位 / 为什么需要这个模块 / 核心设计决策（Decision-Conte
 - Phase 8 深度章（T0801–T0805 已实现；Gate PASS；Learning Review 完成）：30 秒回答 / 1-2 分钟深入 / 10 道高频追问 + 4 道工程深问 / 诚实验证边界
 - Phase 9 深度章（T0901–T0903 已实现；Gate PASS；Learning Review 完成）：30 秒回答 / 1–2 分钟深入 / 高频追问 + 工程深问 / 跨存储删除边界
 - Phase 10 深度章（T1001–T1002 已实现；Gate PASS；Learning Review 完成）：30 秒回答 / 1–2 分钟深入 / 8 道高频追问 + 4 道工程深问 / 前端验证证据分级
+- [Phase 11 深度章](./interview-notes/dx-rag-interview-guide.md#phase-11-learning-review)（T1101–T1105 已实现；Gate PASS；Learning Review / Engineering Review 完成）：shared-resource mental model / F-1 Gate remediation / 8 道高频追问 + 5 道工程深问 / 诚实证据边界
 - 附录：面试前自查清单
 
 ### Phase 学习模板（Phase 4-12 用）

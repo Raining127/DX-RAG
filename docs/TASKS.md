@@ -2388,7 +2388,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T1101 — KnowledgeBaseManager Component
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement the Knowledge Base management UI with list, create, rename, and delete functionality, including all UI states.
 
@@ -2443,7 +2443,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T1102 — FileUpload Component
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement the file upload UI with KB selector, drag-and-drop zone, frontend validation, upload progress, and result display.
 
@@ -2500,7 +2500,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T1103 — QAPanel Component
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement the QA chat interface with Markdown rendering, sources display, conversation history management, and all UI states.
 
@@ -2566,7 +2566,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T1104 — FileManager Component
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Implement the file management UI with file list table, chunk-based preview modal, and delete with confirmation.
 
@@ -2622,7 +2622,7 @@ No Task is complete until all Completion Conditions are met.
 
 ### T1105 — Cross-Component State Patterns
 
-**Status:** TODO
+**Status:** DONE
 
 **Goal:** Ensure consistent application of shared frontend patterns: KB switch clears QA history, component state management consistency, and error boundary behavior.
 

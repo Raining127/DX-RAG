@@ -1,7 +1,7 @@
 # DX-RAG 面试指南（项目介绍 + 技术亮点 + 高频面试题）
 
 > 本文档把 DX-RAG 项目转译成"面试语言"：如何用 3 分钟讲清楚项目、如何亮出技术亮点、如何应对高频追问。
-> **诚实原则**：所有内容基于真实代码与 SPEC/TASKS。项目当前实现到 Phase 0-10 的已完成切片（基础工程 + 向量存储 + Embedding + 文档摄取管道 + 知识库管理/上传/文件管理 API + Keyword/Vector/Hybrid Retrieval + T0801–T0805 RAG/QA slices + T1001 typed API client + T1002 controlled navigation shell）；Phase 6–10 均已有 Gate 结论，其中 Phase 10 为 `PHASE_10_PASS — READY_FOR_PHASE_11`，并于 2026-09-04 完成 Learning Review；Phase 5 Gate Review 裁定 PHASE_5_FAIL 后 F-1/F-2 已修复，Re-review 待执行。真实 provider/Chroma/upload E2E、Phase 11 业务组件接入、browser-to-FastAPI E2E 与 Phase 12 仍是后续范围。**面试话术中注意区分“已实现”与“已验证”**——把设计或 Mocked evidence 讲成真实 E2E 是面试大忌，本文档在关键处标注了诚实话术。
+> **诚实原则**：所有内容基于真实代码与 SPEC/TASKS。项目当前实现到 Phase 0–11 的已完成切片；Phase 11 已交付知识库、上传、问答、文件管理四个业务组件及 shared collection synchronization，Gate 在 F-1 remediation 后给出 `PHASE_11_PASS — READY_FOR_PHASE_12`，Phase Learning Review 于 2026-09-07 完成。Task smoke 包含部分真实 browser-to-FastAPI 证据；F-1 focused re-review 使用真实 production Next UI + isolated in-memory **MOCKED API**。真实 provider/Chroma/upload 全链路、完整 browser-to-FastAPI E2E 与 Phase 12 仍是后续范围。**面试话术中注意区分“已实现”与“已验证”**——把设计或 Mocked evidence 讲成真实 E2E 是面试大忌。
 
 ---
 
@@ -25,7 +25,7 @@
 
 **③ 我的工作（约 45 秒）**
 
-> “我独立完成了这个项目的完整周期：首先是产品设计——写了 2800 多行的 SPEC 规格文档，把 17 个功能模块的接口契约、数据模型、错误码目录、验收标准全部冻结下来；然后是分 13 个 Phase、55 个 Task 的工程实现，目前 Phase 0 到 10 已完成。Phase 10 把后端契约翻译成 typed API client，并用 `MenuKey`、`Record` 和 controlled state 搭出四工作区 frontend shell；Phase 9 完成 file list、persisted-chunk preview 和按 `file_id` cascade delete；Phase 8 完成 context/source assembly、history processing、DeepSeek client、QA Service 与 `/api/query` endpoint。更早还完成了配置管理、统一错误体系、VectorStore 抽象层、Embedding、摄取管道、知识库与上传 API，以及 mixed-language tokenizer、倒排索引、vector adapter、hybrid fusion/filter 与 retrieval facade；项目用 Gate Review 和学习复盘做阶段收口。这个过程中我重点解决了几个问题，下面挑三个讲。”
+> “我独立完成了这个项目的完整周期：首先是产品设计——写了 2800 多行的 SPEC 规格文档，把 17 个功能模块的接口契约、数据模型、错误码目录、验收标准全部冻结下来；然后是分 13 个 Phase、55 个 Task 的工程实现，目前 Phase 0 到 11 已完成。Phase 11 把前端骨架接成知识库、上传、问答和文件管理四个真实工作区，并把 shared collection resource 与各 feature 的 transaction state 分开；一次 Gate finding 还推动我把四份 stale cache 收敛为 page-level source + mutation revision + selection resolver。Phase 10 建立 typed API client 与 controlled shell；Phase 8–9 完成 RAG/QA 与 file-management Backend。更早还完成了配置、统一错误、VectorStore、Embedding、摄取管道和混合检索；项目用 Gate Review 和学习复盘做阶段收口。这个过程中我重点解决了几个问题，下面挑三个讲。”
 
 **④ 技术挑战 + 解决方案（约 45 秒）**
 
@@ -35,7 +35,7 @@
 
 **⑤ 收尾（约 15 秒，可选）**
 
-> “项目还在继续，retrieval、RAG/QA、file management，以及 Phase 10 的 typed API client 与 controlled navigation shell 已完成；Phase 10 的 Gate 与 Learning Review 已收口。下一步是 Phase 11 的知识库、文件和问答业务组件接入；真实 provider/Chroma/upload E2E、browser-to-FastAPI E2E、T1203 跨 feature 验证仍在后续。如果你对某个模块的实现细节感兴趣，我可以展开讲摄取管道的三态回滚、检索分数语义、文件管理的跨存储 cleanup，或者前端如何用两个边界隔离 transport semantics 与 UI composition。”
+> “项目还在继续，Phase 0–11 已完成并通过 Phase 11 Gate；知识库、上传、问答和文件管理 UI 已接入 typed client，collection mutation 也会跨四个工作区同步。下一步是 Phase 12 的集成与验收：真实 provider/Chroma/upload 全链路、完整 browser-to-FastAPI E2E 与跨 feature 验证仍在后续。如果你对某个模块感兴趣，我可以展开讲摄取回滚、检索分数语义、跨存储 cleanup，或者前端如何区分 shared server resource 与 feature-local transaction。”
 
 ### 话术设计要点（为什么这么讲）
 
@@ -51,7 +51,7 @@
 
 ---
 
-## 第二部分：技术亮点（19 个）
+## 第二部分：技术亮点（20 个）
 
 > 每个亮点一句话概括 + 为什么值得说 + 对应代码位置。面试时根据面试官背景挑 3-5 个展开。
 
@@ -195,13 +195,21 @@
 
 **展开点**：[api-client.ts](../../../frontend/lib/api-client.ts)、[types.ts](../../../frontend/lib/types.ts)、[SideMenu.tsx](../../../frontend/components/SideMenu.tsx) 与 [page.tsx](../../../frontend/app/page.tsx)。诚实边界：Gate 验证了 production build、5/5 mocked-fetch contract probes 和四菜单真实浏览器交互；尚无 repository-owned frontend regression suite，也没有 browser-to-FastAPI E2E。
 
+### 亮点 20：shared resource spine + feature-local state machines（前端状态亮点）
+
+**一句话**：Phase 11 让 Home 统一拥有 collection read model 与 CRUD mutation revision，四个 persistent feature 只保留自己的 selection/transaction state；纯函数 resolver 负责 rename migration、delete fallback，QAPanel 再用 generation token 隔离旧 owner 的 answer commit。
+
+**为什么值得说**：Gate 曾发现 persistent mounting 虽保住草稿，却也保住了四份过期 collection cache。修复没有直接引入全局 store，而是按 ownership 把最小公共 resource 上移，把上传、对话和预览等局部状态留在原处，体现了“preservation ≠ freshness”与“共享事实不等于共享全部状态”。
+
+**展开点**：[page.tsx](../../../frontend/app/page.tsx)、[collection-state.ts](../../../frontend/lib/collection-state.ts)、[QAPanel.tsx](../../../frontend/components/QAPanel.tsx) 与 [Phase 11 Technical Learning](../phase-11-frontend-features.md)。诚实边界：F-1 focused re-review 是 production UI + MOCKED API；parallel delete projection race 仍是 accepted v1 MINOR，route error-boundary crash proof 与 repository-owned frontend tests 仍 unavailable。
+
 ---
 
 ## 第三部分：高频面试题（34 题）
 
 > 分类：项目理解（Q01-Q08）/ 架构设计（Q09-Q16）/ RAG（Q17-Q26）/ 工程问题（Q27-Q34）。
 > 每题四个部分：**面试官问题**（怎么问）/ **优秀回答**（怎么答）/ **进一步追问**（面试官大概率接着问什么）/ **回答方向**（追问怎么接）。
-> ⚠️ 标注 `[设计]` 的题目主要涉及尚未完成的 Phase 11-12：回答时用“设计上是……，实现排在 Phase X”的诚实话术。Phase 6–9 的 retrieval/RAG/file-management slices，以及 Phase 10 typed API client 与 controlled shell 已实现；真实 provider/Chroma E2E、Phase 11 业务组件接入和 browser-to-FastAPI E2E 仍只讲已冻结设计或 deferred verification。
+> ⚠️ 标注 `[设计]` 的题目主要涉及尚未完成的 Phase 12：回答时用“设计上是……，实现排在 Phase X”的诚实话术。Phase 6–11 的 retrieval、RAG、file-management 与 frontend-feature slices 已实现；真实 provider/Chroma/upload 全链路及完整 browser-to-FastAPI E2E 仍只讲 deferred verification。
 
 ---
 
@@ -605,7 +613,7 @@
 
 **面试官**：项目有测试吗？怎么保证质量？
 
-**优秀回答**：三层验证：① **单元/构建层**——后端按模块跑 focused tests，并有当前 checkout full suite；Phase 10 运行 production `npm run build`，完成 compile、lint/type check 与 4/4 static generation；② **契约层**——API / service contract 对照 SPEC，验证字段、状态码、score、message shape、response envelope 与 retry lifecycle；T1001 的 5/5 probes 使用 mocked fetch，验证 success/error/network/invalid-payload 等 transport branches；③ **验收层**——按 AC 报告 PASS / DEFERRED，Phase 10 用真实浏览器验证四菜单切换、URL 不漂移、640px 与约 360px 响应式及 console 0 error。诚实边界：Mocked route/client tests 不等于真实 provider、Chroma persistence 或 browser-to-FastAPI E2E；当前也没有 repository-owned frontend regression suite。**流程价值**：Gate Review + Learning Review 让证据强度和教学结论都被单独校准。
+**优秀回答**：三层验证：① **单元/构建层**——后端按模块跑 focused tests，并有 checkout full suite；前端运行 production `npm run build`，完成 compile、lint/type check 与 static generation；② **契约层**——API/service contract 对照 SPEC，验证字段、状态码、score、error envelope 与 retry lifecycle；T1001 的 5/5 probes 用 mocked fetch，Phase 11 validator/formatter 也有 isolated probes；③ **验收层**——按 AC 报告 PASS/DEFERRED，Task smoke 做过真实 browser-to-FastAPI navigation、collection CRUD 与 empty-KB flow，F-1 focused re-review 则在 production Next UI + isolated MOCKED API 下验证 single collection GET、CRUD propagation、rename/delete fallback、QA reset 与 console 0 warning/error。诚实边界：Mocked API 不等于真实 Backend E2E，当前也没有 repository-owned frontend regression suite；真实 provider/Chroma/upload 全链路仍归 Phase 12。**流程价值**：Gate Review 真正发现并拦下 stale-cache 缺陷，修复后 re-review，再由 Learning Review 收敛可迁移结论。
 
 **进一步追问**：如果重来，你会先写测试还是先写实现？
 
@@ -1388,7 +1396,7 @@
 ## Phase 10 深度章 — Frontend Foundation（T1001–T1002 已实现 + Gate / Learning Review 完成）
 
 > 状态：**T1001 typed API client 与 T1002 App Shell 已实现；Gate 结论为 `PHASE_10_PASS — READY_FOR_PHASE_11`；Phase Learning Review 已于 2026-09-04 完成**。
-> 详细代码教材 → [../phase-10-frontend-foundation.md](../phase-10-frontend-foundation.md)；完整工程分析 → [Phase 10 Engineering Review](../engineering-review/phase-10-engineering-review.md)。Phase 11 业务组件和 browser-to-FastAPI E2E 仍 deferred。
+> 详细代码教材 → [../phase-10-frontend-foundation.md](../phase-10-frontend-foundation.md)；完整工程分析 → [Phase 10 Engineering Review](../engineering-review/phase-10-engineering-review.md)。Phase 11 业务组件现已完成；完整 browser-to-FastAPI E2E 仍 deferred。
 
 ### P10-1. 30 秒回答
 
@@ -1396,13 +1404,13 @@
 
 **推荐回答（口语版）**：
 
-> 我先建立了两个稳定边界。下面是 typed API client，统一 base URL、领域类型、JSON 解析、错误 envelope 和 multipart 上传；上面是 controlled App Shell，用菜单配置推导 `MenuKey`，由一个 `useState` 驱动选中态、标题和内容。这样 Phase 11 只需要把真实业务组件插进 shell，并通过 client 调后端，不需要在每个组件里重复翻译 HTTP 语义。Gate 已验证 production build、mocked-fetch contract probes 和真实浏览器菜单/响应式行为，但还没有 browser-to-FastAPI E2E。
+> 我先建立了两个稳定边界。下面是 typed API client，统一 base URL、领域类型、JSON 解析、错误 envelope 和 multipart 上传；上面是 controlled App Shell，用菜单配置推导 `MenuKey`，由一个 `useState` 驱动选中态、标题和内容。Phase 11 后来把四个真实业务组件插进这两个边界，并进一步加入 shared collection source。Phase 10 Gate 验证了 production build、mocked-fetch probes 和真实浏览器菜单/响应式行为；它本身不包含 browser-to-FastAPI E2E。
 
 ### P10-2. 1–2 分钟深入回答：从后端 contract 到可插拔 UI shell
 
 Phase 10 可以理解为“双插座底板”：业务组件向下插入 API client，获得稳定的 domain result 或统一错误；向上插入 App Shell，获得稳定的导航位置与工作区。这里同时约束三类 contract：domain data contract 定义前后端共享字段；transport contract 处理 URL、method、body、status 与 malformed payload；composition contract 保证菜单 key、选中态和内容映射穷尽一致。
 
-关键工程选择是让“翻译发生在边界”。`fetch` 的 network failure 与 HTTP error 在 client 内归一化，组件不解析 error envelope；菜单 key 从 `as const` 配置推导，`Record<MenuKey, ...>` 让新增菜单但漏内容成为 TypeScript 错误；一个 controlled state 同时派生 selected key、heading 和 workspace，避免三份状态互相漂移。代价是 `key={activeKey}` 会在切换时 remount 工作区，Phase 11 若需要保留草稿或会话，需要明确提升状态、缓存组件或调整 composition 策略。
+关键工程选择是让“翻译发生在边界”。`fetch` 的 network failure 与 HTTP error 在 client 内归一化，组件不解析 error envelope；菜单 key 从 `as const` 配置推导，`Record<MenuKey, ...>` 让新增菜单但漏内容成为 TypeScript 错误；一个 controlled state 同时派生 selected key、heading 和 workspace，避免三份状态互相漂移。Phase 11 最终用 persistent panels 保留草稿/会话，并把 shared collection resource 提升到 Home；这也说明 Phase 10 的 seam 是可演进边界，不是冻结所有后续 state ownership。
 
 ### P10-3. 高频追问（8 题）
 
@@ -1428,7 +1436,7 @@ Phase 10 可以理解为“双插座底板”：业务组件向下插入 API cli
 
 **P10Q6. 为什么当前不用 Redux 或 router？**
 
-- **推荐回答**：Phase 10 只有页面内四工作区切换，一个 local state 足够；过早引入全局 store 或路由会增加同步面。若 Phase 11 出现可分享 URL、跨页返回或多组件共享复杂状态，再由具体需求升级。
+- **推荐回答**：Phase 10 只有页面内四工作区切换，一个 local state 足够；Phase 11 出现四区共享 collection resource 后，也只提升这条最小公共状态，没有引入 Redux/router。若后续需要 deep-link、back/forward 或复杂 server cache，再由具体需求升级。
 
 **P10Q7. `key={activeKey}` 有什么风险？**
 
@@ -1448,9 +1456,9 @@ Phase 10 可以理解为“双插座底板”：业务组件向下插入 API cli
 
 - **推荐回答**：当状态需要 URL deep-link、浏览器 back/forward、跨页面生命周期或多远端组件共享时再引入。判断依据是状态的 owner 与生命周期，不是组件数量本身。
 
-**EP10-3. Phase 11 如何接入而不绕过现有边界？**
+**EP10-3. Phase 11 实际如何接入而没有绕过现有边界？**
 
-- **推荐回答**：业务组件只 import domain types/client functions，不直接拼 URL 或解析 envelope；App Shell 只负责选择和承载，不拥有业务请求细节。为每个新 workspace 分别验证 client contract、component state 和 browser flow。
+- **推荐回答**：业务组件只 import domain types/client functions，不直接拼 URL 或解析 envelope；Home 负责 shell 与 shared collection projection，不接管上传、问答、预览等 feature transaction。每个 workspace 分别保留 client contract、component state 与 browser-flow verification。
 
 **EP10-4. Root layout 使用 client component 的取舍是什么？**
 
@@ -1460,8 +1468,118 @@ Phase 10 可以理解为“双插座底板”：业务组件向下插入 API cli
 
 - **已实现**：typed domain contracts、集中 API client、base URL normalization、统一错误翻译、multipart 规则、四工作区 controlled shell、responsive layout。
 - **已验证但有边界**：production build PASS；T1001 mocked-fetch probes **5/5 PASS**；T1002 四菜单真实浏览器交互 **4/4 PASS**，640px 与约 360px 无水平溢出，console 0 error。
-- **仍 deferred**：Phase 11 真实业务组件、browser-to-FastAPI E2E、repository-owned frontend regression suite 与真实后端依赖贯通；完整工程边界见 [Phase 10 Engineering Review](../engineering-review/phase-10-engineering-review.md)。
+- **仍 deferred**：完整 browser-to-FastAPI E2E、repository-owned frontend regression suite 与真实 provider/Chroma/upload 依赖贯通；Phase 11 真实业务组件已完成，见下一深度章。完整 Phase 10 工程边界见 [Phase 10 Engineering Review](../engineering-review/phase-10-engineering-review.md)。
 - **不要虚构 STAR**：本 Phase 没有已闭环的线上前端事故；可以讲边界设计、trade-off 与验证分层，不能包装成生产 incident。
+
+---
+
+<a id="phase-11-learning-review"></a>
+
+## Phase 11 深度章 — Frontend Features（T1101–T1105 已实现 + Gate / Learning Review / Engineering Review 完成）
+
+> 状态：**T1101–T1105 DONE；Gate 在 F-1 remediation 后给出 `PHASE_11_PASS — READY_FOR_PHASE_12`；Phase Learning Review 与独立 Engineering Review 于 2026-09-07 完成。**
+> 详细代码教材 → [../phase-11-frontend-features.md](../phase-11-frontend-features.md)；工程决策与 Known Gaps → [Phase 11 Engineering Review](../engineering-review/phase-11-engineering-review.md)。
+
+### P11-1. 30 秒回答
+
+**面试官**：Phase 11 的前端功能真正完成了什么？
+
+**推荐回答（口语版）**：
+
+> 我把 Phase 10 的四个 placeholder 接成知识库管理、文件上传、RAG 问答和文件管理四个真实工作区。架构上没有把所有 state 做成全局，而是让 Home 只拥有四区共享的 collection resource；CRUD 成功后用 mutation revision 通知 children reconcile rename/delete，上传结果、QA history、文件列表和 preview 仍留在各 feature。菜单切换只改变可见性，所以草稿会保留；KB owner 改变时 QAPanel 清 history，并用 request generation 拒绝旧 answer。Gate 曾因此发现并关闭一条 stale-cache finding。
+
+### P11-2. 1–2 分钟深入回答：一条共享脊柱，四个局部状态机
+
+Phase 11 的核心不是四个页面的 JSX，而是 state ownership：
+
+```text
+Backend durable truth
+  → typed API client
+    → Home: collections + load/error + mutation revision
+      ├── KB Manager: CRUD form / pending / feedback
+      ├── Upload: selected KB / validation / upload outcome
+      ├── QA: selected KB / draft / pending / history / sources
+      └── Files: selected KB / list / preview / delete
+```
+
+四个 feature 共同依赖“哪些 collection 存在”，所以这份 read model 由 Home 单一加载。feature selection 不强制统一，因为用户可以在 Upload 与 QA 选择不同 KB；但每个 selection 都必须通过同一个 resolver 对 shared list 做 referential repair：当前仍存在就保留，当前 owner 被 rename 就迁移到新名称，被 delete 或缺失就回退第一项。
+
+局部 state 则按 domain 设计。FileUpload 用 `beforeUpload` 做 cheap validation、`customRequest` 适配 Promise client，并区分 success 与 partial warning；QAPanel 把 draft、pending question 与 completed history 分开，只把成功 Q/A pair 写入最近 20 条 message log，sources 完全采用 Backend response；FileManager 用 immutable `file_id` 做 row/preview/delete identity，preview 展示 persisted chunks，而不是伪装成原文件 renderer。
+
+异步边界统一采用 last-intent-wins：collection list、QA answer、file list 和 preview 在 commit 前检查 request version/ref ownership。它能阻止 stale result 污染新 owner，但不取消网络或 LLM 工作；真正的 cancellation 需要额外 AbortController/Backend contract。
+
+### P11-3. Gate remediation 闭环（可用 STAR 结构讲，但不是生产事故）
+
+- **Situation**：为保留 QA draft/history，四个工作区改成 persistent panels；Task Learning Pass 发现每个 component 仍有自己的 collection cache。
+- **Task**：Gate 要求证明 KB create/rename/delete 后，隐藏的 Upload、QA、Files 不会继续使用 stale owner。
+- **Action**：把 collection GET、load/error 和 server-confirmed projection 提升到 Home；CRUD 通过 callback 更新 shared list，并发布递增 mutation revision；children 用 pure resolver 处理 rename migration 与 delete fallback，QAPanel owner 改变时清 conversation 并使旧 request generation 失效。
+- **Result**：focused re-review 在 production Next UI + isolated in-memory MOCKED API 下观察到 single collection GET；create/rename/delete 在四区同步，rename 后后续 request 使用新名，delete 后 fallback 且 QA history 清空，menu switch 仍保留 draft，console warning/error 为 0；F-1 CLOSED。
+
+诚实话术：这是 **Gate discovery → remediation → re-review**，不是线上用户 incident。该复验的 API 是 MOCKED；它证明真实 UI 的跨组件状态行为，不证明真实 FastAPI/Chroma/LLM 全链路。
+
+### P11-4. 高频追问（8 题）
+
+**P11Q1. 为什么不把所有 state 都放到 Home 或 Redux？**
+
+- **推荐回答**：只提升多个 sibling 共同依赖的 collection resource。upload `File`、QA history、preview target 都有单一 feature owner；提升它们会扩大 rerender、接口和同步面。global store 应由跨页面/跨生命周期需求驱动。
+
+**P11Q2. persistent mount 与 `hidden` 解决了什么，又引入什么？**
+
+- **推荐回答**：它保留 local component instance，所以菜单切换不丢草稿/历史；hidden 不等于 unmount，effects 和 child reads 仍可能运行，portal/focus 也需独立测试。它还曾暴露“保留 state 不等于保持 server-resource freshness”。
+
+**P11Q3. 为什么 mutation revision 不能只用最新 collection array 替代？**
+
+- **推荐回答**：array 能告诉 child 合法集合，却不能表达 selected old name 应迁移到哪个 new name。rename event 携带 `oldName/newName`，revision 让同一事件只消费一次；delete/缺失则可仅凭集合 fallback。
+
+**P11Q4. QA 切换 KB 为什么既要清 state，又要 request version？**
+
+- **推荐回答**：清 state 只改变当前画面；旧 Promise 仍可能稍后 resolve。generation mismatch 负责拒绝 late commit，否则 KB-A answer 仍可能写进 KB-B conversation。
+
+**P11Q5. `beforeUpload` 为什么不是安全边界？**
+
+- **推荐回答**：浏览器可被绕过，规则也可能 drift。它只做 early feedback；extension、size、empty、collection existence、duplicate 与 path safety 必须由 Backend 最终校验。
+
+**P11Q6. `SUCCESS_WITH_WARNINGS` 为什么不能进入 generic error？**
+
+- **推荐回答**：有效 chunks 已经 durable commit；warning 描述部分页面失败。把它当 error 会误导用户重试整个文件，也丢失已成功部分的事实。
+
+**P11Q7. 文件预览为什么按 `file_id`，而不是 filename？**
+
+- **推荐回答**：filename 是可重复 display field，`file_id` 才是 immutable resource identity。预览拼接 persisted chunks，只是诊断性视图；删除也必须把 `file_id` 传给 Backend 执行跨存储 cascade。
+
+**P11Q8. error boundary 为什么不能替代 feature try/catch？**
+
+- **推荐回答**：`app/error.tsx` 面向 unexpected render/lifecycle failure；event handler 与 async request rejection 仍需 feature 捕获并展示 owner-specific retry。`reset()` 只尝试重渲染 segment，不回滚 Backend mutation。
+
+### P11-5. Engineering Questions（5 题）
+
+**EP11-1. 当前最重要的 accepted boundary 是什么？**
+
+- **推荐回答**：Home 的 collection delete projection 基于 callback closure 计算 remaining；两个并行 delete 在极端完成顺序下可能 local lost update。Gate 将其记为 F-3 MINOR `ACCEPTED_V1_BOUNDARY`。可用 reducer、functional update 同步派生 state，或 mutation 后 authoritative refetch 收紧。
+
+**EP11-2. 什么时候升级到 TanStack Query/SWR？**
+
+- **推荐回答**：当 server resource 数量、跨页消费者、dedup/retry/invalidation、background refetch 与 cache policy 增多时。当前只有一条共享 collection resource，page owner + resolver 更透明；不能为了“现代化”增加依赖。
+
+**EP11-3. 如何把当前 verification 升级为可重复回归？**
+
+- **推荐回答**：先补 repository-owned component/integration tests，固定 create/rename/delete propagation、QA owner reset、stale response rejection 和 upload warning；再用 Playwright 跑真实 Next + FastAPI disposable data，Phase 12 才贯通真实 upload/Chroma/provider flows。
+
+**EP11-4. 如果 collection 被外部客户端修改怎么办？**
+
+- **推荐回答**：当前 shared projection 只覆盖本页面 GET 与本页面 mutation callbacks，不是实时订阅。多客户端场景需要 visibility/focus refetch、polling、SSE/WebSocket 或 query-cache invalidation，并先定义冲突与 freshness SLA；当前没有相应产品要求或证据。
+
+**EP11-5. 为什么 state preservation 不等于 cross-feature freshness？**
+
+- **推荐回答**：persistent mount 保留的是组件实例，不会自动失效 server read model。当前 upload success 只写 FileUpload outcome，没有更新 Home `file_count` 或刷新常驻 FileManager；所以切回文件页仍可能看到旧列表。T1203 应先覆盖“先看文件页 → 上传 → 返回文件页”，再选择 targeted invalidation/refetch，而不是把保留 state 当成一致性机制。
+
+### P11-6. 本 Phase 的诚实边界
+
+- **已实现**：四个 feature components；persistent panels；Home-owned collection source；CRUD mutation propagation；selection resolver；QA history/reset/stale guard；file preview/delete；feature/route error layers。
+- **已验证但有边界**：production build PASS；Task-level validator/formatter probes；部分真实 browser-to-FastAPI smoke；F-1 focused re-review 的 production UI + MOCKED API scenarios PASS。
+- **仍 deferred / Known Gaps**：repository-owned frontend automated suite、error-boundary render-crash runtime proof（F-4/T1204）、upload→FileManager invalidation、upload/file-delete owner-switch late settlement、slow-response race reproduction、完整 accessibility/portal audit、真实 provider/Chroma/upload 与 browser-to-FastAPI full E2E。
+- **已接受 v1 边界**：parallel delete local projection race（F-3 MINOR）。
+- **不要夸大**：Gate remediation 可以按 STAR 组织，但必须称为工程审查闭环，不称生产事故；MOCKED API evidence 不称真实 Backend E2E。
 
 ---
 
@@ -1488,6 +1606,11 @@ Phase 10 可以理解为“双插座底板”：业务组件向下插入 API cli
 - [ ] 能主动说出 Phase 9 的 deferred boundary：T1203 跨 feature 流程、path traversal/absolute/symlink、cross-KB isolation、partial-failure compensation 与 frontend file manager
 - [ ] 能画出 Phase 10 的两个边界与三类 contract：typed API client / controlled shell；domain data / transport / composition
 - [ ] 能区分 Phase 10 的 production build、5/5 mocked-fetch probes、4/4 真实浏览器交互各自证明什么，以及为什么仍不是 browser-to-FastAPI E2E
-- [ ] 能说明 Phase 11 如何通过既有 client/shell 插入真实组件，并主动指出 `key` remount 对表单草稿与会话状态的风险
+- [ ] 能画出 Phase 11 的“一条 shared collection spine + 四个 feature-local state machines”，并说明为什么不是所有 state 都提升
+- [ ] 能讲清 F-1 Gate 闭环：persistent panels 保留四份 stale cache → Home shared source + mutation revision + resolver → focused re-review CLOSED
+- [ ] 能解释 menu switch、manual KB switch、rename、delete 四种事件对 QA draft/history/selection 的不同影响
+- [ ] 能区分 Phase 11 的真实 browser-to-FastAPI Task smoke、production UI + MOCKED API Gate evidence，以及 Phase 12 仍 deferred 的 full E2E
+- [ ] 能主动说出 F-3 parallel-delete accepted boundary、F-4 error-boundary runtime proof 与 frontend automated suite `NOT_AVAILABLE`
+- [ ] 能解释 upload success 为什么尚未刷新 Home file count / FileManager list，以及它为什么应由 T1203 cross-feature flow 验证
 - [ ] 每个"已实现"的说法都能定位到代码文件；每个"已设计"的说法都标注 Phase 编号
 - [ ] 被问"为什么"时，答案里有"规模假设"（v1 是单机、万级文档、可信网络——决策都有前提）

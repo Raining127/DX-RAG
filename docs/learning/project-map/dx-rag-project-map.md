@@ -3,10 +3,10 @@
 > 从项目整体角度理解 DX-RAG：它是什么、为什么存在、每一层做什么、13 个 Phase 如何拼成完整系统。
 > 不深入代码细节——代码级的逐行精读请阅读对应的 `phase-XX-*.md` 学习笔记，工程决策分析请阅读 `engineering-review/`。
 
-**当前状态快照**（以 `docs/TASKS.md` 为准，2026-09-04）：
+**当前状态快照**（以 `docs/TASKS.md` 与最新 Gate verdict 为准，2026-09-07）：
 - SPEC.md v1.6 **FROZEN**，Blocking Questions = 0
 - Phase 0–5 ✅ DONE（工程地基 + 向量存储 + 嵌入 + 文档管道 + 知识库管理 API + 文件上传 API；Phase 5：Gate Review 裁定 PHASE_5_FAIL → F-1/F-2 修复完成 → Re-review 待执行；Learning Pass / ER / Learning Review 已完成）
-- Phase 6 ✅ COMPLETE（T0601–T0602 DONE；PHASE_6_PASS；Learning Review 完成，2026-08-27）；Phase 7 ✅ COMPLETE（T0701–T0703 DONE；`PHASE_7_PASS — CLOSED`；Engineering Review 与 Phase Learning Review 完成，2026-09-03）；Phase 8 ✅ COMPLETE（T0801–T0805 DONE；`PHASE_8_PASS — READY_FOR_PHASE_9`；Learning Review 完成 2026-09-02；Engineering Review 完成 2026-09-04）；Phase 9 ✅ COMPLETE（T0901–T0903 DONE；`PHASE_9_PASS — READY_FOR_PHASE_10`；Engineering Review 与 Phase Learning Review 完成，2026-09-04）；Phase 10 ✅ COMPLETE（T1001–T1002 DONE；`PHASE_10_PASS — READY_FOR_PHASE_11`；Engineering Review 与 Phase Learning Review 完成，2026-09-04）；Phase 11–12 ⬜ TODO
+- Phase 6 ✅ COMPLETE（T0601–T0602 DONE；PHASE_6_PASS；Learning Review 完成，2026-08-27）；Phase 7 ✅ COMPLETE（T0701–T0703 DONE；`PHASE_7_PASS — CLOSED`；Engineering Review 与 Phase Learning Review 完成，2026-09-03）；Phase 8 ✅ COMPLETE（T0801–T0805 DONE；`PHASE_8_PASS — READY_FOR_PHASE_9`；Learning Review 完成 2026-09-02；Engineering Review 完成 2026-09-04）；Phase 9 ✅ COMPLETE（T0901–T0903 DONE；`PHASE_9_PASS — READY_FOR_PHASE_10`；Engineering Review 与 Phase Learning Review 完成，2026-09-04）；Phase 10 ✅ COMPLETE（T1001–T1002 DONE；`PHASE_10_PASS — READY_FOR_PHASE_11`；Engineering Review 与 Phase Learning Review 完成，2026-09-04）；Phase 11 ✅ COMPLETE（T1101–T1105 DONE；`PHASE_11_PASS — READY_FOR_PHASE_12`；Phase Learning Review 与 Engineering Review 完成 2026-09-07）；Phase 12 ⬜ TODO
 
 ---
 
@@ -352,14 +352,14 @@ Answer + Citation（answer 不含内联引用标记；sources 由后端从检索
 | 输出 | typed API client + normalized `ApiError` + ConfigProvider + responsive SideMenu + 四个 placeholder slots |
 | 为什么存在 | 为 Phase 11 提供“双插座底板”：T1001 统一 HTTP boundary，T1002 统一 UI composition boundary |
 
-### Phase 11 — Frontend Features（前端产品功能）⬜ TODO
+### Phase 11 — Frontend Features（前端产品功能）✅ COMPLETE（T1101–T1105 DONE；Gate PASS；Learning Review / Engineering Review 完成 2026-09-07）
 
 | 维度 | 内容 |
 |------|------|
 | 解决什么问题 | 把 Phase 10 placeholders 替换为知识库管理、上传、问答、文件管理真实界面 |
 | 输入 | 用户操作 + Phase 10 API client 与 content slots |
-| 输出 | 四个功能组件、组件内 loading/success/empty/error state、对话 history lifecycle |
-| 为什么存在 | Phase 10 只建边界与骨架；用户可完成真实业务操作仍属于 Phase 11 |
+| 输出 | 四个功能组件 + persistent panels + Home-owned shared collection source + feature-local transaction state + selection/history reconciliation |
+| 为什么存在 | Phase 10 只建边界与骨架；Phase 11 把 API contracts 变成可操作 UI，并用 F-1 Gate remediation 收口跨组件 freshness |
 
 ### Phase 12 — Integration & Acceptance（集成验收）⬜ TODO
 
@@ -385,5 +385,5 @@ Phase 0 (地基) ──┬──→ Phase 1 (VectorStore) ──┬──→ Pha
 ```
 
 > **Readme 导航**：[docs/learning/README.md](../README.md)（Phase 学习地图）· [SPEC.md](../../SPEC.md)（产品规格）· [TASKS.md](../../TASKS.md)（任务状态）
-> **工程决策分析**：[engineering-review/](../engineering-review/)（Phase 0-6 的设计决策与规模分析 + Phase 7 T0701–T0703 增量评审及 Gate closure record）
-> **面试准备**：[interview-notes/](../interview-notes/)（3 分钟介绍 + 高频问题 + Phase 4/5/6/7/8/9/10 深度章；Phase 10 Learning Review 已完成，精选 frontend-foundation candidates 已晋升）
+> **工程决策分析**：[engineering-review/](../engineering-review/)（Phase 0–11 均已建立独立 Engineering Review；Phase 11 评审见 [phase-11-engineering-review.md](../engineering-review/phase-11-engineering-review.md)）
+> **面试准备**：[interview-notes/](../interview-notes/)（3 分钟介绍 + 高频问题 + Phase 4/5/6/7/8/9/10/11 深度章；Phase 11 shared-resource mental model 与 F-1 Gate remediation 已晋升）
