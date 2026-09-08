@@ -41,7 +41,7 @@ Work on exactly **one** Task ID. Complete it before starting another. Never pre-
 ## Task Execution Workflow
 
 ```
-Read → Plan → Implement → Test → Verify ACs → Review Diff → Report → Mark DONE
+Read → Plan → Implement → Test → Verify ACs → Review Diff → Mark DONE → Task Learning Pass → Report
 ```
 
 Update Task status in TASKS.md:
@@ -150,17 +150,23 @@ After completing a Task, report concisely:
 
 When asked to run a Phase Gate Review, first read and follow `docs/learning/templates/phase-gate-review-template.md`. Treat the review as **REVIEW-ONLY** unless the user explicitly authorizes otherwise: independently verify the Phase against SPEC, TASKS, implementation, tests, and complete repository state; treat existing review verdicts as context, not acceptance evidence; do not modify files, `docs/SPEC.md`, Task status, or future Task definitions, and do not start the next Phase. Return the verdict and report structure defined by the canonical Gate Review protocol.
 
-## Learning Pass
+## Learning & Engineering Workflow V2
 
-When asked to run a Task or Phase Learning Pass:
+Use `docs/learning/templates/phase-learning-pass-workflow.md` as the canonical Final Learning & Engineering Workflow V2 for all future DX-RAG Tasks and Phases. Its repository binding defines command routing, evidence vocabulary, ownership, preservation and reader checks. Product behavior and Task sequencing still follow SPEC/TASKS; this workflow does not change their authority.
 
-1. read and follow `docs/learning/templates/phase-learning-pass-workflow.md`;
-2. read `docs/learning/templates/phase-learning-template.md` for the Technical Learning document structure;
-3. inspect the relevant Tasks, referenced SPEC sections, actual implementation, tests/verification artifacts, and existing Phase learning document;
-4. follow the workflow's learner profile and Phase 5 depth/style precedent;
-5. update Technical Learning at the appropriate Task or Phase level;
-6. preserve Engineering Review, Interview, Phase Learning Review, and Gate boundaries;
-7. do not reduce the Learning Pass to a completion summary.
+| Command / event | Responsibility | Structure |
+|---|---|---|
+| After an implementation Task is verified and marked DONE; or `Txxxx learning pass` | Capture fresh Task-aware understanding: component names first, concepts, code, flow, rationale, difficulties, verification, limitations and Phase-consolidation inputs | `docs/learning/templates/phase-learning-template.md`, Part A |
+| `Phase X learning review` (legacy `Phase X learning pass`) | Consolidate Task material into concept-centric Technical Learning after all Tasks are DONE and Gate state is established; reorganize rather than append a summary | Same template, Part B |
+| `Phase X engineering review` | Independently evaluate decisions, constraints, alternatives, costs, failure/consistency, upgrade triggers and Known Gaps after Gate, preferably after learning consolidation | `docs/learning/templates/phase-engineering-review-template.md` |
+
+Preferred Phase sequence: all Tasks DONE → Gate → if FAIL, authorized remediation/tests/Gate re-review → established Gate state → Phase Learning Review → Engineering Review. Unresolved blockers remain explicit; documentation completion never upgrades Gate status or next-Phase readiness. The Gate protocol above stays independent and REVIEW-ONLY by default.
+
+Read current implementation, tests/evidence, relevant SPEC/TASKS and historical findings before writing. Teach Why before How and concepts before symbols; keep real code depth and accurate Python/TypeScript explanations. Phase Learning's main narrative must remain understandable with Task/Gate/Finding/AC identifiers hidden. Engineering Review must answer when each important design stops being appropriate, without becoming another tutorial or Gate report.
+
+Keep historical closure, current implementation and later verification distinct. Do not upgrade STATIC/UNIT/MOCKED/SUBSTITUTED evidence into REAL/LIVE/E2E; state exact boundaries and whether checks were rerun. Preserve existing ADRs, meaningful evidence, limitations and historical terminology.
+
+Interview Guide is a separate derived artifact, synthesized from consolidated Learning, Engineering Reviews, current code and project status. Learning/review commands do not automatically update interview answers or other reviews. Preserve old interview assets and historical workflows; migrate other Phase documents only when explicitly requested. Do not modify code, tests, SPEC/TASKS, Gate records or start another Task/Phase merely to complete a documentation command.
 
 ## Explicitly Out of Scope for v1
 

@@ -7,75 +7,60 @@
 
 ## 学习方式
 
-本项目的学习方法与传统的"看教程 → 做练习"不同。DX-RAG 采用以下学习流水线：
+未来 DX-RAG 使用 **Final Learning & Engineering Workflow V2**：开发围绕 Task，学习围绕概念，工程评审围绕决策，验收围绕证据。既有 Phase 的状态与历史记录继续保留，不因采用新规范而批量迁移。
 
+```text
+SPEC / TASKS → Implement → Test → Verify AC → Review Diff → Mark DONE
+                                                              ↓
+                                                     Task Learning Pass
+                                                              ↓
+全部 Phase Tasks DONE → Phase Gate → 必要修复/测试/Gate Re-review
+                                                              ↓
+                                             Phase Learning Review（概念整合）
+                                                              ↓
+                                             Engineering Review（工程判断）
+                                                              ↓
+                                             自学 → 独立 Interview synthesis
 ```
-Task Coding（任务编码）
-  → Task Verification（任务验证）
-    → Learning Pass（学习文档编写）
-      → Phase Gate Review（阶段门审查）
-        → Phase Learning Review（阶段学后复习）
-```
 
-### Learning Pass Workflow（技术教学工作流）
+### V2 工作流与命令入口
 
-**Canonical workflow**: [templates/phase-learning-pass-workflow.md](./templates/phase-learning-pass-workflow.md)
-
-**Document structure**: [templates/phase-learning-template.md](./templates/phase-learning-template.md)
-
-两份文件职责不同：workflow 定义 Agent **怎样执行** Learning Pass——怎样读证据、推理代码、面向学习者教学、处理验证边界并做 reader test；template 定义 Technical Learning 文档**按哪 11 节组织**。运行未来 Task / Phase Learning Pass 时必须先读 workflow，再按 template 更新现有 Phase 文档。
-
-默认学习者是熟悉 JavaScript / TypeScript / React、有少量 Node.js 经验，但尚未系统学习 Python/backend 的前端开发者。写作采用中文解释 + English technical terms，在准确且有帮助时使用 TypeScript/JavaScript analogies，并显式解释 Python-specific behavior。🟢 必会 / 🟡 了解原理即可 / 🔵 知道存在即可用于管理学习深度。
-
-[phase-05-file-upload.md](./phase-05-file-upload.md) 是 canonical **depth/style precedent**，不是内容或固定行数模板。未来文档应继承它的 learner orientation、真实代码精读、design-intent explanation、项目上下游、verification honesty、failure/data-flow reasoning 与 self-test/practice；篇幅随概念复杂度调整，不能因为文件少或偏好 concise output 而压扁核心教学。
-
-执行层级必须区分：
-
-- **Task Learning Pass**：Task 完成后增量更新当前 Phase Technical Learning，记录该 Task 的 Code / Project / Learning Understanding 与 Interview Candidates，不把未完成 Phase 提前写成 complete。
-- **Phase Learning Review / Consolidation**：全部 Phase Tasks DONE 且 Gate 完成后，才进行跨 Task 去重、统一 mental model、补齐 Phase 级 self-test，并按 cadence 晋升 Interview Candidates。
-
-所有 project-specific claims 必须来自 `CLAUDE.md`、相关 TASKS、被引用 SPEC、actual implementation、tests/verification artifacts 与必要 git evidence；Task description、Completion Report、Engineering Review 或历史 verdict 都不能替代读真实代码。验证结论必须区分 code-level、unit、integration、real E2E、deferred 与 not independently rerun。
-
-各类产物的 canonical responsibility：
-
-| 产物 | 负责什么 |
+| 入口 | 主要用途 |
 |---|---|
-| **Technical Learning** | code mechanics、project context、learner concepts、data flow、verification learning、practice |
-| **Engineering Review** | 完整 ADR、trade-off、failure taxonomy、一致性、scalability、Known Gaps |
-| **Phase Gate Review** | REVIEW-ONLY 独立验收与 next-Phase readiness verdict |
-| **Phase Learning Review** | Gate 后的 Phase-level learning consolidation 与 Interview Candidate 晋升 |
-| **Interview Guide** | 项目级完整回答、STAR、追问与诚实边界话术 |
+| [Final Workflow V2](./templates/phase-learning-pass-workflow.md) | 规范、执行顺序、职责、证据/历史纪律和 repository binding |
+| [Technical Learning Template V2](./templates/phase-learning-template.md) | Part A：Task 素材；Part B：Phase 概念教材 |
+| [Engineering Review Template V2](./templates/phase-engineering-review-template.md) | ADR、成本、失败/一致性、升级条件和 Known Gaps |
+| [Gate Review protocol](./templates/phase-gate-review-template.md) | 独立验收及 Gate Re-review；保持原协议 |
 
-三层内容 cross-link，不复制完整分析；Learning Pass 不能退化为 Task Completion summary，也不能用 Engineering Review 替代 Technical Learning 深度。最终质量问题是：**目标学习者能否读完文档、打开引用代码，并用自己的话解释这个 Phase？**
+- `Txxxx learning pass`：Task 实现已理解和验证后，记录新增能力、概念、代码、flow、理由、难点、证据与后续 consolidation 素材。
+- `Phase X learning review`：全部 Tasks DONE、Gate 状态明确后，将 Task 原材料去重重组为一章；正文不依赖 Task/Gate/Finding/AC ID，不只在日志末尾追加总结。
+- `Phase X engineering review`：Gate 后、优先在学习整合之后，独立判断设计、替代方案、trade-off、failure/consistency、何时换设计及证据边界。
+
+默认读者熟悉 JS/TS/React，正学习 Python/backend/RAG。中文解释为主，先 Why 后 How、先概念后符号；准确的 TypeScript 类比和真实代码精读用于降低学习成本，不省略困难状态/失败路径。[Phase 5](./phase-05-file-upload.md) 可参考教学深度；[Phase 6 Learning](./phase-06-keyword-retrieval.md) 与 [Phase 6 ER](./engineering-review/phase-06-engineering-review.md) 是 V2 试点，均非固定篇幅或统一标题模板。
+
+### 文档各自负责什么？
+
+| 产物 | 主要问题 / 叙事方式 |
+|---|---|
+| SPEC | 系统必须做什么？Contract-centric |
+| TASKS | 接下来实现什么？Task-centric |
+| Task Learning Pass | 我刚做了什么、学到了什么？Task-aware learning 原材料 |
+| Phase Learning Review / Technical Learning | 为什么需要、如何工作、代码在哪里？Concept-centric |
+| Engineering Review | 为何这样设计、成本/风险与更换条件是什么？Decision-centric |
+| Gate Review | 是否满足冻结验收契约？Evidence-centric |
+| Interview Guide | 如何向别人清楚解释和论证？基于理解与工程判断的独立派生产物 |
+
+适度摘要与 cross-link 可以重复，但不让 Learning 和 ER 都逐行解释同一机制。Interview Guide 不再作为未来 learning/review 命令的默认写入对象；历史候选晋升、STAR 和旧执行顺序保留，不作为未来自动生成面试答案的先例。
 
 ### Phase Gate Review（独立阶段门）
 
-**Canonical protocol**: [templates/phase-gate-review-template.md](./templates/phase-gate-review-template.md)
+Gate 继续使用 [canonical protocol](./templates/phase-gate-review-template.md)，默认 **REVIEW-ONLY**。独立核对 SPEC/TASKS、实际代码、tests/runtime evidence 与完整工作树；旧 verdict、DONE 标签、Learning/ER 可以帮助定位，不能代替证据。
 
-Phase Gate Review 位于 Learning Pass 之后、Phase Learning Review 与下一 Phase 之前。默认模式是 **REVIEW-ONLY**：除非用户明确授权，否则审查者不修改文件、不修复 findings、不改 `SPEC.md` 或 Task status、不启动下一 Phase、不提交或推送。
+Gate FAIL 后，按已有授权完成 remediation/tests，再独立 re-review；原失败和修复历史保留。未解决的阻断项不会因学习或工程文档完成而关闭。PASS 只说明 readiness，不授权自动启动下一 Phase；本次 V2 不修改 Gate 的 evidence/severity/result vocabulary 或标准 verdict。
 
-Gate Review 必须独立对照 `SPEC.md > TASKS.md > CLAUDE.md`，审计全部 Phase Tasks、适用 AC、实现契约、runtime evidence 与完整 repository state。Task Completion Report、Technical Learning、Engineering Review、历史 verdict 都可以帮助定位证据，但不能替代当前独立验证：**Existing review verdicts are context, not evidence.**
+当前代码、Phase closure evidence 与 later verification 分开记账。写清 CODE/STATIC、UNIT、MOCKED、SUBSTITUTED、REAL/LIVE、E2E 的具体范围、是否本次重跑和 deferred/not available；不能用测试数量代替行为解释。最终学习检查是：**六个月后能否不先读 TASKS 就恢复 mental model 并读懂真实代码？** 工程检查则是：**能否说明设计合理性的前提、成本、风险和升级触发点？**
 
-四类产物各自负责不同问题，不能互相折叠：
-
-| 产物 | 回答的问题 |
-|---|---|
-| **Technical Learning** | 代码是什么、如何运行、学习者需要掌握什么 |
-| **Engineering Review** | 设计为何如此、ADR/取舍/failure modes/规模边界是什么 |
-| **Phase Gate Review** | 当前 Phase 是否被独立证据验收、是否安全进入下一 Phase |
-| **Phase Learning Review** | Gate 后如何做 Phase 级学习 consolidation 与 Interview Candidate 晋升 |
-
-Phase 只有取得标准化 `PHASE_X_PASS — READY_FOR_PHASE_Y` verdict 后，才可视为已准备进入下一 Phase；PASS 本身不授权审查者自动启动下一 Phase。若 Gate 判定 `FAIL` 或 `BLOCKED`，完成修复或取得必要决策后必须执行 **Gate Re-review**。Re-review 按“Original Finding → Required Remediation → Actual Change → Regression Verification → Current Disposition → Revised Verdict”做 delta verification，不覆盖或改写原 verdict 历史。
-
-本协议从创建之日起治理未来 Gate 与显式 Re-review。下方 Phase 状态保留历史执行顺序；个别旧 Phase 的 Learning Review 早于 Gate，不应被解读为新 canonical workflow 的例外或先例。
-
-每一次 Phase 完成后，你会得到一章对应的学习笔记（即当前目录下的 `phase-XX-*.md` 文件）。这些笔记：
-
-- **基于真实项目代码**，而非虚构示例
-- **结合 SPEC 设计意图**与**实际实现状态**
-- **解释"为什么这样做"**，而不仅仅"做了什么"
-- **明确区分** SPEC 要求、当前实际实现、通用工程知识
-- **包含自测题和动手练习**，可用于学习检验
+以下 Phase 地图保存既有历史状态；Task 当前状态仍以 `docs/TASKS.md` 为准。历史 Learning Review 早于 Gate 等情况不作为新工作流的默认例外。
 
 ---
 
@@ -383,8 +368,7 @@ Current learning themes: prove failure state, preserve immutable identity across
 
 **目录**: [engineering-review/](./engineering-review/)
 
-每个已完成的 Phase 一份独立工程决策复盘；进行中的 Phase 可按 Task 增量维护同一文件，待 Phase Gate 后再收口状态。评审使用统一结构：
-Phase 定位 / 为什么需要这个模块 / 核心设计决策（Decision-Context-Problem-Chosen Solution-Why-Trade-off-Future Improvement）/ 架构影响 / 工程问题分析（可维护性/扩展性/数据一致性/错误处理/性能/安全）/ 规模扩大分析（10x/100x/1000x，均标记 Future / Not implemented in v1）。
+每个 Phase 一份独立工程决策复盘。未来默认在 Gate 状态建立、Phase Learning consolidation 后，按 [Engineering Review Template V2](./templates/phase-engineering-review-template.md) 评估工程问题、约束/替代方案、ADR、成本、失败/一致性、可观察升级条件与 Known Gaps；证据及历史后置。Task 早期判断先保存在学习素材中，既有增量 ER 记录保持原历史，不追溯改写。
 
 - [phase-00-engineering-review.md](./engineering-review/phase-00-engineering-review.md) — Project Bootstrap（配置/错误体系/数据模型）
 - [phase-01-engineering-review.md](./engineering-review/phase-01-engineering-review.md) — VectorStore Foundation（ABC 抽象/距离语义边界/反规范化）
@@ -415,17 +399,17 @@ Phase 定位 / 为什么需要这个模块 / 核心设计决策（Decision-Conte
 - [Phase 11 深度章](./interview-notes/dx-rag-interview-guide.md#phase-11-learning-review)（T1101–T1105 已实现；Gate PASS；Learning Review / Engineering Review 完成）：shared-resource mental model / F-1 Gate remediation / 8 道高频追问 + 5 道工程深问 / 诚实证据边界
 - 附录：面试前自查清单
 
-### Phase 学习模板（Phase 4-12 用）
+### Technical Learning Template V2
 
 **文档**: [templates/phase-learning-template.md](./templates/phase-learning-template.md)
 
-后续 Phase 学习笔记的 11 节标准结构（Phase 学习 / Phase 目标 / 项目位置 / Task 学习 / 代码理解 / 数据流 / 架构设计 / Engineering Review / Technical Decision / Interview Notes / Future Improvement），并强制"三层文档架构"边界（Learning / Engineering Review / Interview 各归其位，禁止再混写成巨型文件；每个 Task 的 Learning 只回答 Code / Project / Learning Understanding 三类问题）。
+Task 原材料与 Phase 概念教材分别提供模板。Phase 默认由问题、基础概念、系统位置、数据流进入代码、设计/失败、验证/限制、自测与一页复习；Task/AC/Gate/历史放附录。不固定 11 节，不把面试话术嵌入教材。
 
-### Phase Learning Pass Workflow
+### Final Learning & Engineering Workflow V2
 
 **文档**: [templates/phase-learning-pass-workflow.md](./templates/phase-learning-pass-workflow.md)
 
-未来 Learning Pass 的 canonical execution method：证据包、学习者画像、Phase 5 depth/style precedent、Task vs Phase 两级 cadence、Code / Project / Learning 三种理解、close reading、data flow + mental model、verification-as-learning、self-test/practice、三层所有权、quality guardrails 与 fresh-reader test。它规定“怎样执行”；上方 template 规定“文档长什么样”。
+保留用户提供的完整 V2 规范，并通过 repository binding 连接三个命令、两类模板、独立 Gate、证据语义、loss audit 与 fresh-reader test。默认治理未来 Tasks/Phases；历史迁移只在明确请求时执行。
 
 ### Phase Gate Review 模板
 
@@ -437,11 +421,11 @@ Phase 定位 / 为什么需要这个模块 / 核心设计决策（Decision-Conte
 
 ## 如何使用这些学习文档
 
-1. **按 Phase 顺序阅读**: 每个 Phase 的学习文档假设你已经理解了前面所有 Phase 的内容
+1. **先读问题与前置概念**: 按需要回看上游 Phase，不要求先记住 Task ID 或全部开发历史
 2. **配合代码阅读**: 学习文档会引用具体文件路径，请打开对应文件对照阅读
-3. **完成自测题**: 每章末尾有自测题，建议先尝试回答再看答案
+3. **完成自测题**: 先主动回忆，再回到概念、代码和证据核对，不以背答案代替理解
 4. **做动手练习**: 在理解的基础上，通过练习加深记忆
-5. **不要跳 Phase**: 后期 Phase 高度依赖前期建立的基础设施
+5. **从理解进入判断**: 学习章之后阅读对应 Engineering Review，最后再使用 Interview Guide 整理表达
 
 ---
 
