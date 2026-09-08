@@ -1,0 +1,19 @@
+{
+  "changes_since_T1202_live_audit": [
+    "backend\\app\\main.py"
+  ],
+  "T1201_hashes_match": true,
+  "T1201_raw": "docs\\verification\\T1201\\live-final.txt",
+  "T1201_raw_sha256": "99ab2890e7ae90645f4e5f476b13d216d6796f55103512b64e12f77956d185ca",
+  "T1202_raw": "docs\\verification\\T1202\\live-reviewed.txt",
+  "T1202_raw_sha256": "923b0723727ee4b686f7ad94f20737b9b65ae111f1663426f867bee8f6965159",
+  "interpretation": "Only backend/app/main.py changed since provider evidence: configured CORS consumption. Ingestion/QA/embedding/storage implementations, SPEC and raw live logs match prior audit hashes. CORS regression separately verified. No new live provider requests.",
+  "public_representation_policy": "../SANITIZATION-PROVENANCE.md",
+  "original_validity_record_sha256": "f0df642bfdf1cba25a297234a41a5fe7513482828e4e8ae184680aa13bcbb546",
+  "original_validity_record_local_path": "../.local-originals/T1204/live-evidence-validity.json",
+  "hash_scope": "*_raw_sha256 fields below remain historical original-byte hashes; *_public_sha256 fields verify the public representations. The historical applicability interpretation is retained, not newly executed.",
+  "T1201_public": "T1201/live-final.txt",
+  "T1201_public_sha256": "670f0c5f86ce47364193ee216f87edf4db6c5bac21573e885f384a3b27cc61e8",
+  "T1202_public": "T1202/live-reviewed.txt",
+  "T1202_public_sha256": "923b0723727ee4b686f7ad94f20737b9b65ae111f1663426f867bee8f6965159"
+}

@@ -349,26 +349,17 @@ Phase 只有取得标准化 `PHASE_X_PASS — READY_FOR_PHASE_Y` verdict 后，�
 
 ### Phase 12 — Integration & Acceptance
 
-**状态**: 🔴 GATE REMEDIATION（原 verdict `PHASE_12_FAIL — FIX_REQUIRED`；T1201/T1202/T1204 BLOCKED，T1203 DONE；未启动新Phase）
+**Learning Review:** learning consolidation completed 2026-09-07; independent fresh-reader check pending. This is not a formal workflow completion verdict.
+**Tasks:** T1201 DONE | T1202 DONE | T1203 DONE | T1204 DONE.
+**Gate:** current **PHASE_12_PASS**, F-6 **CLOSED / REMEDIATED**, T1201–T1204 Gate PASS. Historical `PHASE_12_FAIL — FIX_REQUIRED` and remediation remain recorded in [Gate closure](../verification/PHASE-12-GATE-CLOSURE.md). Independent learning fresh-reader/full workflow completion remains pending.
 
-**Tasks**: T1201 ⛔ BLOCKED（DashScope） | T1202 ⛔ BLOCKED（DeepSeek） | T1203 ✅ DONE | T1204 ⛔ BLOCKED（provider acceptance）
+- Current Technical Learning: [Phase 12 Learning Review](phase-12-learning-review.md) — one state/evidence model, live versus deterministic boundaries, PDF resource lifetime, retry acceptance, CORS consumption, whole-phase self-test.
+- Historical Task close readings: [pre-live Learning Pass](phase-12-integration-acceptance.md). Its old BLOCKED/NOT_AVAILABLE statements are historical, not current status.
+- Acceptance evidence: [T1204 full audit](../verification/T1204/README.md), including 104 section-qualified AC occurrences / 85 IDs, actual Qwen and DeepSeek evidence and the separate DoD matrix.
+- Interview consolidation: [Phase 12 answer bank](interview-notes/dx-rag-interview-guide.md#phase-12-learning-review), with evidence-qualified claims and Gate status preserved.
+- Phase 12 Engineering Review: [completed 2026-09-07](engineering-review/phase-12-engineering-review.md), covering evidence boundaries, rollback, retry, publication provenance and historical UI freshness finding ER12-01 (now closed as F-6) and remaining concurrency boundaries. The separate Gate re-review has completed PASS.
 
-**当前学习产物**:
-
-- 📖 **Technical Learning**: [phase-12-integration-acceptance.md](./phase-12-integration-acceptance.md)（已同步BGE `SPEC_CONFLICT` remediation：保留BAAI模型、统一512维、REAL本地模型+Chroma证据；DashScope/DeepSeek仍NOT_AVAILABLE）
-- 🔍 **Engineering Review**: 尚未建立；待 Phase 12 按独立 cadence 执行
-- 🎤 **Interview Preparation**: T1201–T1204 仅在 Technical Learning 记录 candidates，Phase 未完成前不晋升项目级 Interview Guide
-
-**当前与未来主要学习主题**:
-
-- Ingestion Pipeline broad probe（81/81 PASS：真实FastAPI/parsers/Chroma + deterministic 512维Embedding/OCR substitutions）；REAL BGE另以4/4独立probe通过；T1201因live DashScope未验收仍BLOCKED
-- Child-process + temp-storage isolation、env-before-import 与 runtime fixture generation（T1201 ✅）
-- Retrieval + QA broad probe（46/46 PASS：真实upload/Chroma/retrieval/QA API + deterministic 512维Embedding/DeepSeek transport substitutions）；真实BGE受控中文排序PASS；T1202因live DeepSeek未验收仍BLOCKED
-- Phase 12 remediation regression：focused embedding 3/3、完整backend `unittest` 81/81 PASS
-- File Management & Security Cross-Feature Verification（T1203 ✅：真实upload/list/persisted preview/cascade delete/re-upload + 双KB隔离；仅Embedding model替代；43/43 PASS）
-- T1203 focused files/upload regression：18/18 `unittest` PASS；完整 backend regression：78/78 PASS；frontend仅static source wiring，未执行browser
-- Full SPEC inventory/focused probe仍为29/29 PASS，但原100% mandatory AC结论因provider substitutions被Gate撤回；T1204保持BLOCKED
-- REAL BGE：revision `7999e1d3359715c523056ef9478215996d62a620`，13-file snapshot完整、512维、norm、singleton、临时Chroma中文同义排序4/4 PASS；DashScope/DeepSeek未调用、未标PASS
+Current learning themes: prove failure state, preserve immutable identity across operations, choose evidence appropriate to each claim, audit the verifier itself, bind old evidence to current code. This learning review reused the final runtime evidence; it did not rerun providers/tests or change product code, SPEC or Task statuses.
 
 ---
 

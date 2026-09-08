@@ -1,0 +1,18 @@
+COMMAND: python scripts/verify_bge_model.py
+CWD: backend
+    [PASS] official Hugging Face snapshot is complete and size/hash verified -- revision=7999e1d3359715c523056ef9478215996d62a620; files=13; mismatches=[]
+    [PASS] real model loads from the configured local path and is a lazy singleton -- path=<REPO_ROOT>/backend/models/bge-small-zh-v1.5; dimension=512
+    [PASS] real encode_chunks returns 512-dimensional L2-normalized vectors -- shape=4x512; norms=[1.0, 1.0, 1.0, 1.0]
+    [PASS] real BGE plus Chroma ranks the controlled Chinese synonym match first -- query='AI 的子领域是什么？'; ranking=[('machine-learning.txt', 0.467517), ('frontend.txt', 0.415124), ('database.txt', 0.367617), ('cooking.txt', 0.251864)]
+
+==============================================================================
+Required checks: 4/4 passed
+RESULT: PASS
+MODEL_REVISION: 7999e1d3359715c523056ef9478215996d62a620
+==============================================================================
+--- child stderr ---
+
+Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 71/71 [00:00<00:00, 3392.99it/s]
+
+EXIT_CODE: 0

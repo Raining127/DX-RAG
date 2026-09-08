@@ -319,6 +319,114 @@ def run_probe(probe_root: Path) -> int:
     )
     store.delete_collection(vector_kb)
 
+    print("\n--- Literal F016 three-file list and 15-chunk deletion")
+    file_kb = "f016-literal"
+    store.create_collection(file_kb)
+    file_dir = upload_root / file_kb
+    file_dir.mkdir(parents=True)
+    check(
+        "AC-F016-03 new collection returns an empty file list",
+        body_of(client.get("/api/files", params={"collection_name": file_kb}))
+        == {"collection_name": file_kb, "files": []},
+    )
+    identities = {}
+    for file_name, count in (("doc.pdf", 15), ("keep-a.txt", 1), ("keep-b.txt", 1)):
+        file_id = str(uuid.uuid4())
+        identities[file_name] = file_id
+        if file_name.endswith(".pdf"):
+            with fitz.open() as document:
+                document.new_page().insert_text((72, 72), "literal deletion fixture")
+                raw = document.tobytes()
+        else:
+            raw = b"retained fixture"
+        (file_dir / file_name).write_bytes(raw)
+        chunks = [f"literaldeletiontoken {file_name} chunk {i}" for i in range(count)]
+        metadata = [dict(
+            chunk_id=str(uuid.uuid4()), file_id=file_id, file_name=file_name,
+            collection_name=file_kb, chunk_index=i,
+            source_file=f"uploads/{file_kb}/{file_name}", file_size=len(raw),
+            upload_time=upload_time, ingestion_status="SUCCESS",
+        ) for i in range(count)]
+        store.add_texts(file_kb, chunks, embedding_mod.encode_chunks(chunks), metadata)
+    listed_files = client.get("/api/files", params={"collection_name": file_kb})
+    rows = body_of(listed_files).get("files", [])
+    check(
+        "AC-F016-01 literal three persisted files have complete list metadata",
+        listed_files.status_code == 200 and len(rows) == 3
+        and {row["file_name"]: row["chunk_count"] for row in rows}
+        == {"doc.pdf": 15, "keep-a.txt": 1, "keep-b.txt": 1}
+        and all({"file_id", "file_name", "size", "upload_time", "chunk_count", "status"}
+                == set(row) for row in rows),
+    )
+    target_id = identities["doc.pdf"]
+    kept_before = record_snapshot([
+        row for row in store.list_chunks(file_kb) if row.file_id != target_id
+    ])
+    KeywordRetriever(store).keyword_search(file_kb, "literaldeletiontoken", 20)
+    check("AC-F016-02 literal precondition is exactly 15 persisted PDF chunks",
+          len(store.get_chunks_by_file(file_kb, target_id)) == 15)
+    deleted = client.delete(f"/api/files/{target_id}", params={"collection_name": file_kb})
+    check(
+        "AC-F016-02 deletes all 15 chunks/raw PDF and invalidates keyword cache",
+        deleted.status_code == 200 and not (file_dir / "doc.pdf").exists()
+        and store.get_chunks_by_file(file_kb, target_id) == []
+        and record_snapshot(store.list_chunks(file_kb)) == kept_before
+        and file_kb in KeywordRetriever._dirty_collections,
+    )
+    client.delete(f"/api/collections/{file_kb}")
+
+    print("\n--- Section 9 OCR errors (deterministic SDK fault injection)")
+    from pydantic import SecretStr
+    from dashscope import MultiModalConversation
+    from types import SimpleNamespace
+
+    error_kb = "ocr-error-contract"
+    client.post("/api/collections", json={"name": error_kb})
+    with fitz.open() as document:
+        document.new_page()
+        blank_pdf = document.tobytes()
+        encrypted_pdf = document.tobytes(
+            encryption=fitz.PDF_ENCRYPT_AES_256, owner_pw="audit-owner", user_pw="audit-reader"
+        )
+
+    def upload_error_fixture(content: bytes):
+        return client.post("/api/upload", data={"collection_name": error_kb},
+                           files={"file": ("error.pdf", content, "application/pdf")})
+
+    encrypted = upload_error_fixture(encrypted_pdf)
+    check("Section 9 real encrypted PDF maps to 422 ENCRYPTED_PDF",
+          encrypted.status_code == 422 and code_of(encrypted) == "ENCRYPTED_PDF")
+    with patch.object(settings, "DASHSCOPE_API_KEY", None), patch.object(MultiModalConversation, "call") as remote:
+        response = upload_error_fixture(blank_pdf)
+        check("Section 9 missing OCR key maps to 500 OCR_NOT_CONFIGURED without SDK call",
+              response.status_code == 500 and code_of(response) == "OCR_NOT_CONFIGURED"
+              and not remote.called)
+    for status in (401, 403, 400, 429, 503):
+        with patch.object(settings, "DASHSCOPE_API_KEY", SecretStr("offline-audit")), \
+             patch.object(MultiModalConversation, "call", return_value=SimpleNamespace(status_code=status)) as remote, \
+             patch("app.services.ingest.time.sleep") as sleep:
+            response = upload_error_fixture(blank_pdf)
+        is_auth = status in (401, 403)
+        retryable = status in (429, 503)
+        check(f"Section 9 injected OCR HTTP {status} maps error and obeys retry contract",
+              response.status_code == (500 if is_auth else 422)
+              and code_of(response) == ("OCR_AUTH_FAILED" if is_auth else "FILE_PARSE_ERROR")
+              and remote.call_count == (3 if retryable else 1)
+              and [call.args[0] for call in sleep.call_args_list] == ([1.0, 2.0] if retryable else []))
+    with patch.object(settings, "DASHSCOPE_API_KEY", SecretStr("offline-audit")), \
+         patch.object(fitz.Page, "get_pixmap", side_effect=RuntimeError("controlled render failure")), \
+         patch.object(MultiModalConversation, "call") as remote:
+        response = upload_error_fixture(blank_pdf)
+        check("Section 9 render failure is a structured PAGE_RENDER_FAILED warning",
+              response.status_code == 422
+              and body_of(response).get("error", {}).get("details", {}).get("warnings")
+              == [{"page_number": 1, "error_code": "PAGE_RENDER_FAILED"}]
+              and not remote.called)
+    check("Section 9 rejected OCR uploads leave no persisted residual",
+          store.get_chunk_count(error_kb) == 0
+          and not (upload_root / error_kb / "error.pdf").exists())
+    client.delete(f"/api/collections/{error_kb}")
+
     print("\n--- F001 create, list, and validation")
     main_kb = "test-kb"
     renamed_kb = "renamed-kb"

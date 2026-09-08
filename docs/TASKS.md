@@ -2676,9 +2676,9 @@ No Task is complete until all Completion Conditions are met.
 
 ### T1201 — Ingestion Pipeline E2E Verification
 
-**Status:** BLOCKED
+**Status:** DONE
 
-**Phase 12 Gate remediation note (2026-09-07):** Original finding `SPEC_CONFLICT` identified that the retained official model `BAAI/bge-small-zh-v1.5` outputs 512 dimensions while the frozen baseline required 384. Product approved retaining the model and updating SPEC/implementation/acceptance to 512. The local model is now verified with REAL evidence (revision `7999e1d3359715c523056ef9478215996d62a620`), but live DashScope/Qwen-VL OCR remains `NOT_AVAILABLE` and unverified; therefore T1201 is not PASS/DONE.
+**Phase 12 Gate remediation / live acceptance note (2026-09-07):** The approved 512-dimensional BGE baseline remains in effect (official local revision `7999e1d3359715c523056ef9478215996d62a620`). User-authorized REAL DashScope/Qwen-VL + REAL local BGE ingestion verification now passes **91/91**, including scanned/mixed PDFs, controlled real network-timeout retries, SUCCESS_WITH_WARNINGS, full FAILED rollback, same-name recovery, all 11 formats, and validation. A Windows malformed-PDF handle leak found during verification was fixed and regression-tested. Existing rollback checks pass 56/56, deterministic ingestion regression 88/88, and backend tests 82/82. All T1201 ingestion ACs and Completion Conditions pass; see [T1201 verification evidence](verification/T1201/README.md). This closes only T1201; T1202/T1204 and the Phase 12 Gate are not upgraded.
 
 **Goal:** End-to-end verification of the complete ingestion pipeline: upload → parse → clean → chunk → embed → store, across all supported formats.
 
@@ -2733,9 +2733,9 @@ No Task is complete until all Completion Conditions are met.
 
 ### T1202 — Retrieval + QA Pipeline E2E Verification
 
-**Status:** BLOCKED
+**Status:** DONE
 
-**Phase 12 Gate remediation note (2026-09-07):** Original finding `SPEC_CONFLICT` identified the 384-vs-512 BGE contract mismatch. The approved decision keeps `BAAI/bge-small-zh-v1.5` and aligns the contract to 512. REAL local BGE + isolated Chroma semantic ranking now passes at the recorded revision, but live DeepSeek answer grounding, history/pronoun behavior, provider compatibility, and prompt-injection behavior remain `NOT_AVAILABLE` and unverified; therefore T1202 is not PASS/DONE.
+**Phase 12 remaining-acceptance audit (2026-09-07):** DONE. All 29 applicable F009-F015 / AC-QA mandatory ACs and T1202 Completion Conditions pass. Existing LIVE DeepSeek + real BGE/Chroma evidence passes 70/70 checks, including actual QA, timeout/network recovery and actual 401. Final DETERMINISTIC QA/query regression passes 60/60, the contract matrix 46/46, and additional retry/auth fault injection 15/15. SPEC F013 / Section 9.3 requires correct retry/error behavior; no frozen AC requires naturally observed live 429/5xx/403. Those live statuses remain NOT_OBSERVED; deterministic evidence is not relabeled as live. The artifact-added exit-2 gate is removed, with historical logs preserved. See [T1202 evidence and AC ledger](verification/T1202/README.md) and [precise blocker audit](verification/T1202/BLOCKER-AUDIT.md). No product/SPEC change or new provider request in this audit. T1204 and the Phase 12 Gate are not upgraded.
 
 **Goal:** End-to-end verification of the retrieval and QA pipeline: keyword search, vector search, hybrid fusion, context assembly, LLM answer generation, and source citation.
 
@@ -2789,6 +2789,8 @@ No Task is complete until all Completion Conditions are met.
 
 **Status:** DONE
 
+**F-6 remediation (2026-09-07): DONE reconfirmed after current backend lifecycle/security 43/43 and actual Home + four-component deterministic integration 5/5 (red before fix, green after). Same-KB upload/list/preview/delete/re-upload and counts synchronize without remount or selection changes; KB isolation and rename/delete callbacks verified. See [F-6 evidence](verification/T1204/F6-REMEDIATION.md). No browser upload/provider claim; the subsequent independent incremental Gate Re-review is complete: PHASE_12_PASS, F-6 CLOSED / REMEDIATED; see [Gate closure](verification/PHASE-12-GATE-CLOSURE.md).**
+
 **Goal:** Verify file management operations, path traversal security, and cross-feature interactions (upload → list → preview → delete → re-upload).
 
 **SPEC References:**
@@ -2833,9 +2835,11 @@ No Task is complete until all Completion Conditions are met.
 
 ### T1204 — Full SPEC Acceptance Criteria Audit
 
-**Status:** BLOCKED
+**Status:** DONE
 
-**Phase 12 Gate remediation note (2026-09-07):** The original Gate `SPEC_CONFLICT` is remediated by the approved 512-dimensional BGE baseline, and BGE-specific evidence is now REAL. The full audit cannot be PASS while live DashScope OCR and live DeepSeek acceptance remain `NOT_AVAILABLE`; substituted provider evidence does not satisfy those literal acceptance boundaries. T1204 remains BLOCKED pending separately authorized provider verification.
+**F-6 incremental re-audit (2026-09-07): affected F002/F016/F017 and DOD-01 state synchronization restored; affected acceptance/DoD evidence supplemented. T1203 43/43, component integration 5/5, upload boundary 2/2, backend 83/83, typecheck and build pass. DONE reconfirmed for this affected scope. The remediation did not itself issue a Gate verdict; the subsequent independent incremental re-review confirmed T1204 PASS and PHASE_12_PASS. No full-audit/provider rerun was required. See [F-6 remediation](verification/T1204/F6-REMEDIATION.md).**
+
+**Full SPEC acceptance audit (2026-09-07):** DONE. Independently audited 65 Section 5 + 39 Section 12 mandatory occurrences (104 section-qualified rows; 85 unique IDs), with complete owner/implementation/evidence/result traceability and DOD-01 through DOD-06 PASS. Revalidated unchanged Qwen 91/91 and DeepSeek 70/70 LIVE artifacts; deterministic retry/auth evidence remains separately labeled, without requiring natural live 429/5xx/403. Fixed ignored CORS_ORIGINS configuration (SPEC 8.1/10.3) and verified it. Final backend tests 83/83; rollback 56/56; T1201 88/88; T1202 46/46 + 15/15 failure contracts; T1203 43/43; expanded T1204 42/42; real BGE 4/4. Frontend dependency/typecheck/build pass, browser scenarios 6/6 and component boundary checks 2/2; file chooser permission limitation explicitly recorded, not called browser-upload PASS. See [complete T1204 audit](verification/T1204/README.md), [104-row AC matrix](verification/T1204/ACCEPTANCE-MATRIX.md) and [DoD matrix](verification/T1204/DOD-MATRIX.md). SPEC unchanged; no new provider requests, dependencies, future work or task started. This completes T1204 only and does not silently rewrite a separate historical Phase Gate event.
 
 **Goal:** Complete audit of all mandatory Acceptance Criteria from SPEC Section 5 (Feature ACs) and Section 12 (Cross-feature ACs) to confirm every AC has a passing verification.
 

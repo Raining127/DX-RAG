@@ -60,6 +60,7 @@ function getErrorMessage(error: unknown): string {
 export default function Home() {
   const [selectedKey, setSelectedKey] = useState<MenuKey>('knowledge-base');
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [fileRevisions, setFileRevisions] = useState<Record<string, number>>({});
   const [collectionState, setCollectionState] =
     useState<CollectionState>('loading');
   const [collectionError, setCollectionError] = useState('');
@@ -150,6 +151,20 @@ export default function Home() {
     },
     [collections],
   );
+
+  const handleFileUploaded = useCallback((collectionName: string) => {
+    setCollections((current) =>
+      current.map((collection) =>
+        collection.name === collectionName
+          ? { ...collection, file_count: collection.file_count + 1 }
+          : collection,
+      ),
+    );
+    setFileRevisions((current) => ({
+      ...current,
+      [collectionName]: (current[collectionName] ?? 0) + 1,
+    }));
+  }, []);
 
   const handleFileDeleted = useCallback((collectionName: string) => {
     setCollections((current) =>
@@ -244,7 +259,7 @@ export default function Home() {
               data-panel-key="upload"
               hidden={selectedKey !== 'upload'}
             >
-              <FileUpload {...collectionSource} />
+              <FileUpload {...collectionSource} onFileUploaded={handleFileUploaded} />
             </div>
             <div
               className="feature-panel"
@@ -261,6 +276,7 @@ export default function Home() {
               <FileManager
                 {...collectionSource}
                 onFileDeleted={handleFileDeleted}
+                fileRevisions={fileRevisions}
               />
             </div>
           </div>

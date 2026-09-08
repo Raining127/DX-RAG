@@ -57,3 +57,47 @@ htmlcov/
 tmp/
 temp/
 *.tmp
+
+# Local agent settings and runtime/test storage
+/.claude/settings.local.json
+/backend/tmpnw2f1mgn/
+uploads/
+*.tsbuildinfo
+
+# Phase 12 raw captures: new outputs stay local; reviewed evidence is allowlisted.
+/docs/verification/T1201/*.txt
+/docs/verification/T1202/*.txt
+/docs/verification/T1204/*.txt
+!/docs/verification/T1201/backend-regression.txt
+!/docs/verification/T1201/corrupt-pdf-regression.txt
+!/docs/verification/T1201/deterministic-final.txt
+!/docs/verification/T1201/deterministic-regression.txt
+!/docs/verification/T1201/live-final.txt
+!/docs/verification/T1201/live-network.txt
+!/docs/verification/T1201/live-sandbox.txt
+!/docs/verification/T1201/review.txt
+!/docs/verification/T1201/rollback-regression.txt
+!/docs/verification/T1202/blocker-audit-deterministic.txt
+!/docs/verification/T1202/blocker-audit-failure-contract.txt
+!/docs/verification/T1202/blocker-audit-focused.txt
+!/docs/verification/T1202/blocker-audit-review.txt
+!/docs/verification/T1202/deterministic.txt
+!/docs/verification/T1202/focused-before.txt
+!/docs/verification/T1202/live-final.txt
+!/docs/verification/T1202/live-first.txt
+!/docs/verification/T1202/live-reviewed.txt
+!/docs/verification/T1202/review.txt
+!/docs/verification/T1204/backend-final.txt
+!/docs/verification/T1204/bge.txt
+!/docs/verification/T1204/frontend-component.txt
+!/docs/verification/T1204/frontend-validation.txt
+!/docs/verification/T1204/review.txt
+!/docs/verification/T1204/rollback-final.txt
+!/docs/verification/T1204/t1201-final.txt
+!/docs/verification/T1204/t1202-faults.txt
+!/docs/verification/T1204/t1202-final.txt
+!/docs/verification/T1204/t1203-final.txt
+!/docs/verification/T1204/t1204-final.txt
+
+# Original evidence before public path sanitization (local provenance only)
+/docs/verification/.local-originals/

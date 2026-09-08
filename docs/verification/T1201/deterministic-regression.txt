@@ -1,0 +1,152 @@
+warning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
+EVIDENCE_MODE: SUBSTITUTED BGE + OCR
+STARTED_UTC: 2026-09-07T08:59:22.143316+00:00
+    [PASS] AC-F007-02 lazy model is constructed once and reused �� loads=1
+    [PASS] AC-F007-02 configured model path reaches the loader �� path=models/bge-small-zh-v1.5
+    [PASS] AC-F007-01 embedding count, width, and L2 normalization
+    [PASS] probe storage is outside the repository �� uploads=<TEMP_DIR>/uploads; chroma=<TEMP_DIR>/chroma
+
+--- Text formats, cleaning, and plain-text dispatch
+    [PASS] create isolated knowledge base t1201-text
+    [PASS] AC-F003-01 UTF-8 TXT upload �� HTTP 200 SUCCESS
+    [PASS] AC-F005-01 cleaning removes blank lines and edge whitespace
+    [PASS] AC-F003-01/02 GBK fallback upload �� HTTP 200 SUCCESS
+    [PASS] AC-F003-02 GBK text remains readable after the full pipeline
+    [PASS] F003 UTF-16 fallback �� HTTP 200 SUCCESS
+    [PASS] UTF-16 decoded text is preserved
+    [PASS] supported plain-text format .csv �� HTTP 200 SUCCESS
+    [PASS] supported plain-text format .json �� HTTP 200 SUCCESS
+    [PASS] supported plain-text format .log �� HTTP 200 SUCCESS
+    [PASS] AC-F005-02 cleaned-empty upload is rejected �� HTTP 422 FILE_PARSE_ERROR
+    [PASS] AC-F005-02 cleaned-empty upload leaves no raw file
+
+--- Markdown and recursive chunking
+    [PASS] create isolated knowledge base t1201-chunk
+    [PASS] AC-F006-01 Markdown upload �� HTTP 200 SUCCESS
+    [PASS] AC-F006-01 nested header path prefixes a chunk �� chunks=['�½�A\n\n���� A', '�½�A > С��A1\n\n���� A1']
+    [PASS] AC-F006-03 short text upload �� HTTP 200 SUCCESS
+    [PASS] AC-F006-03 300-character text remains one chunk
+    [PASS] AC-F006-02 long text upload �� HTTP 200 SUCCESS
+    [PASS] AC-F006-02 recursive chunks stay within 800 characters �� sizes=[800, 800, 640]
+    [PASS] AC-F006-02 adjacent recursive chunks overlap by 120 characters
+
+--- DOCX and all Excel variants
+    [PASS] create isolated knowledge base t1201-office
+    [PASS] AC-F003-03/04 DOCX table upload �� HTTP 200 SUCCESS
+    [PASS] AC-F003-03/04 DOCX paragraph and table cells are extracted �� content='Document introduction\nName Value\nAlpha 42'
+    [PASS] supported Excel format .xlsx �� HTTP 200 SUCCESS
+    [PASS] .xlsx cell content extracted
+    [PASS] AC-F003-05 XLSX skips empty sheet and reads later sheet �� content='Alpha 1\nGamma 3'
+    [PASS] supported Excel format .xlsm �� HTTP 200 SUCCESS
+    [PASS] .xlsm cell content extracted
+    [PASS] supported Excel format .xltx �� HTTP 200 SUCCESS
+    [PASS] .xltx cell content extracted
+    [PASS] supported Excel format .xltm �� HTTP 200 SUCCESS
+    [PASS] .xltm cell content extracted
+
+--- Native, scanned, mixed, warning, and FAILED PDFs
+    [PASS] create isolated knowledge base t1201-pdf
+    [PASS] AC-F002-01 native PDF upload �� HTTP 200 SUCCESS
+    [PASS] native PDF does not call OCR
+    [PASS] file-list API responds for t1201-pdf
+    [PASS] AC-F002-01 raw PDF, chunks, and file-list record persist
+    [PASS] native PDF text survives parsing and storage
+    [PASS] scanned.pdf page 1 has no native text
+    [PASS] scanned.pdf page 2 has no native text
+    [PASS] AC-F004-01 scanned PDF OCR success �� HTTP 200 SUCCESS
+    [PASS] AC-F004-01 scanned pages preserve OCR order with no warnings
+    [PASS] F004 real OCR adapter sends qwen-vl-plus, data URI, and frozen prompt
+    [PASS] mixed.pdf page 2 has no native text
+    [PASS] AC-F003-02 / AC-F004-02 mixed PDF �� HTTP 200 SUCCESS
+    [PASS] AC-F003-02 / AC-F004-02 native and OCR pages are ordered and OCR is selective
+    [PASS] partial.pdf page 3 has no native text
+    [PASS] AC-F002-07 / AC-F004-03 partial OCR failure �� HTTP 200 SUCCESS_WITH_WARNINGS
+    [PASS] AC-F002-07 / AC-F004-03 returns SUCCESS_WITH_WARNINGS and keeps good pages
+    [PASS] AC-F004-05 failed OCR page is never silently omitted
+    [PASS] AC-F002-10 SUCCESS_WITH_WARNINGS remains duplicate-protected �� HTTP 409 FILE_ALREADY_EXISTS
+    [PASS] all-failed.pdf page 1 has no native text
+    [PASS] all-failed.pdf page 2 has no native text
+    [PASS] all-failed.pdf page 3 has no native text
+    [PASS] AC-F002-08 / AC-F004-04 all OCR pages failing returns 422 with warnings �� HTTP 422 FILE_PARSE_ERROR
+    [PASS] file-list API responds for t1201-pdf
+    [PASS] AC-F002-09 FAILED leaves no raw file, chunk/vector/metadata, or keyword entry
+    [PASS] AC-F002-09 same-name retry succeeds after FAILED rollback �� HTTP 200 SUCCESS
+
+--- Validation, duplicate scope, and keyword-index invalidation
+    [PASS] create isolated knowledge base t1201-valid
+    [PASS] AC-F002 validation rejects bad.exe �� HTTP 400 UNSUPPORTED_FILE_TYPE
+    [PASS] AC-F002 validation rejects empty.txt �� HTTP 400 EMPTY_FILE
+    [PASS] AC-F002 validation rejects oversized.txt �� HTTP 413 FILE_TOO_LARGE
+    [PASS] AC-F002 validation rejects ../escape.txt �� HTTP 400 INVALID_FILE_NAME
+    [PASS] AC-F002 validation rejects subdir/escape.txt �� HTTP 400 INVALID_FILE_NAME
+    [PASS] AC-F002 validation rejects broken.pdf �� HTTP 422 FILE_PARSE_ERROR
+    [FAIL] AC-F002-04/05/06 validation failures have no persistence side effects
+    [PASS] create isolated knowledge base t1201-kb-a
+    [PASS] create isolated knowledge base t1201-kb-b
+    [PASS] AC-F002-03 same filename succeeds independently in two knowledge bases
+    [PASS] AC-F002-02 case-variant duplicate in one knowledge base is rejected �� HTTP 409 FILE_ALREADY_EXISTS
+    [PASS] create isolated knowledge base t1201-index
+    [PASS] keyword index starts empty
+    [PASS] upload after empty keyword index cache �� HTTP 200 SUCCESS
+    [PASS] successful ingestion invalidates and rebuilds the keyword index
+
+--- Vector persistence contract through ingested chunks
+    [PASS] create isolated knowledge base t1201-vector
+    [PASS] ten-chunk vector fixture upload �� HTTP 200 SUCCESS
+    [PASS] AC-F008-01 ingestion persisted ten chunks with immutable UUID identities �� chunk_count=10
+    [PASS] F008 persisted metadata has the exact nine required fields
+    [PASS] AC-F008-01 public search returns top-3 similarity results with identities
+    [PASS] AC-F008-02 delete_by_file removes one file's chunks and preserves another �� deleted=10
+    [PASS] create isolated knowledge base t1201-delete
+    [PASS] AC-F008-02 literal 5/3 deletion fixture
+    [PASS] AC-F008-03 application code does not access Chroma private attributes �� violations=[]
+    [PASS] all 11 supported upload extensions complete the ingestion pipeline �� observed=['.csv', '.docx', '.json', '.log', '.md', '.pdf', '.txt', '.xlsm', '.xlsx', '.xltm', '.xltx']
+
+==============================================================================
+Required checks: 87/88 passed
+RESULT: FAIL
+  - AC-F002-04/05/06 validation failures have no persistence side effects
+==============================================================================
+--- child stderr ---
+upload rollback: failed to delete <TEMP_DIR>/uploads/t1201-valid/broken.pdf
+Traceback (most recent call last):
+  File "<PYTHON_ROOT>/Lib/site-packages/pymupdf/__init__.py", line 3013, in __init__
+    doc = mupdf.fz_open_document_with_stream_and_dir(suffix, fz_stream, archive.this)
+  File "<PYTHON_ROOT>/Lib/site-packages/pymupdf/mupdf.py", line 53426, in fz_open_document_with_stream_and_dir
+    return _mupdf.fz_open_document_with_stream_and_dir(magic, stream, dir)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+pymupdf.mupdf.FzErrorFormat: code=7: no objects found
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<REPO_ROOT>/backend/app/services/ingest.py", line 232, in parse_pdf_file
+    doc = fitz.open(str(file_path))
+  File "<PYTHON_ROOT>/Lib/site-packages/pymupdf/__init__.py", line 3016, in __init__
+    raise FileDataError(f'Failed to open file {filename!r} as type {suffix}.') from e
+pymupdf.FileDataError: Failed to open file '<TEMP_DIR>/uploads/t1201-valid/broken.pdf' as type pdf.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<REPO_ROOT>/backend/app/api/upload.py", line 199, in upload_file
+    result = IngestService.process(target, file_name, collection)
+  File "<REPO_ROOT>/backend/app/services/ingest.py", line 598, in process
+    raw_text = cls._parse(file_path)
+  File "<REPO_ROOT>/backend/app/services/ingest.py", line 651, in _parse
+    return parse_pdf_file(file_path, ocr_page=ocr_page)
+  File "<REPO_ROOT>/backend/app/services/ingest.py", line 234, in parse_pdf_file
+    raise AppError("FILE_PARSE_ERROR") from exc
+app.core.errors.AppError: �ļ�����ʧ��
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<REPO_ROOT>/backend/app/api/upload.py", line 231, in _discard_saved_file
+    target.unlink(missing_ok=True)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "<PYTHON_ROOT>/Lib/pathlib/__init__.py", line 1042, in unlink
+    os.unlink(self)
+    ~~~~~~~~~^^^^^^
+PermissionError: [WinError 32] ��һ����������ʹ�ô��ļ��������޷����ʡ�: '<TEMP_DIR>/uploads/t1201-valid/broken.pdf'
+ISOLATED_STORAGE_CLEANUP: PASS

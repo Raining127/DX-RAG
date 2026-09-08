@@ -1,0 +1,9 @@
+SECRET_SCAN: PASS (configured values absent from task-local files and diff; values withheld)
+T1201_PRESERVATION: PASS (all recorded source/artifact hashes unchanged)
+TASK_SCOPE: PASS (all TASKS content outside T1202 unchanged)
+PRODUCT_SPEC_ENV_DEPENDENCIES: UNCHANGED by T1202
+FINAL_LIVE: 70/70 checks; exit 2 BLOCKED for unobserved actual 429/5xx
+REGRESSION: 60/60 focused tests; 46/46 deterministic matrix
+COMMIT: none
+SHA256 backend/scripts/verify_t1202_live.py 203217589a078580743068946c732f77d4c87e295621ddb8f164c80cd06427c4
+SHA256 backend/scripts/verify_t1202_retrieval_qa.py 904433f83b782b1645a5d668124f7bb24e956cbd52e7cfc51ee064541ff83685

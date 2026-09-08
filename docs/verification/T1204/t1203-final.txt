@@ -1,0 +1,63 @@
+COMMAND: python backend/scripts/verify_t1203_file_management_security.py
+CWD: .
+warning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
+    [PASS] declared embedding boundary loads once from the configured path
+    [PASS] probe storage is outside the repository — uploads=<TEMP_DIR>/uploads; chroma=<TEMP_DIR>/chroma
+    [PASS] create isolated knowledge base t1203-alpha — HTTP 201
+    [PASS] create isolated knowledge base t1203-beta — HTTP 201
+
+--- Upload filename security and clean-name control
+    [PASS] AC-SEC-01 rejects traversal filename '../doc.pdf' — HTTP 400; code=INVALID_FILE_NAME
+    [PASS] AC-SEC-01 rejection for '../doc.pdf' is side-effect free
+    [PASS] AC-SEC-01 rejects traversal filename '..\\doc.pdf' — HTTP 400; code=INVALID_FILE_NAME
+    [PASS] AC-SEC-01 rejection for '..\\doc.pdf' is side-effect free
+    [PASS] AC-SEC-01 rejects traversal filename 'subdir/doc.pdf' — HTTP 400; code=INVALID_FILE_NAME
+    [PASS] AC-SEC-01 rejection for 'subdir/doc.pdf' is side-effect free
+    [PASS] AC-SEC-01 covers parent, Windows-parent, and nested path forms — results=[('../doc.pdf', 400, 'INVALID_FILE_NAME'), ('..\\doc.pdf', 400, 'INVALID_FILE_NAME'), ('subdir/doc.pdf', 400, 'INVALID_FILE_NAME')]
+    [PASS] AC-SEC-01 no escaped or nested doc.pdf exists
+    [PASS] upload safe-document.pdf into t1203-alpha — HTTP 200; chunks=1
+    [PASS] AC-SEC-02 a clean supported filename follows normal upload
+
+--- Upload, list metadata, and cross-KB isolation
+    [PASS] upload preview-source.txt into t1203-alpha — HTTP 200; chunks=1
+    [PASS] upload long-preview.txt into t1203-alpha — HTTP 200; chunks=11
+    [PASS] upload delete-me.txt into t1203-alpha — HTTP 200; chunks=1
+    [PASS] upload delete-me.txt into t1203-beta — HTTP 200; chunks=1
+    [PASS] uploaded files list with the complete metadata contract — HTTP 200; files=4
+    [PASS] file-list size, chunk count, status, and timestamp are accurate
+    [PASS] cross-KB file lists expose only their own persisted identities
+    [PASS] same display filename is stored independently in KB-A and KB-B
+
+--- Persisted-chunk preview and truncation
+    [PASS] AC-F016-04 preview reconstructs persisted chunks in index order — HTTP 200
+    [PASS] AC-F016-04 preview ignores mutated raw file and external services
+    [PASS] AC-F016-05 long preview is truncated to MAX_PREVIEW_CHARS — total=8409
+    [PASS] AC-F016-05 total_chars reports the complete pre-truncation length
+    [PASS] AC-F016-06 preview in a missing collection returns 404 — code=COLLECTION_NOT_FOUND
+    [PASS] AC-F016-07 missing file preview returns 404 FILE_NOT_FOUND — code=FILE_NOT_FOUND
+    [PASS] cross-KB preview cannot resolve a file_id owned by another KB
+
+--- Cascade delete, keyword invalidation, and re-upload
+    [PASS] keyword index is primed with the file before deletion
+    [PASS] AC-F016-08 delete endpoint returns the specified confirmation — HTTP 200
+    [PASS] AC-F016-08 raw file and all Chroma records are removed — deleted_chunks=1
+    [PASS] AC-F016-08 delete invalidates the collection keyword cache
+    [PASS] cross-KB delete preserves same-name raw file and Chroma records
+    [PASS] invalidated keyword index rebuild removes stale deleted chunks
+    [PASS] AC-F016-09 deleting a missing file returns 404 FILE_NOT_FOUND — code=FILE_NOT_FOUND
+    [PASS] AC-F016-09 missing-file delete is side-effect free
+    [PASS] cross-KB delete cannot target a file_id from another KB
+    [PASS] re-upload after delete succeeds with a new file identity — HTTP 200
+    [PASS] re-upload leaves no stale file or chunk identity
+    [PASS] re-upload invalidates and rebuilds keyword search with new chunks
+    [PASS] KB-B remains independently listable and previewable after KB-A cycle
+
+--- Frontend file-management contract wiring
+    [PASS] FileManager integration uses file_id plus collection for preview/delete
+
+==============================================================================
+Required checks: 43/43 passed
+RESULT: PASS
+==============================================================================
+
+EXIT_CODE: 0

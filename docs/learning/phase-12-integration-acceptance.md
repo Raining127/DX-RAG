@@ -1,5 +1,7 @@
 # Phase 12 — Integration & Acceptance Technical Learning
 
+> **历史 Task Learning Pass 快照（pre-live / Gate remediation）。** 当前 Phase 级学习入口是 [Phase 12 Learning Review](phase-12-learning-review.md)。下文保留当时的代码精读、问题与验收边界；其中“当前”“本轮”、BLOCKED/NOT_AVAILABLE 和旧计数均指此历史检查点，不代表今天的 Task 状态。现在 T1201–T1204 已 DONE，真实 provider 证据与最终矩阵见 [T1204 audit](../verification/T1204/README.md)；历史 Gate FAIL 后的独立增量 Re-review 已完成：**PHASE_12_PASS，F-6 CLOSED**，见 [当前 Gate 记录](../verification/PHASE-12-GATE-CLOSURE.md)。下文所有旧状态均为历史快照。
+
 > **Phase 状态**：GATE REMEDIATION（T1201、T1202、T1204 BLOCKED；T1203 DONE；不得进入新 Phase）
 > **本文档状态**：2026-09-07 BGE 规格冲突修订与真实模型证据已同步；DashScope / DeepSeek live acceptance 仍待单独授权
 > **当前证据**：原 Gate finding `SPEC_CONFLICT` 已按产品决策修复：保留 `BAAI/bge-small-zh-v1.5`，SPEC v1.7 / implementation / fixtures 统一为 512 维。官方本地模型 revision `7999e1d3359715c523056ef9478215996d62a620` 的完整性、加载、4×512 norm、lazy singleton 与真实 BGE + 临时 Chroma 中文同义排序均为 **REAL 4/4 PASS**；focused embedding 3/3、T0503 56/56、T1201 81/81、T1202 46/46、T1203 43/43、T1204 29/29及完整backend 81/81均exit 0。

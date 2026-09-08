@@ -35,6 +35,7 @@ interface ActionError {
 
 interface FileManagerProps extends CollectionSourceProps {
   onFileDeleted: (collectionName: string) => void;
+  fileRevisions: Record<string, number>;
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -94,6 +95,7 @@ export default function FileManager({
   collectionMutation,
   onRetryCollections,
   onFileDeleted,
+  fileRevisions,
 }: FileManagerProps) {
   const [selectedCollection, setSelectedCollection] = useState<string>();
 
@@ -113,6 +115,7 @@ export default function FileManager({
   const previewRequestVersionRef = useRef(0);
   const selectedCollectionRef = useRef<string>();
   const handledMutationRevisionRef = useRef(0);
+  const loadedFileRevisionRef = useRef(0);
 
   const loadFileList = useCallback(async (collectionName: string) => {
     const requestVersion = fileRequestVersionRef.current + 1;
@@ -153,6 +156,7 @@ export default function FileManager({
     collectionMutation,
     handledMutationRevisionRef.current,
   );
+  const fileRevision = resolvedCollection ? fileRevisions[resolvedCollection] ?? 0 : 0;
 
   useEffect(() => {
     if (
@@ -166,9 +170,14 @@ export default function FileManager({
       handledMutationRevisionRef.current = collectionMutation.revision;
     }
     if (resolvedCollection === selectedCollection) {
+      if (resolvedCollection && loadedFileRevisionRef.current !== fileRevision) {
+        loadedFileRevisionRef.current = fileRevision;
+        void loadFileList(resolvedCollection);
+      }
       return;
     }
 
+    loadedFileRevisionRef.current = fileRevision;
     closePreview();
     selectedCollectionRef.current = resolvedCollection;
     setSelectedCollection(resolvedCollection);
@@ -186,6 +195,7 @@ export default function FileManager({
     closePreview,
     collectionMutation,
     collectionState,
+    fileRevision,
     loadFileList,
     resolvedCollection,
     selectedCollection,
@@ -193,6 +203,7 @@ export default function FileManager({
 
   const handleCollectionChange = (collectionName: string) => {
     closePreview();
+    loadedFileRevisionRef.current = fileRevisions[collectionName] ?? 0;
     selectedCollectionRef.current = collectionName;
     setSelectedCollection(collectionName);
     void loadFileList(collectionName);

@@ -17,7 +17,7 @@ file handles. The repository's real uploads and Chroma data are never touched.
 
 The repository-local BGE model and real semantic ranking are verified
 separately by ``verify_bge_model.py``. This broad deterministic matrix replaces
-the BGE inference edge and the unapproved DeepSeek transport so it can exercise
+the BGE inference edge and the DeepSeek transport so it can exercise
 all query branches without external calls:
 
 * ``SentenceTransformer`` construction returns a deterministic 512-dimension,
@@ -29,6 +29,11 @@ all query branches without external calls:
   errors. Answers are deterministic functions of the assembled prompt.
 
 Exit code 0 means every required check passed; 1 means at least one failed.
+
+Explicitly authorized live run: append ``--live``. It delegates to
+``verify_t1202_live.run_probe`` with real BGE and DeepSeek. Exit 2 denotes
+unavailable live prerequisites. Unobserved remote error statuses are reported
+separately; deterministic failure-contract evidence complements live QA checks.
 """
 
 from __future__ import annotations
@@ -988,6 +993,14 @@ def run_probe(probe_root: Path) -> int:
 
 def _emit(output: str) -> None:
     """Print child output safely on Windows consoles with legacy codecs."""
+    if "--live" in sys.argv:
+        import os
+        from dotenv import dotenv_values
+        values = dotenv_values(_BACKEND / ".env")
+        for name in ("DEEPSEEK_API_KEY", "DASHSCOPE_API_KEY"):
+            for value in (values.get(name), os.environ.get(name)):
+                if value:
+                    output = output.replace(value, "[REDACTED]")
     try:
         sys.stdout.write(output)
     except UnicodeEncodeError:
@@ -1000,27 +1013,32 @@ def _emit(output: str) -> None:
 
 def main() -> int:
     """Run the matrix in a child, then remove its isolated temp tree."""
+    import os
+    live = "--live" in sys.argv
     probe_root = Path(tempfile.mkdtemp(prefix="t1202_retrieval_qa_"))
     try:
         completed = subprocess.run(
             [
                 sys.executable,
+                "-u",
                 str(Path(__file__).resolve()),
                 "--probe-root",
                 str(probe_root),
-            ],
+            ] + (["--live"] if live else []),
             capture_output=True,
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=300,
+            timeout=1200 if live else 300,
+            env={**os.environ, "PYTHONIOENCODING": "utf-8"},
         )
         _emit(completed.stdout)
-        if completed.stderr.strip():
+        if completed.stderr.strip() and not live:
             _emit("--- child stderr ---\n" + completed.stderr)
         return_code = completed.returncode
     except subprocess.TimeoutExpired as exc:
-        _emit((exc.stdout or "") + (exc.stderr or ""))
+        partial = exc.stdout or b""
+        _emit(partial.decode("utf-8", errors="replace") if isinstance(partial, bytes) else partial)
         _emit("\nT1202 verification timed out.\n")
         return_code = 1
 
@@ -1032,10 +1050,18 @@ def main() -> int:
     if probe_root.exists():
         print(f"T1202 cleanup failed: {probe_root}")
         return 1
+    print("ISOLATED_STORAGE_CLEANUP: PASS")
     return return_code
 
 
 if __name__ == "__main__":
+    if "--probe-root" in sys.argv and "--live" in sys.argv:
+        from verify_t1202_live import run_probe as run_live_probe
+        try:
+            raise SystemExit(run_live_probe(Path(sys.argv[2])))
+        except Exception as exc:
+            print(f"BLOCKED: live probe terminated ({type(exc).__name__}); exception text withheld")
+            raise SystemExit(1)
     if len(sys.argv) == 3 and sys.argv[1] == "--probe-root":
         raise SystemExit(run_probe(Path(sys.argv[2])))
     raise SystemExit(main())

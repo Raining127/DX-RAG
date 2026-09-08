@@ -1,11 +1,13 @@
 # DX-RAG 面试指南（项目介绍 + 技术亮点 + 高频面试题）
 
 > 本文档把 DX-RAG 项目转译成"面试语言"：如何用 3 分钟讲清楚项目、如何亮出技术亮点、如何应对高频追问。
-> **诚实原则**：所有内容基于真实代码与 SPEC/TASKS。项目当前实现到 Phase 0–11 的已完成切片；Phase 11 已交付知识库、上传、问答、文件管理四个业务组件及 shared collection synchronization，Gate 在 F-1 remediation 后给出 `PHASE_11_PASS — READY_FOR_PHASE_12`，Phase Learning Review 于 2026-09-07 完成。Task smoke 包含部分真实 browser-to-FastAPI 证据；F-1 focused re-review 使用真实 production Next UI + isolated in-memory **MOCKED API**。真实 provider/Chroma/upload 全链路、完整 browser-to-FastAPI E2E 与 Phase 12 仍是后续范围。**面试话术中注意区分“已实现”与“已验证”**——把设计或 Mocked evidence 讲成真实 E2E 是面试大忌。
+> **诚实原则（2026-09-07 更新）**：Phase 0–11 implementation 与 T1201–T1204 已 DONE。Phase 12 已有真实 Qwen/DeepSeek、持久化与浏览器验证；各自范围见 [Phase 12 话术](#phase-12-learning-review)及其证据链接，不能概括成每个故障都由真实 provider 触发。历史 Gate FAIL 后已完成 F-6 修复及独立增量 Re-review，当前 PHASE_12_PASS / F-6 CLOSED；Task DONE 与 Gate PASS 仍是分别验证的事件。下文早期 Phase 深度章保留当时的验证边界，其中 deferred/NOT_AVAILABLE 属于历史检查点；当前口径以 Phase 12 章为准。面试前请先完成自测，再把话术改成自己能解释的表达。
 
 ---
 
 ## 第一部分：3 分钟项目介绍
+
+> 本节保留 Phase 11 时期介绍框架，旧验收边界用于比较学习进展。当前面试请使用文末 [Phase 12 的 30 秒与 1–2 分钟回答](#phase-12-learning-review)补充；其中“仍 deferred”“零业务代码修复”不能作为全项目当前结论，后者只描述早期那组测试。
 
 > 目标：让面试官在 3 分钟内理解——你解决了什么问题、系统长什么样、你做了什么、难在哪、你怎么解决的。
 > 下面给出**完整版话术**（假设面试时项目已完成；如未完成，用文中标注的"诚实替换"）。
@@ -35,7 +37,7 @@
 
 **⑤ 收尾（约 15 秒，可选）**
 
-> “项目还在继续，Phase 0–11 已完成并通过 Phase 11 Gate；知识库、上传、问答和文件管理 UI 已接入 typed client，collection mutation 也会跨四个工作区同步。下一步是 Phase 12 的集成与验收：真实 provider/Chroma/upload 全链路、完整 browser-to-FastAPI E2E 与跨 feature 验证仍在后续。如果你对某个模块感兴趣，我可以展开讲摄取回滚、检索分数语义、跨存储 cleanup，或者前端如何区分 shared server resource 与 feature-local transaction。”
+> “目前实现任务和 Phase 12 的四项验收任务都已完成。真实 Qwen/DeepSeek 调用、文件生命周期、故障契约和最终 SPEC 矩阵有各自证据；历史 Gate FAIL 经 F-6 修复和独立增量 Re-review 后已关闭，当前 PHASE_12_PASS。最后一轮让我学会了根据问题选择证据：真实 API 证明兼容性，可控故障验证重试，跨存储状态检查证明回滚。如果你感兴趣，我可以展开讲 Windows PDF 句柄问题，或为什么验收脚本本身也需要审计。”
 
 ### 话术设计要点（为什么这么讲）
 
@@ -51,7 +53,7 @@
 
 ---
 
-## 第二部分：技术亮点（20 个）
+## 第二部分：技术亮点（21 个）
 
 > 每个亮点一句话概括 + 为什么值得说 + 对应代码位置。面试时根据面试官背景挑 3-5 个展开。
 
@@ -205,11 +207,17 @@
 
 ---
 
+### 亮点 21：把验收结论绑定到证据边界
+
+**一句话**：Phase 12 把真实 provider compatibility、可控故障契约和最终 AC 覆盖分开证明，并审计验收脚本是否擅自添加门槛。
+
+**展开点**：真实 Qwen 91/91、DeepSeek 70/70 与 deterministic failure-path 15/15 是不同的证据集合；最终矩阵按 section + AC ID 保留 104 个出现位置，避免同名 ID 覆盖遗漏。计数证明该组断言通过，不能推导出所有现实输入都可靠。详见 [Phase 12 话术](#phase-12-learning-review)。
+
 ## 第三部分：高频面试题（34 题）
 
 > 分类：项目理解（Q01-Q08）/ 架构设计（Q09-Q16）/ RAG（Q17-Q26）/ 工程问题（Q27-Q34）。
 > 每题四个部分：**面试官问题**（怎么问）/ **优秀回答**（怎么答）/ **进一步追问**（面试官大概率接着问什么）/ **回答方向**（追问怎么接）。
-> ⚠️ 标注 `[设计]` 的题目主要涉及尚未完成的 Phase 12：回答时用“设计上是……，实现排在 Phase X”的诚实话术。Phase 6–11 的 retrieval、RAG、file-management 与 frontend-feature slices 已实现；真实 provider/Chroma/upload 全链路及完整 browser-to-FastAPI E2E 仍只讲 deferred verification。
+> 历史题库的 `[设计]` 和 deferred 表述保留原阶段语境。当前 Phase 12 已补最终验收，回答时结合 [当前证据与限制](#phase-12-learning-review)，不要继续把已验收项讲成 future work，也不要把有限场景推广为无限保证。
 
 ---
 
@@ -1614,3 +1622,58 @@ Backend durable truth
 - [ ] 能解释 upload success 为什么尚未刷新 Home file count / FileManager list，以及它为什么应由 T1203 cross-feature flow 验证
 - [ ] 每个"已实现"的说法都能定位到代码文件；每个"已设计"的说法都标注 Phase 编号
 - [ ] 被问"为什么"时，答案里有"规模假设"（v1 是单机、万级文档、可信网络——决策都有前提）
+
+---
+
+<a id="phase-12-learning-review"></a>
+
+## Phase 12 深度章 — Integration & Acceptance
+
+本章替换前文旧项目介绍中的“Phase 12 尚未验收”口径。T1201–T1204 已 DONE；独立 Gate Re-review 已完成 PHASE_12_PASS，F-6 CLOSED；独立 fresh-reader 和完整 Learning Review workflow 仍 pending，见 [当前 Gate 记录](../../verification/PHASE-12-GATE-CLOSURE.md)。本轮仅整理学习与面试材料。技术解释和练习见 [Phase 12 Learning Review](../phase-12-learning-review.md)。
+
+### 30 秒回答：最后一阶段做了什么？
+
+> 我把摄取、问答、文件管理接起来做最终验收。除了验证成功，还检查失败后原始文件、向量和关键词索引是否清理，同名文件能否重传。真实 Qwen 和 DeepSeek 证明 provider 能在这条链路工作；429、5xx、403 则用明确标注的确定性故障测试验证控制流。最后逐项建立 SPEC 到代码和测试结果的映射，避免把 Task DONE 当成证据。
+
+### 1–2 分钟回答：验收怎么组织？
+
+> 我先把每条验收要求拆成输入、操作、可观察结果和禁止出现的副作用。比如上传失败，不能只看返回 FAILED，还要看 uploads、Chroma 和关键词检索没有残留，并且同名文件可重传。删除也要留下另一个知识库作对照，证明清理没有越界。
+>
+> 对模型相关行为，我区分两类证据。真实 provider 调用覆盖 OCR、基于知识库回答和多轮指代；固定响应序列覆盖重试次数、退避和认证错误不重试。这两类测试互补，但模拟 429 不能说成观察到了真实限流。T1202 一度因为没有自然出现 429/5xx/403 被阻塞，后来逐条核对冻结要求，确认那是脚本额外添加的门槛，于是保留原始记录，修正结论依据。
+>
+> 最终审计也发现了真实问题：CORS 配置虽然定义了，运行时却仍使用硬编码通配符。修复后用独立进程验证允许和拒绝的 origin。这个阶段让我更关注配置是否被消费、资源是否释放，以及证据是否仍对应当前代码，而不只是测试数量。
+
+上述回答对应 [T1201](../../verification/T1201/README.md)、[T1202 blocker audit](../../verification/T1202/BLOCKER-AUDIT.md)和 [T1204](../../verification/T1204/README.md)。这是开发验收经历，不是生产事故或上线业绩。
+
+### 一个可展开的真实问题：Windows PDF 失败后无法删除
+
+- **情境**：T1201 验证损坏 PDF 的失败路径，预期解析失败后完整回滚。
+- **任务**：保证失败不留下原始文件，并允许同名文件再次上传。
+- **行动**：沿解析异常和 cleanup 检查资源生命周期，定位 Windows 上解析库可能保留文件句柄的问题；改为先读取 bytes，再交给 `fitz.open(stream=..., filetype="pdf")`，让 Python 文件读取完成后就释放磁盘句柄。
+- **结果与限制**：修复后的相关回滚及重传检查通过；字节读取增加了内存占用，需要放在 v1 文件大小上限内理解。不能由此声称进程崩溃时也具备事务恢复能力。
+
+定位：[摄取代码](../../../backend/app/services/ingest.py)、[T1201 证据](../../verification/T1201/README.md)。面试时应能解释“异常对象可能延长资源存活”与“删除函数写了不代表删除一定成功”的区别。
+
+### 高频问答与追问
+
+| 问题 | 回答要点 |
+|---|---|
+| 为什么不用全部 mock？ | mock 不能证明 SDK、鉴权、模型输出和本地真实 embedding 能共同工作；live evidence 补这一层。 |
+| 为什么不等真实 429 才验收？ | 冻结要求约束收到故障后的行为，没有要求自然产生故障。可控序列能稳定验证重试，不需要滥用 provider。 |
+| 真实 401 能证明 403 吗？ | 不能直接证明观测过 403；真实 401 加确定性 403 分别支持实际鉴权失败和共用 non-retry contract。 |
+| 70/70 能说明回答永远正确吗？ | 只能支持已执行 fixture 的断言；不是统计性语义质量 benchmark。 |
+| 回滚为什么要检查关键词索引？ | 向量删除不等于缓存失效。旧关键词结果可能让失败文件继续可检索。 |
+| 104 条和 85 个 ID 为什么不同？ | SPEC 各 section 存在同名 ID，矩阵保留每个 section-qualified 出现位置；不能用 ID 字典静默覆盖。 |
+| 定义 CORS_ORIGINS 为什么仍会错？ | 定义与消费是两步。实际 middleware 若硬编码，环境配置不会改变运行行为。 |
+| 前端大文件校验证据是什么？ | 实际组件的受控契约测试验证拒绝、提示和零 API 调用；浏览器文件选择器受权限限制，没有冒称该动作已 browser PASS。 |
+
+继续追问时，准备解释三个取舍：为什么环境隔离放在 import 前、为什么 mock 要 patch 使用处的名称、为什么 retry 检查应同时统计调用次数和 sleep。代码精读与参考答案在 [学习章 §5、§10](../phase-12-learning-review.md)。
+
+### 面试前检查
+
+- 能画出上传、查询、删除三个动作分别改变哪些状态。
+- 能口算 `0.3 × keyword_score + 0.7 × vector_score`，解释阈值过滤发生在哪一步。
+- 能指出真实 Qwen 91/91、DeepSeek 70/70、确定性失败路径 15/15 各自的证据边界。
+- 能解释本地 `bge-small-zh-v1.5` 的 frozen baseline 是 512 dimensions。
+- 能从 [最终 AC 矩阵](../../verification/T1204/ACCEPTANCE-MATRIX.md)挑一条，复述 requirement → implementation → verification → result。
+- 不把 Task DONE、Learning 整理完成、Gate PASS、生产就绪说成同一件事；不编造用户量、性能提升或线上故障。

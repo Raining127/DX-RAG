@@ -29,6 +29,16 @@ branches without provider calls or repeatedly running heavyweight inference:
   retry/warning logic, cleaning, chunking, API mapping, and rollback run.
 
 Exit code 0 means every required check passed; 1 means at least one failed.
+
+Explicitly authorized live verification::
+
+    python backend/scripts/verify_t1201_ingestion.py --live
+
+Live mode reads backend/.env without printing it, runs the real local BGE
+model and real DashScope SDK, and records only allowlisted response evidence.
+Failure cases use a real SDK request with a 1-microsecond network timeout;
+no response/exception is fabricated and the application's real backoff runs.
+These are controlled transport failures, not observed provider 5xx outages.
 """
 
 from __future__ import annotations
@@ -43,7 +53,7 @@ from pathlib import Path
 _BACKEND = Path(__file__).resolve().parents[1]
 
 
-def run_probe(probe_root: Path) -> int:
+def run_probe(probe_root: Path, *, live: bool = False) -> int:
     """Run the verification matrix in the isolated child process."""
     import ast
     import hashlib
@@ -51,13 +61,23 @@ def run_probe(probe_root: Path) -> int:
     import os
     import types
     import uuid
+    import logging
+    from datetime import datetime, timezone
+    from contextlib import contextmanager, nullcontext
     from types import SimpleNamespace
     from unittest.mock import patch
 
     os.environ["ANONYMIZED_TELEMETRY"] = "False"
     os.environ["UPLOAD_DIR"] = str(probe_root / "uploads")
     os.environ["CHROMA_PERSIST_DIR"] = str(probe_root / "chroma")
-    os.environ["DASHSCOPE_API_KEY"] = f"test-double-{probe_root.name}"
+    if live:
+        os.chdir(_BACKEND)
+        os.environ["EMBED_MODEL"] = str(_BACKEND / "models" / "bge-small-zh-v1.5")
+        os.environ["HF_HUB_OFFLINE"] = "1"
+        os.environ["TRANSFORMERS_OFFLINE"] = "1"
+        logging.disable(logging.CRITICAL)
+    else:
+        os.environ["DASHSCOPE_API_KEY"] = f"test-double-{probe_root.name}"
 
     sys.path.insert(0, str(_BACKEND))
 
@@ -76,6 +96,16 @@ def run_probe(probe_root: Path) -> int:
 
     results: list[tuple[str, bool, str]] = []
     supported_successes: set[str] = set()
+    print("EVIDENCE_MODE:", "REAL BGE + REAL DashScope; controlled network timeouts" if live else "SUBSTITUTED BGE + OCR")
+    print("STARTED_UTC:", datetime.now(timezone.utc).isoformat())
+    if live and not settings.get_dashscope_key():
+        print("BLOCKED: DASHSCOPE_API_KEY is not configured")
+        return 1
+    if live:
+        from dotenv import dotenv_values
+        if settings.get_dashscope_key() != dotenv_values(_BACKEND / ".env").get("DASHSCOPE_API_KEY"):
+            print("BLOCKED: effective DashScope credential differs from backend/.env")
+            return 1
 
     def check(label: str, condition: bool, detail: str = "") -> None:
         ok = bool(condition)
@@ -133,20 +163,20 @@ def run_probe(probe_root: Path) -> int:
     fake_sentence_transformers = types.ModuleType("sentence_transformers")
     fake_sentence_transformers.SentenceTransformer = DeterministicSentenceTransformer
     embedding_mod._model = None
-    with patch.dict(sys.modules, {"sentence_transformers": fake_sentence_transformers}):
+    with (nullcontext() if live else patch.dict(sys.modules, {"sentence_transformers": fake_sentence_transformers})):
         first_model = embedding_mod.get_model()
         second_model = embedding_mod.get_model()
         contract_vectors = embedding_mod.encode_chunks(["one", "two", "three"])
 
     check(
         "AC-F007-02 lazy model is constructed once and reused",
-        first_model is second_model and DeterministicSentenceTransformer.load_count == 1,
-        f"loads={DeterministicSentenceTransformer.load_count}",
+        first_model is second_model and (live or DeterministicSentenceTransformer.load_count == 1),
+        "same model object reused" if live else f"loads={DeterministicSentenceTransformer.load_count}",
     )
     check(
         "AC-F007-02 configured model path reaches the loader",
-        DeterministicSentenceTransformer.loaded_paths == [settings.EMBED_MODEL],
-        f"paths={DeterministicSentenceTransformer.loaded_paths}",
+        Path(settings.EMBED_MODEL).is_dir() if live else DeterministicSentenceTransformer.loaded_paths == [settings.EMBED_MODEL],
+        f"path={settings.EMBED_MODEL}",
     )
     check(
         "AC-F007-01 embedding count, width, and L2 normalization",
@@ -155,9 +185,13 @@ def run_probe(probe_root: Path) -> int:
             len(vector) == embedding_mod.EMBEDDING_DIMENSION
             for vector in contract_vectors
         )
-        and all(math.isclose(math.sqrt(sum(value * value for value in vector)), 1.0) for vector in contract_vectors)
-        and first_model.encode_calls[-1][1] is True,
+        and all(math.isclose(math.sqrt(sum(value * value for value in vector)), 1.0, abs_tol=1e-6) for vector in contract_vectors)
+        and (live or first_model.encode_calls[-1][1] is True),
     )
+
+    if live:
+        norms = [round(math.sqrt(sum(v*v for v in row)), 7) for row in contract_vectors]
+        print(f"BGE_MODEL class={type(first_model).__module__}.{type(first_model).__name__} shape={len(contract_vectors)}x{len(contract_vectors[0])} norms={norms}")
 
     repo_root = _BACKEND.parent.resolve()
     upload_root = Path(settings.UPLOAD_DIR).resolve()
@@ -263,6 +297,8 @@ def run_probe(probe_root: Path) -> int:
         document.save(path)
         document.close()
         content = path.read_bytes()
+        if live:
+            print(f"FIXTURE name={name} sha256={hashlib.sha256(content).hexdigest()} pages={pages!r}")
         reopened = fitz.open(stream=content, filetype="pdf")
         for index, (kind, _) in enumerate(pages):
             if kind == "scan":
@@ -288,6 +324,64 @@ def run_probe(probe_root: Path) -> int:
     def ocr_failure():
         return SimpleNamespace(status_code=500)
 
+    @contextmanager
+    def observe_ocr(*, texts=None, fail=False):
+        if not live:
+            kwargs = {"return_value": ocr_failure()} if fail else {"side_effect": [ocr_success(text) for text in (texts or [])]}
+            with patch.object(dashscope.MultiModalConversation, "call", **kwargs) as observed:
+                yield observed
+            return
+        # This observer delegates every attempt to the real SDK. It never
+        # changes credentials, endpoint, model, messages, or returned output.
+        descriptor = dashscope.MultiModalConversation.__dict__["call"]
+        original = dashscope.MultiModalConversation.call
+        observed = SimpleNamespace(call_count=0, call_args_list=[], failures=[])
+
+        def call(**kwargs):
+            observed.call_count += 1
+            observed.call_args_list.append(SimpleNamespace(kwargs=kwargs))
+            started = time.monotonic()
+            try:
+                response = original(**kwargs, request_timeout=0.000001 if fail else 60)
+            except Exception as exc:
+                # Exception messages / request headers must never enter logs.
+                observed.failures.append(type(exc).__name__)
+                print(f"LIVE_OCR attempt={observed.call_count} controlled_timeout={fail} exception={type(exc).__name__} elapsed={time.monotonic()-started:.3f}s")
+                cause = exc.__cause__ or exc.__context__
+                if cause is not None:
+                    print(f"LIVE_TRANSPORT_CAUSE type={type(cause).__name__} errno={getattr(cause, 'errno', None)}")
+                raise
+            print(f"LIVE_OCR attempt={observed.call_count} controlled_timeout={fail} status={response.status_code} request_id={response.request_id} elapsed={time.monotonic()-started:.3f}s")
+            return response
+
+        dashscope.MultiModalConversation.call = staticmethod(call)
+        try:
+            yield observed
+        finally:
+            dashscope.MultiModalConversation.call = descriptor
+            if fail:
+                check("controlled failure is a real SDK transport timeout", bool(observed.failures) and all("Timeout" in name for name in observed.failures), f"exceptions={observed.failures}")
+
+    @contextmanager
+    def observe_sleep():
+        if not live:
+            with patch.object(ingest_mod.time, "sleep", return_value=None) as observed:
+                yield observed
+            return
+        original = ingest_mod.time.sleep
+        observed = SimpleNamespace(call_count=0)
+
+        def sleep(seconds):
+            observed.call_count += 1
+            print(f"LIVE_BACKOFF seconds={seconds}")
+            original(seconds)
+
+        ingest_mod.time.sleep = sleep
+        try:
+            yield observed
+        finally:
+            ingest_mod.time.sleep = original
+
     print("\n--- Text formats, cleaning, and plain-text dispatch")
     create_kb("t1201-text")
     utf8_response = upload(
@@ -309,6 +403,8 @@ def run_probe(probe_root: Path) -> int:
         "AC-F003-02 GBK text remains readable after the full pipeline",
         gbk_text in stored_text("t1201-text", gbk_body.get("file_id", "")),
     )
+    utf16_body = record_success(upload("t1201-text", "utf16.txt", gbk_text.encode("utf-16")), ".txt", "F003 UTF-16 fallback")
+    check("UTF-16 decoded text is preserved", stored_text("t1201-text", utf16_body.get("file_id", "")) == gbk_text)
 
     plain_formats = {
         ".csv": b"name,value\nalpha,1",
@@ -405,8 +501,8 @@ def run_probe(probe_root: Path) -> int:
 
     print("\n--- Native, scanned, mixed, warning, and FAILED PDFs")
     create_kb("t1201-pdf")
-    native_pdf = pdf_fixture("native.pdf", [("native", "NATIVE_PDF_TEXT")])
-    with patch.object(dashscope.MultiModalConversation, "call") as ocr_call:
+    native_pdf = pdf_fixture("native.pdf", [("native", "NATIVE_PDF_TEXT"), ("native", "NATIVE_SECOND_PAGE")])
+    with observe_ocr() as ocr_call:
         native_response = upload("t1201-pdf", "native.pdf", native_pdf, "application/pdf")
     native_body = record_success(native_response, ".pdf", "AC-F002-01 native PDF upload")
     check("native PDF does not call OCR", ocr_call.call_count == 0)
@@ -418,27 +514,27 @@ def run_probe(probe_root: Path) -> int:
     )
     check(
         "native PDF text survives parsing and storage",
-        "NATIVE_PDF_TEXT" in stored_text("t1201-pdf", native_body.get("file_id", "")),
+        "NATIVE_PDF_TEXT\nNATIVE_SECOND_PAGE" == stored_text("t1201-pdf", native_body.get("file_id", "")),
     )
 
     scanned_pdf = pdf_fixture(
         "scanned.pdf",
         [("scan", "SCAN IMAGE ONE"), ("scan", "SCAN IMAGE TWO")],
     )
-    with patch.object(
-        dashscope.MultiModalConversation,
-        "call",
-        side_effect=[ocr_success("OCR_PAGE_ONE"), ocr_success("OCR_PAGE_TWO")],
-    ) as ocr_call:
+    with observe_ocr(texts=["OCR_PAGE_ONE", "OCR_PAGE_TWO"]) as ocr_call:
         scanned_response = upload("t1201-pdf", "scanned.pdf", scanned_pdf, "application/pdf")
     scanned_body = record_success(scanned_response, ".pdf", "AC-F004-01 scanned PDF OCR success")
     scanned_text = stored_text("t1201-pdf", scanned_body.get("file_id", ""))
+    if live:
+        print(f"OCR_STORED scanned={scanned_text!r}")
     check(
         "AC-F004-01 scanned pages preserve OCR order with no warnings",
         scanned_response.status_code == 200
         and scanned_body.get("status") == "SUCCESS"
         and scanned_body.get("warnings") == []
-        and scanned_text.index("OCR_PAGE_ONE") < scanned_text.index("OCR_PAGE_TWO")
+        and ("SCAN IMAGE ONE" if live else "OCR_PAGE_ONE") in scanned_text
+        and ("SCAN IMAGE TWO" if live else "OCR_PAGE_TWO") in scanned_text
+        and scanned_text.index("SCAN IMAGE ONE" if live else "OCR_PAGE_ONE") < scanned_text.index("SCAN IMAGE TWO" if live else "OCR_PAGE_TWO")
         and ocr_call.call_count == 2,
     )
     first_ocr_kwargs = ocr_call.call_args_list[0].kwargs if ocr_call.call_args_list else {}
@@ -454,18 +550,18 @@ def run_probe(probe_root: Path) -> int:
         "mixed.pdf",
         [("native", "MIXED_NATIVE_FIRST"), ("scan", "MIXED SCAN SECOND")],
     )
-    with patch.object(
-        dashscope.MultiModalConversation,
-        "call",
-        return_value=ocr_success("MIXED_OCR_SECOND"),
-    ) as ocr_call:
+    with observe_ocr(texts=["MIXED_OCR_SECOND"]) as ocr_call:
         mixed_response = upload("t1201-pdf", "mixed.pdf", mixed_pdf, "application/pdf")
     mixed_body = record_success(mixed_response, ".pdf", "AC-F003-02 / AC-F004-02 mixed PDF")
     mixed_text = stored_text("t1201-pdf", mixed_body.get("file_id", ""))
+    if live:
+        print(f"OCR_STORED mixed={mixed_text!r}")
     check(
         "AC-F003-02 / AC-F004-02 native and OCR pages are ordered and OCR is selective",
         mixed_body.get("status") == "SUCCESS"
-        and mixed_text.index("MIXED_NATIVE_FIRST") < mixed_text.index("MIXED_OCR_SECOND")
+        and "MIXED_NATIVE_FIRST" in mixed_text
+        and ("MIXED SCAN SECOND" if live else "MIXED_OCR_SECOND") in mixed_text
+        and mixed_text.index("MIXED_NATIVE_FIRST") < mixed_text.index("MIXED SCAN SECOND" if live else "MIXED_OCR_SECOND")
         and ocr_call.call_count == 1,
     )
 
@@ -479,11 +575,7 @@ def run_probe(probe_root: Path) -> int:
             ("native", "PARTIAL_PAGE_5"),
         ],
     )
-    with patch.object(
-        dashscope.MultiModalConversation,
-        "call",
-        return_value=ocr_failure(),
-    ) as ocr_call, patch.object(ingest_mod.time, "sleep", return_value=None) as sleep_call:
+    with observe_ocr(fail=True) as ocr_call, observe_sleep() as sleep_call:
         partial_response = upload("t1201-pdf", "partial.pdf", partial_pdf, "application/pdf")
     partial_body = record_success(
         partial_response,
@@ -492,6 +584,8 @@ def run_probe(probe_root: Path) -> int:
     )
     expected_partial_warning = [{"page_number": 3, "error_code": "OCR_PAGE_FAILED"}]
     partial_text = stored_text("t1201-pdf", partial_body.get("file_id", ""))
+    if live:
+        print(f"PARTIAL_RESULT status={partial_body.get('status')} chunks={partial_body.get('chunks')} warnings={partial_body.get('warnings')} stored={partial_text!r}")
     check(
         "AC-F002-07 / AC-F004-03 returns SUCCESS_WITH_WARNINGS and keeps good pages",
         partial_response.status_code == 200
@@ -517,17 +611,17 @@ def run_probe(probe_root: Path) -> int:
         [("scan", "FAILED SCAN 1"), ("scan", "FAILED SCAN 2"), ("scan", "FAILED SCAN 3")],
     )
     failed_baseline_count = store.get_chunk_count("t1201-pdf")
-    KeywordRetriever(store).keyword_search("t1201-pdf", "FAILED_SCAN_UNIQUE", 5)
-    with patch.object(
-        dashscope.MultiModalConversation,
-        "call",
-        return_value=ocr_failure(),
-    ) as ocr_call, patch.object(ingest_mod.time, "sleep", return_value=None):
+    failed_baseline_chunks = store.list_chunks("t1201-pdf")
+    KeywordRetriever(store).keyword_search("t1201-pdf", "rollbackabsencetoken", 5)
+    baseline_index = {token: set(ids) for token, ids in KeywordRetriever._indexes["t1201-pdf"].items()}
+    with observe_ocr(fail=True) as ocr_call, observe_sleep():
         failed_response = upload("t1201-pdf", "all-failed.pdf", all_failed_pdf, "application/pdf")
     failed_warnings = [
         {"page_number": page, "error_code": "OCR_PAGE_FAILED"}
         for page in (1, 2, 3)
     ]
+    if live:
+        print(f"FAILED_RESULT http={failed_response.status_code} code={code_of(failed_response)} warnings={body_of(failed_response).get('error', {}).get('details', {}).get('warnings')}")
     check(
         "AC-F002-08 / AC-F004-04 all OCR pages failing returns 422 with warnings",
         failed_response.status_code == 422
@@ -538,26 +632,30 @@ def run_probe(probe_root: Path) -> int:
     )
     current_files = files_in("t1201-pdf")
     failed_keyword_results = KeywordRetriever(store).keyword_search(
-        "t1201-pdf", "FAILED_SCAN_UNIQUE", 5
+        "t1201-pdf", "rollbackabsencetoken", 5
     )
     check(
         "AC-F002-09 FAILED leaves no raw file, chunk/vector/metadata, or keyword entry",
         not (upload_root / "t1201-pdf" / "all-failed.pdf").exists()
         and store.get_chunk_count("t1201-pdf") == failed_baseline_count
+        and sorted(store.list_chunks("t1201-pdf"), key=lambda chunk: chunk.chunk_id) == sorted(failed_baseline_chunks, key=lambda chunk: chunk.chunk_id)
+        and KeywordRetriever._indexes["t1201-pdf"] == baseline_index
+        and set(KeywordRetriever._chunks["t1201-pdf"]) == {chunk.chunk_id for chunk in failed_baseline_chunks}
         and not any(item.get("file_name") == "all-failed.pdf" for item in current_files)
         and failed_keyword_results == [],
+        f"chunks_before={failed_baseline_count}; chunks_after={store.get_chunk_count('t1201-pdf')}; raw_exists={(upload_root / 't1201-pdf' / 'all-failed.pdf').exists()}; keyword_query_matches={len(failed_keyword_results)}",
     )
-    with patch.object(
-        dashscope.MultiModalConversation,
-        "call",
-        side_effect=[ocr_success("RECOVERED_1"), ocr_success("RECOVERED_2"), ocr_success("RECOVERED_3")],
-    ):
+    with observe_ocr(texts=["RECOVERED_1", "RECOVERED_2", "RECOVERED_3"]):
         retry_response = upload("t1201-pdf", "all-failed.pdf", all_failed_pdf, "application/pdf")
     check(
         "AC-F002-09 same-name retry succeeds after FAILED rollback",
         retry_response.status_code == 200 and body_of(retry_response).get("status") == "SUCCESS",
         f"HTTP {retry_response.status_code} {body_of(retry_response).get('status')}",
     )
+    if live:
+        recovered = stored_text("t1201-pdf", body_of(retry_response).get("file_id", ""))
+        print(f"OCR_STORED recovered={recovered!r}")
+        check("same-name retry really OCRs all three scan pages", all(f"FAILED SCAN {page}" in recovered for page in (1, 2, 3)))
 
     print("\n--- Validation, duplicate scope, and keyword-index invalidation")
     create_kb("t1201-valid")
@@ -566,6 +664,9 @@ def run_probe(probe_root: Path) -> int:
         ("bad.exe", b"payload", 400, "UNSUPPORTED_FILE_TYPE"),
         ("empty.txt", b"", 400, "EMPTY_FILE"),
         ("oversized.txt", b"x" * (51 * 1024 * 1024), 413, "FILE_TOO_LARGE"),
+        ("../escape.txt", b"payload", 400, "INVALID_FILE_NAME"),
+        ("subdir/escape.txt", b"payload", 400, "INVALID_FILE_NAME"),
+        ("broken.pdf", b"not a PDF", 422, "FILE_PARSE_ERROR"),
     ]
     for name, content, status, error_code in rejected:
         response = upload("t1201-valid", name, content)
@@ -578,6 +679,7 @@ def run_probe(probe_root: Path) -> int:
         "AC-F002-04/05/06 validation failures have no persistence side effects",
         store.get_chunk_count("t1201-valid") == validation_baseline
         and not any((upload_root / "t1201-valid" / name).exists() for name, *_ in rejected),
+        f"remaining_files={[str(path.relative_to(upload_root)) for path in (upload_root / 't1201-valid').rglob('*') if path.is_file()]}",
     )
 
     create_kb("t1201-kb-a")
@@ -668,6 +770,14 @@ def run_probe(probe_root: Path) -> int:
         and len(store.get_chunks_by_file("t1201-vector", survivor_body.get("file_id", ""))) == 1,
         f"deleted={deleted_count}",
     )
+    create_kb("t1201-delete")
+    def section_file(count):
+        return "\n\n".join(f"## Section {index}\nContent {index}" for index in range(count)).encode("utf-8")
+    file_a = body_of(upload("t1201-delete", "a.md", section_file(5)))
+    file_b = body_of(upload("t1201-delete", "b.md", section_file(3)))
+    before_b = chunks_for("t1201-delete", file_b.get("file_id", ""))
+    removed = store.delete_by_file("t1201-delete", file_a.get("file_id", ""))
+    check("AC-F008-02 literal 5/3 deletion fixture", file_a.get("chunks") == 5 and len(before_b) == 3 and removed == 5 and chunks_for("t1201-delete", file_a.get("file_id", "")) == [] and chunks_for("t1201-delete", file_b.get("file_id", "")) == before_b and store.get_chunk_count("t1201-delete") == 3)
 
     private_accesses: list[str] = []
     app_root = _BACKEND / "app"
@@ -716,6 +826,14 @@ def run_probe(probe_root: Path) -> int:
 
 def _emit(text: str) -> None:
     """Print child output safely on Windows consoles with legacy codecs."""
+    if "--live" in sys.argv:
+        from dotenv import dotenv_values
+        import os
+        values = dotenv_values(_BACKEND / ".env")
+        for name in ("DASHSCOPE_API_KEY", "DEEPSEEK_API_KEY"):
+            for value in (values.get(name), os.environ.get(name)):
+                if value:
+                    text = text.replace(value, "[REDACTED]")
     try:
         sys.stdout.write(text)
     except UnicodeEncodeError:
@@ -724,24 +842,27 @@ def _emit(text: str) -> None:
     sys.stdout.flush()
 
 
-def main() -> int:
+def main(*, live: bool = False) -> int:
     """Run the matrix in a child, then remove its isolated temp tree."""
+    import os
     probe_root = Path(tempfile.mkdtemp(prefix="t1201_ingestion_"))
     try:
         completed = subprocess.run(
-            [sys.executable, str(Path(__file__).resolve()), "--probe-root", str(probe_root)],
+            [sys.executable, "-u", str(Path(__file__).resolve()), "--probe-root", str(probe_root)] + (["--live"] if live else []),
             capture_output=True,
             text=True,
             encoding="utf-8",
             errors="replace",
             timeout=900,
+            env={**os.environ, "PYTHONIOENCODING": "utf-8"},
         )
         _emit(completed.stdout)
-        if completed.stderr.strip():
+        if completed.stderr.strip() and not live:
             _emit("--- child stderr ---\n" + completed.stderr)
         return_code = completed.returncode
     except subprocess.TimeoutExpired as exc:
-        _emit((exc.stdout or "") + (exc.stderr or ""))
+        partial = exc.stdout or b""
+        _emit(partial.decode("utf-8", errors="replace") if isinstance(partial, bytes) else partial)
         _emit("\nT1201 verification timed out.\n")
         return_code = 1
 
@@ -753,10 +874,18 @@ def main() -> int:
     if probe_root.exists():
         print(f"T1201 cleanup failed: {probe_root}")
         return 1
+    print("ISOLATED_STORAGE_CLEANUP: PASS")
     return return_code
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 3 and sys.argv[1] == "--probe-root":
-        raise SystemExit(run_probe(Path(sys.argv[2])))
-    raise SystemExit(main())
+    live_mode = "--live" in sys.argv
+    if "--probe-root" in sys.argv:
+        try:
+            raise SystemExit(run_probe(Path(sys.argv[2]), live=live_mode))
+        except Exception as exc:
+            if not live_mode:
+                raise
+            print(f"BLOCKED: probe terminated ({type(exc).__name__}); exception text withheld")
+            raise SystemExit(1)
+    raise SystemExit(main(live=live_mode))

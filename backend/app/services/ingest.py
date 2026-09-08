@@ -229,7 +229,10 @@ def parse_pdf_file(
     try:
         import fitz
 
-        doc = fitz.open(str(file_path))
+        # A failed PyMuPDF filename-open can retain a Windows file handle in
+        # its exception traceback, preventing the upload layer's rollback.
+        # Own the file read here so even malformed PDFs leave no open handle.
+        doc = fitz.open(stream=file_path.read_bytes(), filetype="pdf")
     except Exception as exc:
         raise AppError("FILE_PARSE_ERROR") from exc
 

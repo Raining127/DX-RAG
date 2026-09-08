@@ -1,0 +1,9 @@
+warning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
+test_corrupt_pdf_releases_file_for_rollback_with_traceback_alive (tests.test_upload.UploadContractTests.test_corrupt_pdf_releases_file_for_rollback_with_traceback_alive) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.105s
+
+OK
+
+EXIT_CODE: 0

@@ -1,0 +1,6 @@
+SECRET_SCAN: PASS (literal configured values absent from all task-local source/diffs/artifacts; values withheld)
+TASK_SCOPE: PASS (all TASKS content outside T1201 unchanged)
+SPEC_ENV_DEPENDENCIES: UNCHANGED
+SHA256 backend/app/services/ingest.py 50cffaff449866c166fa80717124237e2a64506cfe887a6ebd315389ae3b9666
+SHA256 backend/scripts/verify_t1201_ingestion.py c91e120f0e8048b82da361fd451f1457b9bb5f3599bb9c12b9f71f5a1d998818
+SHA256 backend/tests/test_upload.py a9c4f32bc17f342aa7d1b90d529bf615a3a04cc4ffca60a671dddb6607640598

@@ -1,0 +1,2 @@
+# Evidence SHA-256 provenance describes exact bytes across Git checkouts.
+/docs/verification/** -text

@@ -1,6 +1,8 @@
 """Focused contract tests for the Phase 5 upload boundary."""
 
 import unittest
+import tempfile
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 from fastapi.testclient import TestClient
@@ -11,6 +13,24 @@ from app.services.qa import KeywordRetriever
 
 
 class UploadContractTests(unittest.TestCase):
+    def test_corrupt_pdf_releases_file_for_rollback_with_traceback_alive(self) -> None:
+        from app.core.errors import AppError
+        from app.services.ingest import parse_pdf_file
+
+        with tempfile.TemporaryDirectory(prefix="t1201_corrupt_pdf_") as root:
+            target = Path(root) / "broken.pdf"
+            target.write_bytes(b"not a PDF")
+            try:
+                parse_pdf_file(target)
+            except AppError as exc:
+                self.assertEqual(exc.code, "FILE_PARSE_ERROR")
+                # Match upload_file's except block: the parser exception and
+                # native library traceback are still alive during unlink.
+                target.unlink()
+                self.assertFalse(target.exists())
+            else:
+                self.fail("corrupt PDF was accepted")
+
     def setUp(self) -> None:
         self.client = TestClient(app)
         self.store = Mock()

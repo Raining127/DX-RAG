@@ -1,0 +1,69 @@
+{
+  "date": "2026-09-07",
+  "scope": "F-6 remediation, not Gate Re-review",
+  "provider_requests": 0,
+  "backend_dotenv_read": false,
+  "browser_upload_executed": false,
+  "red": {
+    "command": "cd frontend; node scripts/verify_f6_integration.cjs",
+    "exit_code": 1,
+    "observed": "F-6: mounted FileManager must refresh after same-KB upload: 0 !== 1",
+    "scope": "Scenario A fails before product fix; later QA assertion added before final green run."
+  },
+  "integration": {
+    "command": "cd frontend; node scripts/verify_f6_integration.cjs",
+    "exit_code": 0,
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0,
+    "output": "PASS A: same-KB upload refreshes hidden mounted list and rendered/shared counts; QA draft preserved\nPASS B: upload/list/preview/delete/empty/count-zero/same-name-reupload/count-one in one session\nPASS C: KB-B upload/delete never refreshes or changes KB-A rows/count\nPASS warning-success synchronizes; rejected upload changes neither count nor list\nPASS actual KB rename/delete callbacks retain identity/fallback and counts\nSUMMARY 5/5 PASS; MOCKED API/hooks, actual Home + four components; no browser/provider\n"
+  },
+  "upload_boundary": {
+    "command": "cd frontend; node scripts/verify_t1204_contracts.cjs",
+    "exit_code": 0,
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "output": "{\"bytes\":53477376,\"rejected\":true,\"uploadCalls\":0,\"pass\":true}\n{\"bytes\":52428800,\"rejected\":false,\"uploadCalls\":0,\"pass\":true}\nSUMMARY: 2/2 PASS; DETERMINISTIC component handler/state; NOT browser upload\n"
+  },
+  "typecheck": {
+    "command": "cd frontend; node node_modules/typescript/bin/tsc --noEmit --incremental false",
+    "exit_code": 0,
+    "passed": null,
+    "failed": 0,
+    "skipped": 0,
+    "output": ""
+  },
+  "backend": {
+    "command": "Empty temporary cwd wrapper: T1203 script + backend unittest discovery (see F6-REMEDIATION.md)",
+    "exit_code": 0,
+    "passed": null,
+    "failed": 0,
+    "skipped": 0,
+    "output": "COMMAND T1203\r\nRequired checks: 43/43 passed\r\nRESULT: PASS\r\nEXIT_CODE 0\r\nCOMMAND backend unittest\r\nRan 83 tests in 6.777s\r\nOK\r\nEXIT_CODE 0\r\nEMPTY_CWD_DOTENV_ISOLATION: backend/.env not loaded; temp cleanup complete\r\n"
+  },
+  "build": {
+    "command": "cd frontend; npm.cmd run build",
+    "exit_code": 0,
+    "passed": null,
+    "failed": 0,
+    "skipped": 0,
+    "output": " ✓ Compiled successfully\n   Linting and checking validity of types ...\n   Collecting page data ...\n   Generating static pages (0/4) ...\n   Generating static pages (1/4) \r\n   Generating static pages (2/4) \r\n   Generating static pages (3/4) \r\n ✓ Generating static pages (4/4)\n   Finalizing page optimization ...\n   Collecting build traces ...\n\nRoute (app)                              Size     First Load JS\n┌ ○ /                                    246 kB          385 kB\n└ ○ /_not-found                          873 B          88.1 kB\n+ First Load JS shared by all            87.2 kB\n  ├ chunks/117-d01c22fe956e1663.js       31.6 kB\n  ├ chunks/fd9d1056-1e78f98e91b6cc44.js  53.6 kB\n  └ other shared chunks (total)          1.96 kB\n\n\n○  (Static)  prerendered as static content\n\n"
+  },
+  "build_initial": {
+    "command": "cd frontend; npm run build",
+    "exit_code": 1,
+    "reason": "PowerShell npm.ps1 execution policy; build did not start. Used npm.cmd without policy changes."
+  },
+  "verified_sha256": {
+    "frontend/app/page.tsx": "475071fe50d465737aec7a04aa4b70074cec23a73b942aa070987e767adc9c9a",
+    "frontend/components/FileUpload.tsx": "4301f6eb9abb7b94077a542dd284fe752776d6295ad44882b8be5c764e9f0c85",
+    "frontend/components/FileManager.tsx": "e114871abae3d14bdfcdb9da2f68244cc0d6af48dcfff977992ace3ae3f66147",
+    "frontend/scripts/verify_f6_integration.cjs": "b3a31a274dc480f164d4cb32a5f66d80b865d9321a494ae8e94539d3b0f036cb",
+    "docs/SPEC.md": "c7f4bf90b180dafba913036b3d2697325ecc50ea79acb1d6f3526aebc887c68a",
+    "backend/app/services/ingest.py": "50cffaff449866c166fa80717124237e2a64506cfe887a6ebd315389ae3b9666",
+    "backend/app/services/qa.py": "1b09bd00b11730894cac11271da7242c3532e59522d3150649c6aca62ed8e57f",
+    "docs/verification/T1201/live-final.txt": "670f0c5f86ce47364193ee216f87edf4db6c5bac21573e885f384a3b27cc61e8",
+    "docs/verification/T1202/live-reviewed.txt": "923b0723727ee4b686f7ad94f20737b9b65ae111f1663426f867bee8f6965159"
+  }
+}

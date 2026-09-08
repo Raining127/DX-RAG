@@ -1,12 +1,15 @@
+> **Historical Gate-remediation snapshot.** The current T1204 task audit is [docs/verification/T1204/README.md](verification/T1204/README.md). Its current provider evidence supersedes the availability blockers below; the original Gate event is retained as history.
+
 # Phase 12 Gate Remediation / T1204 Acceptance Evidence
 
 > Remediation date: 2026-09-07  
 > SPEC baseline: `docs/SPEC.md` v1.7 (FROZEN)  
 > Original Gate verdict: `PHASE_12_FAIL — FIX_REQUIRED`  
-> Current verdict: **`PHASE_12_FAIL — FIX_REQUIRED`**  
+> Historical verdict at this remediation checkpoint: **`PHASE_12_FAIL — FIX_REQUIRED`**
+> Current final verdict after F-6 and independent incremental re-review: **PHASE_12_PASS** — [Gate closure](verification/PHASE-12-GATE-CLOSURE.md)
 > Next Phase started: no
 
-## 1. Current disposition
+## 1. Historical disposition at this checkpoint
 
 The original T1204 report claimed 100% mandatory AC PASS while the local BGE
 model, DashScope OCR, and DeepSeek answer behavior were represented by test

@@ -1,0 +1,693 @@
+{
+  "task": "T1202",
+  "status": "DONE",
+  "reason": "Frozen mandatory ACs satisfied by LIVE provider/QA evidence plus separately labeled DETERMINISTIC error-contract evidence; natural 429/5xx/403 observations are not required.",
+  "records": [
+    {
+      "type": "RUN",
+      "mode": "REAL local BGE + REAL DeepSeek + REAL temporary Chroma",
+      "utc": "2026-09-07T09:27:24.006226+00:00"
+    },
+    {
+      "type": "CHECK",
+      "ac": "frozen configuration",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "isolated storage",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "create t1202-live",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "create t1202-live-empty",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "create t1202-live-injection",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "upload machine-learning.txt",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "upload related-ai.txt",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "upload python-guide.txt",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "upload untrusted-instructions.txt",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "real BGE singleton and 512 dimensions",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F009-01 bigram",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F009-02/03 no-match and 3/5",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F009-04 mixed tokens",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "upload new-index.txt",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F009-05 index rebuild",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F010-01/02 semantic and empty",
+      "result": "PASS"
+    },
+    {
+      "type": "PROVIDER_RESPONSE",
+      "case": "matching",
+      "status": 200,
+      "id": "953d0fda-70d3-4184-91aa-2b1d807b1574",
+      "request_id": null,
+      "model": "deepseek-v4-flash",
+      "elapsed": 0.799,
+      "usage": {
+        "completion_tokens": 22,
+        "completion_tokens_details": null,
+        "prompt_cache_hit_tokens": 1280,
+        "prompt_cache_miss_tokens": 7,
+        "prompt_tokens": 1287,
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cache_write_tokens": null,
+          "cached_tokens": 1280,
+          "image_tokens": null,
+          "text_tokens": null
+        },
+        "total_tokens": 1309
+      }
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F015-01/02 sources matching",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "no inline citations matching",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "answer is unmodified real provider output matching",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-QA-01 matching",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "matching grounded",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F011-01/04 fusion and identity",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-QA-04 ranking meaning",
+      "result": "PASS"
+    },
+    {
+      "type": "PROVIDER_RESPONSE",
+      "case": "python-first",
+      "status": 200,
+      "id": "7a87bab0-c6ad-4233-b742-084ff6df6c2f",
+      "request_id": null,
+      "model": "deepseek-v4-flash",
+      "elapsed": 1.069,
+      "usage": {
+        "completion_tokens": 69,
+        "completion_tokens_details": null,
+        "prompt_cache_hit_tokens": 1152,
+        "prompt_cache_miss_tokens": 47,
+        "prompt_tokens": 1199,
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cache_write_tokens": null,
+          "cached_tokens": 1152,
+          "image_tokens": null,
+          "text_tokens": null
+        },
+        "total_tokens": 1268
+      }
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F015-01/02 sources python-first",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "no inline citations python-first",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "answer is unmodified real provider output python-first",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F013-01 Python grounded Markdown",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F011-02 real unrelated below threshold",
+      "result": "PASS"
+    },
+    {
+      "type": "PROVIDER_RESPONSE",
+      "case": "unrelated",
+      "status": 200,
+      "id": "24bb4aa2-f432-4903-8d7a-761628c2e820",
+      "request_id": null,
+      "model": "deepseek-v4-flash",
+      "elapsed": 0.574,
+      "usage": {
+        "completion_tokens": 10,
+        "completion_tokens_details": null,
+        "prompt_cache_hit_tokens": 128,
+        "prompt_cache_miss_tokens": 52,
+        "prompt_tokens": 180,
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cache_write_tokens": null,
+          "cached_tokens": 128,
+          "image_tokens": null,
+          "text_tokens": null
+        },
+        "total_tokens": 190
+      }
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F015-01/02 sources unrelated",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "no inline citations unrelated",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "answer is unmodified real provider output unrelated",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-QA-02 / AC-F012-02 / AC-F013-02",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-QA-05 empty KB skips retrieval and LLM",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-QA-06 top_k=0",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-QA-06 top_k=21",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-QA-06 top_k=-1",
+      "result": "PASS"
+    },
+    {
+      "type": "PROVIDER_RESPONSE",
+      "case": "pronoun",
+      "status": 200,
+      "id": "231f73d3-5ed8-4d8c-8ab0-9d0bf00d8096",
+      "request_id": null,
+      "model": "deepseek-v4-flash",
+      "elapsed": 0.843,
+      "usage": {
+        "completion_tokens": 29,
+        "completion_tokens_details": null,
+        "prompt_cache_hit_tokens": 256,
+        "prompt_cache_miss_tokens": 50,
+        "prompt_tokens": 306,
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cache_write_tokens": null,
+          "cached_tokens": 256,
+          "image_tokens": null,
+          "text_tokens": null
+        },
+        "total_tokens": 335
+      }
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F015-01/02 sources pronoun",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "no inline citations pronoun",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "answer is unmodified real provider output pronoun",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-QA-03 / AC-F014-01 pronoun",
+      "result": "PASS"
+    },
+    {
+      "type": "PROVIDER_RESPONSE",
+      "case": "history-window",
+      "status": 200,
+      "id": "def3b6fd-2994-424e-988f-8073c0eab0f8",
+      "request_id": null,
+      "model": "deepseek-v4-flash",
+      "elapsed": 1.313,
+      "usage": {
+        "completion_tokens": 67,
+        "completion_tokens_details": null,
+        "prompt_cache_hit_tokens": 1280,
+        "prompt_cache_miss_tokens": 35,
+        "prompt_tokens": 1315,
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cache_write_tokens": null,
+          "cached_tokens": 1280,
+          "image_tokens": null,
+          "text_tokens": null
+        },
+        "total_tokens": 1382
+      }
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F015-01/02 sources history-window",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "no inline citations history-window",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "answer is unmodified real provider output history-window",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F014-02 latest 20",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F014-03 omitted history",
+      "result": "PASS"
+    },
+    {
+      "type": "PROVIDER_RESPONSE",
+      "case": "injection",
+      "status": 200,
+      "id": "d21c3954-a7cb-431f-8dbd-f783647740b3",
+      "request_id": null,
+      "model": "deepseek-v4-flash",
+      "elapsed": 0.739,
+      "usage": {
+        "completion_tokens": 10,
+        "completion_tokens_details": null,
+        "prompt_cache_hit_tokens": 128,
+        "prompt_cache_miss_tokens": 112,
+        "prompt_tokens": 240,
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cache_write_tokens": null,
+          "cached_tokens": 128,
+          "image_tokens": null,
+          "text_tokens": null
+        },
+        "total_tokens": 250
+      }
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F015-01/02 sources injection",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "no inline citations injection",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "answer is unmodified real provider output injection",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F013-03 real prompt injection",
+      "result": "PASS"
+    },
+    {
+      "type": "INJECTION_OBSERVATION",
+      "answers_known_fact": false,
+      "note": "AC-F013-03 requires Chinese and no instruction override; conservative abstention is separately reported"
+    },
+    {
+      "type": "PROVIDER_RESPONSE",
+      "case": "history-not-facts",
+      "status": 200,
+      "id": "bfee9569-7c9c-4cae-954e-bde4c34543ba",
+      "request_id": null,
+      "model": "deepseek-v4-flash",
+      "elapsed": 0.714,
+      "usage": {
+        "completion_tokens": 23,
+        "completion_tokens_details": null,
+        "prompt_cache_hit_tokens": 256,
+        "prompt_cache_miss_tokens": 8,
+        "prompt_tokens": 264,
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cache_write_tokens": null,
+          "cached_tokens": 256,
+          "image_tokens": null,
+          "text_tokens": null
+        },
+        "total_tokens": 287
+      }
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F015-01/02 sources history-not-facts",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "no inline citations history-not-facts",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "answer is unmodified real provider output history-not-facts",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "history is not a factual source",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "create context-boundary KB",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "upload context-boundary.md",
+      "result": "PASS"
+    },
+    {
+      "type": "PROVIDER_RESPONSE",
+      "case": "context-boundary",
+      "status": 200,
+      "id": "ca67dd2e-d8aa-43da-a56f-915040b4712c",
+      "request_id": null,
+      "model": "deepseek-v4-flash",
+      "elapsed": 2.53,
+      "usage": {
+        "completion_tokens": 289,
+        "completion_tokens_details": null,
+        "prompt_cache_hit_tokens": 1920,
+        "prompt_cache_miss_tokens": 82,
+        "prompt_tokens": 2002,
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cache_write_tokens": null,
+          "cached_tokens": 1920,
+          "image_tokens": null,
+          "text_tokens": null
+        },
+        "total_tokens": 2291
+      }
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F015-01/02 sources context-boundary",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "no inline citations context-boundary",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "answer is unmodified real provider output context-boundary",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-QA-07 / AC-F012-01 real provider context boundary",
+      "result": "PASS"
+    },
+    {
+      "type": "PROVIDER_ERROR",
+      "case": "timeout-recovery",
+      "elapsed": 0.005,
+      "exception": "APITimeoutError",
+      "fault": "timeout",
+      "status": null
+    },
+    {
+      "type": "PROVIDER_RESPONSE",
+      "case": "timeout-recovery",
+      "status": 200,
+      "id": "7f1ea867-cecd-41f2-8068-418aa4e5a0ff",
+      "request_id": null,
+      "model": "deepseek-v4-flash",
+      "elapsed": 1.099,
+      "usage": {
+        "completion_tokens": 63,
+        "completion_tokens_details": null,
+        "prompt_cache_hit_tokens": 1152,
+        "prompt_cache_miss_tokens": 38,
+        "prompt_tokens": 1190,
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cache_write_tokens": null,
+          "cached_tokens": 1152,
+          "image_tokens": null,
+          "text_tokens": null
+        },
+        "total_tokens": 1253
+      }
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F015-01/02 sources timeout-recovery",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "no inline citations timeout-recovery",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "answer is unmodified real provider output timeout-recovery",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F013-04 / Section 9.3 timeout-recovery",
+      "result": "PASS"
+    },
+    {
+      "type": "PROVIDER_ERROR",
+      "case": "timeout-exhaustion",
+      "elapsed": 0.018,
+      "exception": "APITimeoutError",
+      "fault": "timeout",
+      "status": null
+    },
+    {
+      "type": "PROVIDER_ERROR",
+      "case": "timeout-exhaustion",
+      "elapsed": 0.014,
+      "exception": "APITimeoutError",
+      "fault": "timeout",
+      "status": null
+    },
+    {
+      "type": "PROVIDER_ERROR",
+      "case": "timeout-exhaustion",
+      "elapsed": 0.01,
+      "exception": "APITimeoutError",
+      "fault": "timeout",
+      "status": null
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F013-04 / Section 9.3 timeout-exhaustion",
+      "result": "PASS"
+    },
+    {
+      "type": "PROVIDER_ERROR",
+      "case": "network-recovery",
+      "elapsed": 2.051,
+      "exception": "APIConnectionError",
+      "fault": "network",
+      "status": null
+    },
+    {
+      "type": "PROVIDER_RESPONSE",
+      "case": "network-recovery",
+      "status": 200,
+      "id": "59691d50-aae7-4b66-b775-a010f9ff0371",
+      "request_id": null,
+      "model": "deepseek-v4-flash",
+      "elapsed": 0.985,
+      "usage": {
+        "completion_tokens": 63,
+        "completion_tokens_details": null,
+        "prompt_cache_hit_tokens": 1152,
+        "prompt_cache_miss_tokens": 38,
+        "prompt_tokens": 1190,
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cache_write_tokens": null,
+          "cached_tokens": 1152,
+          "image_tokens": null,
+          "text_tokens": null
+        },
+        "total_tokens": 1253
+      }
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F015-01/02 sources network-recovery",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "no inline citations network-recovery",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "answer is unmodified real provider output network-recovery",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F013-04 / Section 9.3 network-recovery",
+      "result": "PASS"
+    },
+    {
+      "type": "PROVIDER_ERROR",
+      "case": "auth",
+      "elapsed": 0.187,
+      "exception": "AuthenticationError",
+      "fault": "invalid-auth",
+      "status": 401
+    },
+    {
+      "type": "CHECK",
+      "ac": "AC-F013-04 / Section 9.3 auth",
+      "result": "PASS"
+    },
+    {
+      "type": "CHECK",
+      "ac": "DeepSeek provider compatibility",
+      "result": "PASS"
+    },
+    {
+      "type": "SUMMARY",
+      "failures": [],
+      "observed_http_statuses": [
+        200,
+        401
+      ],
+      "passed": 70,
+      "provider_attempts": 16,
+      "total": 70
+    },
+    {
+      "type": "LIVE_NOT_OBSERVED",
+      "cases": [
+        "429",
+        "5xx",
+        "403 (conditional)"
+      ],
+      "note": "Synthetic regression is not live provider evidence"
+    }
+  ],
+  "remaining_acceptance_audit": {
+    "report": "BLOCKER-AUDIT.md",
+    "live_log": "live-reviewed.txt",
+    "historical_live_exit_code": 2,
+    "live_checks": "70/70",
+    "natural_live_statuses_not_observed": [
+      "429",
+      "5xx",
+      "403"
+    ],
+    "deterministic_final": {
+      "focused": "60/60",
+      "matrix": "46/46",
+      "failure_contract": "15/15"
+    },
+    "new_provider_requests": 0,
+    "product_and_spec_changes": false
+  }
+}

@@ -1,0 +1,19 @@
+PRODUCT_SPEC_T1201_RAW_LIVE_PRESERVATION: PASS
+TASKS_OUTSIDE_T1201_T1202_UNCHANGED: PASS
+RETAINED_LIVE_CHECKS_70_OF_70: PASS
+FINAL_FOCUSED: PASS
+FINAL_DETERMINISTIC: PASS
+FINAL_FAILURE-CONTRACT: PASS
+SYNTAX: PASS
+GIT_DIFF_CHECK: PASS
+EXACT_SECRET_SCAN_VALUES_WITHHELD: PASS
+COMMAND: python -m py_compile backend/scripts/verify_t1202_live.py backend/scripts/verify_t1202_retrieval_qa.py backend/scripts/verify_t1202_failure_contract.py
+COMMAND: git diff --check
+LIVE: prior 70/70; historical exit 2 preserved; no new provider requests
+DETERMINISTIC: focused 60/60; matrix 46/46; fault injection 15/15
+SCOPE: T1202 verification scripts, evidence and status only; no product or SPEC edits in audit
+T1204: NOT_STARTED_BY_THIS_AUDIT; Phase 12 Gate unchanged
+COMMIT: none
+SHA256 backend\scripts\verify_t1202_failure_contract.py ed833b97cb11d3cac9b719b8fec3cc73d3a448a63da5993e22299d60d812f3d1
+SHA256 backend\scripts\verify_t1202_live.py f6d0d0848afea0560fe148a8f77e6c8521bc5fa20a4599d7fd9772fc90294b81
+SHA256 backend\scripts\verify_t1202_retrieval_qa.py 3de9359df6a44e532ce1603719777015a6bb8d75811930b5296d540389e722e6

@@ -1,0 +1,18 @@
+{
+  "backend/app/services/ingest.py": "50cffaff449866c166fa80717124237e2a64506cfe887a6ebd315389ae3b9666",
+  "backend/scripts/verify_t1201_ingestion.py": "c91e120f0e8048b82da361fd451f1457b9bb5f3599bb9c12b9f71f5a1d998818",
+  "backend/tests/test_upload.py": "a9c4f32bc17f342aa7d1b90d529bf615a3a04cc4ffca60a671dddb6607640598",
+  "docs/TASKS.md": "a67e5e9b386cc1377644f45caa363a60bbd6521da3743d26fcf15eac5e7f456c",
+  "T1201_artifacts": {
+    "docs/verification/T1201/backend-regression.txt": "28a53a8e6acd5324b414e36b4613d644a92643959130960cf5d99fcf32b97f03",
+    "docs/verification/T1201/corrupt-pdf-regression.txt": "9b10bf7bb11bc87758717f5f26d75855d39a3c9f27cb1eeec9d80d0f46512d1a",
+    "docs/verification/T1201/deterministic-final.txt": "468434f71b765f5add534664948234b51f8c26702492f63718b531ebb595970f",
+    "docs/verification/T1201/deterministic-regression.txt": "7dd4bb7701b1df55409eab1fac42c833be85c2f37d204b204278d1a3d77cde73",
+    "docs/verification/T1201/live-final.txt": "99ab2890e7ae90645f4e5f476b13d216d6796f55103512b64e12f77956d185ca",
+    "docs/verification/T1201/live-network.txt": "4a38a9d236cea6b4bab69ce070e8d739b2b90f64cfaebe1c1dab384f4afa3ba4",
+    "docs/verification/T1201/live-sandbox.txt": "c7a274981e886b018a61380bd708748c57967dc41baf4ddc027d274ef457eb61",
+    "docs/verification/T1201/README.md": "706f08fce4d3996dd0812d519c0a469efb61a9fc8f05bbc1a6aef8c4773645e7",
+    "docs/verification/T1201/review.txt": "5495903b9691decad306182c061305484e15e749fca5130ca6c5edf2d8cb6e91",
+    "docs/verification/T1201/rollback-regression.txt": "f954536af03d791c78ead6cbc1b6770efb118899f051d0afb638315698a888c3"
+  }
+}

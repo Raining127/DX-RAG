@@ -1,0 +1,146 @@
+COMMAND: python backend/scripts/verify_t1202_failure_contract.py
+CWD: .
+{
+  "evidence": "DETERMINISTIC fault injection; NOT live HTTP",
+  "provider_requests": 0,
+  "results": [
+    {
+      "status": 429,
+      "failures": 1,
+      "attempts": 2,
+      "backoff": [
+        1.0
+      ],
+      "passed": true
+    },
+    {
+      "status": 429,
+      "failures": 2,
+      "attempts": 3,
+      "backoff": [
+        1.0,
+        2.0
+      ],
+      "passed": true
+    },
+    {
+      "status": 429,
+      "failures": 3,
+      "attempts": 3,
+      "backoff": [
+        1.0,
+        2.0
+      ],
+      "passed": true
+    },
+    {
+      "status": 500,
+      "failures": 1,
+      "attempts": 2,
+      "backoff": [
+        1.0
+      ],
+      "passed": true
+    },
+    {
+      "status": 500,
+      "failures": 2,
+      "attempts": 3,
+      "backoff": [
+        1.0,
+        2.0
+      ],
+      "passed": true
+    },
+    {
+      "status": 500,
+      "failures": 3,
+      "attempts": 3,
+      "backoff": [
+        1.0,
+        2.0
+      ],
+      "passed": true
+    },
+    {
+      "status": 503,
+      "failures": 1,
+      "attempts": 2,
+      "backoff": [
+        1.0
+      ],
+      "passed": true
+    },
+    {
+      "status": 503,
+      "failures": 2,
+      "attempts": 3,
+      "backoff": [
+        1.0,
+        2.0
+      ],
+      "passed": true
+    },
+    {
+      "status": 503,
+      "failures": 3,
+      "attempts": 3,
+      "backoff": [
+        1.0,
+        2.0
+      ],
+      "passed": true
+    },
+    {
+      "status": 599,
+      "failures": 1,
+      "attempts": 2,
+      "backoff": [
+        1.0
+      ],
+      "passed": true
+    },
+    {
+      "status": 599,
+      "failures": 2,
+      "attempts": 3,
+      "backoff": [
+        1.0,
+        2.0
+      ],
+      "passed": true
+    },
+    {
+      "status": 599,
+      "failures": 3,
+      "attempts": 3,
+      "backoff": [
+        1.0,
+        2.0
+      ],
+      "passed": true
+    },
+    {
+      "status": 401,
+      "attempts": 1,
+      "backoff": [],
+      "passed": true
+    },
+    {
+      "status": 403,
+      "attempts": 1,
+      "backoff": [],
+      "passed": true
+    },
+    {
+      "status": 400,
+      "attempts": 1,
+      "backoff": [],
+      "passed": true
+    }
+  ],
+  "passed": 15,
+  "total": 15
+}
+
+EXIT_CODE: 0

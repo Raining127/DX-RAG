@@ -3,10 +3,10 @@
 > 从项目整体角度理解 DX-RAG：它是什么、为什么存在、每一层做什么、13 个 Phase 如何拼成完整系统。
 > 不深入代码细节——代码级的逐行精读请阅读对应的 `phase-XX-*.md` 学习笔记，工程决策分析请阅读 `engineering-review/`。
 
-**当前状态快照**（以 `docs/TASKS.md` 与最新 Gate verdict 为准，2026-09-07）：
+**当前状态快照**（以 `docs/TASKS.md` 与最新 Gate verdict 为准，Phase 12 更新于 2026-09-08）：
 - SPEC.md v1.7 **FROZEN**，Blocking Questions = 0（保留`BAAI/bge-small-zh-v1.5`，官方输出合同统一为512维）
 - Phase 0–5 ✅ DONE（工程地基 + 向量存储 + 嵌入 + 文档管道 + 知识库管理 API + 文件上传 API；Phase 5：Gate Review 裁定 PHASE_5_FAIL → F-1/F-2 修复完成 → Re-review 待执行；Learning Pass / ER / Learning Review 已完成）
-- Phase 6 ✅ COMPLETE（T0601–T0602 DONE；PHASE_6_PASS；Learning Review 完成，2026-08-27）；Phase 7 ✅ COMPLETE（T0701–T0703 DONE；`PHASE_7_PASS — CLOSED`）；Phase 8 ✅ COMPLETE（T0801–T0805 DONE；`PHASE_8_PASS — READY_FOR_PHASE_9`）；Phase 9 ✅ COMPLETE（T0901–T0903 DONE；`PHASE_9_PASS — READY_FOR_PHASE_10`）；Phase 10 ✅ COMPLETE（T1001–T1002 DONE；`PHASE_10_PASS — READY_FOR_PHASE_11`）；Phase 11 ✅ COMPLETE（T1101–T1105 DONE；`PHASE_11_PASS — READY_FOR_PHASE_12`）；Phase 12 🔴 GATE REMEDIATION（原`PHASE_12_FAIL — FIX_REQUIRED`；T1201/T1202/T1204 BLOCKED，T1203 DONE；BGE冲突已修复，providers仍未验收）
+- Phase 6 ✅ COMPLETE（T0601–T0602 DONE；PHASE_6_PASS；Learning Review 完成，2026-08-27）；Phase 7 ✅ COMPLETE（T0701–T0703 DONE；`PHASE_7_PASS — CLOSED`）；Phase 8 ✅ COMPLETE（T0801–T0805 DONE；`PHASE_8_PASS — READY_FOR_PHASE_9`）；Phase 9 ✅ COMPLETE（T0901–T0903 DONE；`PHASE_9_PASS — READY_FOR_PHASE_10`）；Phase 10 ✅ COMPLETE（T1001–T1002 DONE；`PHASE_10_PASS — READY_FOR_PHASE_11`）；Phase 11 ✅ COMPLETE（T1101–T1105 DONE；`PHASE_11_PASS — READY_FOR_PHASE_12`）；Phase 12 **PHASE_12_PASS**（T1201–T1204 DONE / Gate PASS；F-6 CLOSED / REMEDIATED）。历史 FAIL、provider evidence 补齐及独立增量复审见 [Gate closure](../../verification/PHASE-12-GATE-CLOSURE.md)。独立 learning fresh-reader / 完整 Learning Review workflow 仍 pending。
 
 ---
 
@@ -154,7 +154,7 @@ Invalidate keyword index（该 KB 的倒排索引标记 dirty，下次查询重�
 
 ### 2.3 用户查询流程（Query Flow）
 
-> 下图是 SPEC 目标查询流；截至当前 checkout，T0701–T0703 已完成 Service Layer 的 vector/hybrid slice 与 `retrieve()` facade，T0801/T0802 已分别提供 Context/Source 与 history converters，T0803 已提供 DeepSeek client，T0804 已将这些边界接成 QAService，T0805 已接入 `/api/query`、HTTP request validation 与 response envelope；真实 provider/Chroma/upload E2E 与前端集成仍未验证。[PROJECT FACT]
+> 下图是 SPEC 目标查询流；截至当前 checkout，T0701–T0703 已完成 Service Layer 的 vector/hybrid slice 与 `retrieve()` facade，T0801/T0802 已分别提供 Context/Source 与 history converters，T0803 已提供 DeepSeek client，T0804 已将这些边界接成 QAService，T0805 已接入 `/api/query`、HTTP request validation 与 response envelope；该查询流说明形成时，真实 provider/Chroma/upload E2E 与前端集成尚未验证。[HISTORICAL PROJECT FACT] 当前 Phase 12 验收与证据类型见 [Gate closure](../../verification/PHASE-12-GATE-CLOSURE.md)。
 
 ```
 用户输入问题（选择 KB，携带对话历史）
@@ -332,7 +332,7 @@ Answer + Citation（answer 不含内联引用标记；sources 由后端从检索
 | 输出 | T0801–T0804：受 `MAX_CONTEXT_CHARS` 约束的 context text、backend-owned sources、经校验/截断/格式化的 history text、DeepSeek answer adapter，以及 service-level result；T0805 暴露 HTTP 200/统一错误 envelope 的 POST /api/query；Phase Learning Review 已完成统一 data flow 与验证边界收口 |
 | 为什么存在 | 产品核心价值所在：用户要的是答案，不是文档列表。System Prompt 六原则保证"只基于知识库回答、不编造、不被文档注入指令覆盖" |
 
-> 工程复盘见 [Phase 8 Engineering Review](../engineering-review/phase-08-engineering-review.md)；真实 provider/Chroma/upload → query E2E 与 frontend integration 仍未验证。
+> 工程复盘见 [Phase 8 Engineering Review](../engineering-review/phase-08-engineering-review.md)；该 Phase 8 历史检查点尚未验证真实 provider/Chroma/upload → query E2E 与 frontend integration；当前结果见 [Gate closure](../../verification/PHASE-12-GATE-CLOSURE.md)。
 
 ### Phase 9 — File Management API（文件管理）✅ COMPLETE（T0901–T0903 DONE；`PHASE_9_PASS — READY_FOR_PHASE_10`；Learning Review 完成 2026-09-04）
 
@@ -361,7 +361,9 @@ Answer + Citation（answer 不含内联引用标记；sources 由后端从检索
 | 输出 | 四个功能组件 + persistent panels + Home-owned shared collection source + feature-local transaction state + selection/history reconciliation |
 | 为什么存在 | Phase 10 只建边界与骨架；Phase 11 把 API contracts 变成可操作 UI，并用 F-1 Gate remediation 收口跨组件 freshness |
 
-### Phase 12 — Integration & Acceptance（集成验收）🔴 GATE REMEDIATION
+### Phase 12 — Integration & Acceptance（集成验收）
+
+**当前最终状态：PHASE_12_PASS，T1201–T1204 DONE / Gate PASS，F-6 CLOSED。** [独立增量复审记录](../../verification/PHASE-12-GATE-CLOSURE.md)说明 LIVE 与 COMPONENT/INTEGRATION（MOCKED API/hooks）的边界。独立学习流程仍 pending。以下表格和计数保留为历史 Gate remediation 检查点，不代表当前状态。
 
 | 维度 | 内容 |
 |------|------|
@@ -370,7 +372,7 @@ Answer + Citation（answer 不含内联引用标记；sources 由后端从检索
 | 输出 | 三条isolated broad probes、REAL BGE专项probe与T1204审计账本；T1201/T1202/T1204因live provider evidence缺失保持BLOCKED |
 | 为什么存在 | SPEC Section 5的65次Feature AC + Section 12的39次Cross-feature AC共同构成mandatory audit分母；去重后为85个ID |
 
-> 当前证据：REAL BGE revision `7999e1d3359715c523056ef9478215996d62a620`已通过完整性、512维、norm、singleton和临时Chroma中文同义排序4/4；T0503/T1201/T1202/T1203/T1204 broad probes分别56/56、81/81、46/46、43/43、29/29，完整backend 81/81。Broad probes中的Qwen/DeepSeek仍是SUBSTITUTED，live DashScope/DeepSeek均NOT_AVAILABLE且未调用；因此原100% audit声明已撤回，Phase Gate仍FAIL。详见 [Phase 12 Technical Learning](../phase-12-integration-acceptance.md)。
+> 历史 remediation 检查点证据：REAL BGE revision `7999e1d3359715c523056ef9478215996d62a620`已通过完整性、512维、norm、singleton和临时Chroma中文同义排序4/4；T0503/T1201/T1202/T1203/T1204 broad probes分别56/56、81/81、46/46、43/43、29/29，完整backend 81/81。Broad probes中的Qwen/DeepSeek仍是SUBSTITUTED，live DashScope/DeepSeek均NOT_AVAILABLE且未调用；因此原100% audit声明已撤回，Phase Gate仍FAIL。详见 [Phase 12 Technical Learning](../phase-12-integration-acceptance.md)。
 
 ### 4.1 依赖全景
 

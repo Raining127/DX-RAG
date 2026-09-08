@@ -54,13 +54,18 @@ function getErrorMessage(error: unknown): string {
   return '上传未完成，请稍后重试。';
 }
 
+interface FileUploadProps extends CollectionSourceProps {
+  onFileUploaded: (collectionName: string) => void;
+}
+
 export default function FileUpload({
   collections,
   collectionState,
   collectionError,
   collectionMutation,
   onRetryCollections,
-}: CollectionSourceProps) {
+  onFileUploaded,
+}: FileUploadProps) {
   const [selectedCollection, setSelectedCollection] = useState<string>();
 
   const [uploadState, setUploadState] = useState<UploadState>('idle');
@@ -137,6 +142,7 @@ export default function FileUpload({
 
     try {
       const response = await uploadFile(file, resolvedCollection);
+      onFileUploaded(resolvedCollection);
       callbacks?.onProgress?.({ percent: 100 });
       callbacks?.onSuccess?.(response);
       setFileList((current) =>

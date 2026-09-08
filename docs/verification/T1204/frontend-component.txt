@@ -1,0 +1,7 @@
+COMMAND: node scripts/verify_t1204_contracts.cjs
+CWD: frontend
+{"bytes":53477376,"rejected":true,"uploadCalls":0,"pass":true}
+{"bytes":52428800,"rejected":false,"uploadCalls":0,"pass":true}
+SUMMARY: 2/2 PASS; DETERMINISTIC component handler/state; NOT browser upload
+
+EXIT_CODE: 0

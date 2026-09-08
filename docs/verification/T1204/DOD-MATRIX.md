@@ -1,0 +1,25 @@
+> **Public evidence representation (2026-09-07):** linked captures at the existing paths are the public representations described in [sanitization/provenance](../SANITIZATION-PROVENANCE.md). Path-bearing captures were sanitized only for filesystem paths; immutable originals remain locally preserved and excluded from Git. Historical raw hashes refer to those originals; public hashes are recorded separately. No acceptance, assertion, provider response or evidence classification was changed.
+
+# Mandatory DoD by feature area
+
+DOD-01..06 apply to every implemented area. Internal features use the documented service interface rather than inventing an HTTP endpoint. Per-AC requirement/implementation/test links are in ACCEPTANCE-MATRIX.md.
+
+| Feature | DOD-01 implementation | DOD-02 ACs | DOD-03 contracts | DOD-04 errors | DOD-05 scope | DOD-06 style | Evidence / qualification |
+|---|---|---|---|---|---|---|---|
+| F001 | PASS | PASS | PASS | PASS | PASS | PASS | [t1204-final.txt](t1204-final.txt); shared schema/error review and [diff review](review.txt).  [F-6 incremental re-audit](F6-REMEDIATION.md): affected UI lifecycle/count contract restored; no new browser/live claim. |
+| F002 | PASS | PASS | PASS | PASS | PASS | PASS | [../T1201/live-final.txt](../T1201/live-final.txt); [rollback-final.txt](rollback-final.txt); [t1201-final.txt](t1201-final.txt); shared schema/error review and [diff review](review.txt).  [F-6 incremental re-audit](F6-REMEDIATION.md): affected UI lifecycle/count contract restored; no new browser/live claim. |
+| F003 | PASS | PASS | PASS | PASS | PASS | PASS | [../T1201/live-final.txt](../T1201/live-final.txt); [t1201-final.txt](t1201-final.txt); shared schema/error review and [diff review](review.txt). |
+| F004 | PASS | PASS | PASS | PASS | PASS | PASS | [../T1201/live-final.txt](../T1201/live-final.txt); [t1201-final.txt](t1201-final.txt); [t1204-final.txt](t1204-final.txt); shared schema/error review and [diff review](review.txt). |
+| F005 | PASS | PASS | PASS | PASS | PASS | PASS | [t1201-final.txt](t1201-final.txt); shared schema/error review and [diff review](review.txt). |
+| F006 | PASS | PASS | PASS | PASS | PASS | PASS | [t1201-final.txt](t1201-final.txt); shared schema/error review and [diff review](review.txt). |
+| F007 | PASS | PASS | PASS | PASS | PASS | PASS | [../T1201/live-final.txt](../T1201/live-final.txt); [backend-final.txt](backend-final.txt); [bge.txt](bge.txt); shared schema/error review and [diff review](review.txt). |
+| F008 | PASS | PASS | PASS | PASS | PASS | PASS | [t1201-final.txt](t1201-final.txt); [t1204-final.txt](t1204-final.txt); shared schema/error review and [diff review](review.txt). |
+| F009 | PASS | PASS | PASS | PASS | PASS | PASS | [../T1202/live-reviewed.txt](../T1202/live-reviewed.txt); [backend-final.txt](backend-final.txt); [t1202-final.txt](t1202-final.txt); shared schema/error review and [diff review](review.txt). |
+| F010 | PASS | PASS | PASS | PASS | PASS | PASS | [../T1202/live-reviewed.txt](../T1202/live-reviewed.txt); [bge.txt](bge.txt); [t1202-final.txt](t1202-final.txt); shared schema/error review and [diff review](review.txt). |
+| F011 | PASS | PASS | PASS | PASS | PASS | PASS | [../T1202/live-reviewed.txt](../T1202/live-reviewed.txt); [backend-final.txt](backend-final.txt); [t1202-final.txt](t1202-final.txt); shared schema/error review and [diff review](review.txt). |
+| F012 | PASS | PASS | PASS | PASS | PASS | PASS | [../T1202/live-reviewed.txt](../T1202/live-reviewed.txt); [t1202-final.txt](t1202-final.txt); shared schema/error review and [diff review](review.txt). |
+| F013 | PASS | PASS | PASS | PASS | PASS | PASS | [../T1202/live-reviewed.txt](../T1202/live-reviewed.txt); [backend-final.txt](backend-final.txt); [t1202-faults.txt](t1202-faults.txt); shared schema/error review and [diff review](review.txt). |
+| F014 | PASS | PASS | PASS | PASS | PASS | PASS | [../T1202/live-reviewed.txt](../T1202/live-reviewed.txt); [backend-final.txt](backend-final.txt); [t1202-final.txt](t1202-final.txt); shared schema/error review and [diff review](review.txt). |
+| F015 | PASS | PASS | PASS | PASS | PASS | PASS | [../T1202/live-reviewed.txt](../T1202/live-reviewed.txt); [backend-final.txt](backend-final.txt); [t1202-final.txt](t1202-final.txt); shared schema/error review and [diff review](review.txt). |
+| F016 | PASS | PASS | PASS | PASS | PASS | PASS | [backend-final.txt](backend-final.txt); [t1203-final.txt](t1203-final.txt); [t1204-final.txt](t1204-final.txt); shared schema/error review and [diff review](review.txt).  [F-6 incremental re-audit](F6-REMEDIATION.md): affected UI lifecycle/count contract restored; no new browser/live claim. |
+| F017 | PASS | PASS | PASS | PASS | PASS | PASS | [browser.md](browser.md); [frontend-build.txt](EXECUTION-SUMMARY.md#build); [frontend-component.txt](frontend-component.txt); [frontend-typecheck.txt](EXECUTION-SUMMARY.md#typecheck); [frontend-validation.txt](frontend-validation.txt); shared schema/error review and [diff review](review.txt).  [F-6 incremental re-audit](F6-REMEDIATION.md): affected UI lifecycle/count contract restored; no new browser/live claim. |

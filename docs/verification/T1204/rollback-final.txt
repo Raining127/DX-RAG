@@ -1,0 +1,301 @@
+COMMAND: python backend/scripts/verify_t0503_rollback.py
+CWD: .
+==============================================================================
+T0503 — Upload ROLLBACK Behavior Verification
+==============================================================================
+UPLOAD_DIR          : <TEMP_DIR>/uploads
+CHROMA_PERSIST_DIR  : <TEMP_DIR>/chroma
+
+--- V1/V2 pre-write rejection is side-effect free  [kb=kb-validate]
+    [PASS] ../evil.txt -> 400 INVALID_FILE_NAME — HTTP 400 INVALID_FILE_NAME
+    [PASS] evil.exe -> 400 UNSUPPORTED_FILE_TYPE — HTTP 400 UNSUPPORTED_FILE_TYPE
+    [PASS] empty.txt -> 400 EMPTY_FILE — HTTP 400 EMPTY_FILE
+    [PASS] huge.txt -> 413 FILE_TOO_LARGE — HTTP 413 FILE_TOO_LARGE
+    [PASS] unknown collection -> 404 COLLECTION_NOT_FOUND — HTTP 404 COLLECTION_NOT_FOUND
+    [PASS] no validation rejection created any file — state={'raw': [], 'count': 0, 'files': []}
+
+--- V15 request-validation rejection (missing file part)
+    [PASS] missing file part -> 422 REQUEST_VALIDATION_ERROR with no persistence side effect — HTTP 422 REQUEST_VALIDATION_ERROR
+
+--- V3 empty effective content -> FAILED (AC-F002-08/09)  [kb=kb-failed]
+    [PASS] AC-F002-08: all-pages-fail equivalent -> 422 FILE_PARSE_ERROR — HTTP 422 FILE_PARSE_ERROR  [D-2: whitespace-only .txt substitution]
+    [PASS] #37: FAILED warnings preserved in error.details.warnings — details={'warnings': [{'page_number': 3, 'error_code': 'OCR_PAGE_FAILED'}]}
+    [PASS] AC-F002-09: no raw file residue — raw=[]
+    [PASS] AC-F002-09: no residual chunk/vector/metadata — chunk_count 0 -> 0
+    [PASS] AC-F002-09: file not exposed by get_files() — get_files=[]
+    [PASS] AC-F002-09: no other knowledge base affected — unrelated collection counts unchanged
+
+--- V4 immediate same-name retry after FAILED
+    [PASS] AC-F002-09 item 4: retry not blocked by previous FAILED — HTTP 200 SUCCESS
+    [PASS] retry commits chunks — chunks=1
+    [PASS] retry persists raw file and chunks — state={'raw': ['blank.txt'], 'count': 1, 'files': ['blank.txt']}
+
+--- V5 duplicate after a committed success
+    [PASS] duplicate name -> 409 FILE_ALREADY_EXISTS — HTTP 409 FILE_ALREADY_EXISTS
+
+--- V6 parse error (ENCRYPTED_PDF) rolls back  [kb=kb-parse]
+    [PASS] parse error -> 422 ENCRYPTED_PDF — HTTP 422 ENCRYPTED_PDF
+    [PASS] V6: no raw file residue — raw=[]
+    [PASS] V6: no residual chunk/vector/metadata — chunk_count 0 -> 0
+    [PASS] V6: file not exposed by get_files() — get_files=[]
+    [PASS] V6: no other knowledge base affected — unrelated collection counts unchanged
+
+--- V7 embedding failure rolls back  [kb=kb-embed]
+    [PASS] embedding failure -> 500 EMBEDDING_MODEL_ERROR — HTTP 500 EMBEDDING_MODEL_ERROR
+    [PASS] V7: no raw file residue — raw=[]
+    [PASS] V7: no residual chunk/vector/metadata — chunk_count 0 -> 0
+    [PASS] V7: file not exposed by get_files() — get_files=[]
+    [PASS] V7: no other knowledge base affected — unrelated collection counts unchanged
+
+--- V8 Chroma persistence failure rolls back  [kb=kb-chroma]
+    [PASS] persistence failure -> 500 INTERNAL_ERROR — HTTP 500 INTERNAL_ERROR
+    [PASS] V8: no raw file residue — raw=[]
+    [PASS] V8: no residual chunk/vector/metadata — chunk_count 0 -> 0
+    [PASS] V8: file not exposed by get_files() — get_files=[]
+    [PASS] V8: no other knowledge base affected — unrelated collection counts unchanged
+
+--- V9 legal file above Chroma max batch size (F-1 remediated)  [kb=kb-batch]
+    fixture: 7.22 MB (limit 50 MB) — legal upload
+    [PASS] F-1: legal >5461-chunk upload -> 200 SUCCESS — HTTP 200 SUCCESS (chunks=6000)
+    [PASS] F-1: all expected chunks persisted — chunk_count=6000 vs chunks=6000
+    [PASS] F-1: raw file persists on success — raw=['big.txt']
+    [PASS] F-1: get_files exposes the uploaded file with full chunk count — get_files={'big.txt': 6000}
+    [PASS] F-1: same-name re-upload after success -> 409 — HTTP 409 FILE_ALREADY_EXISTS
+
+--- V10 batch-2 failure after batch-1 commit (F-2 remediated)  [kb=kb-partial]
+    [PASS] V10: pre-seeded unrelated file committed — HTTP 200 SUCCESS
+    [PASS] F-2: injected batch-2 failure -> 500 INTERNAL_ERROR — HTTP 500 INTERNAL_ERROR
+    [PASS] F-2: no raw file residue — raw=['good.txt']
+    [PASS] F-2: no residual chunk/vector/metadata — chunk_count 1 -> 1
+    [PASS] F-2: file not exposed by get_files() — get_files=['good.txt']
+    [PASS] F-2: no other knowledge base affected — unrelated collection counts unchanged
+    [PASS] F-2: unrelated pre-existing file untouched — state={'raw': ['good.txt'], 'count': 1, 'files': ['good.txt']}
+    [PASS] F-2: same-name retry succeeds after compensation — HTTP 200 SUCCESS
+
+--- V11 keyword invalidation failure after commit (F-3)  [kb=kb-kwidx]
+    [PASS] F-3: invalidation failure does not fail committed upload — HTTP 200 SUCCESS
+    [PASS] V11: raw file and chunks stay mutually consistent — no split raw/Chroma state
+    [PASS] F-3: keyword index recovers via dirty rebuild — results=['kwfail.txt']
+
+--- V12 GUARD cleanup failure must not mask the original error  [kb=kb-cleanupfail]
+    [PASS] V12: original error survives a failed cleanup — HTTP 500 EMBEDDING_MODEL_ERROR
+    [PASS] V12: no chunks persisted despite the residual raw file — raw=['stuck.txt'] (residue expected — unlink was forced to fail)
+
+--- V13 clean SUCCESS control  [kb=kb-success]
+    [PASS] clean upload -> 200 SUCCESS with empty warnings — HTTP 200 SUCCESS
+    [PASS] SUCCESS commits raw file and chunks — state={'raw': ['good.txt'], 'count': 1, 'files': ['good.txt']}
+
+--- V14 SUCCESS_WITH_WARNINGS is a commit, not a rollback (AC-F002-10)  [kb=kb-warn]
+    [PASS] partial OCR failure -> 200 SUCCESS_WITH_WARNINGS — HTTP 200 SUCCESS_WITH_WARNINGS
+    [PASS] warnings carry {page_number, error_code} — warnings=[{'page_number': 3, 'error_code': 'OCR_PAGE_FAILED'}]
+    [PASS] SUCCESS_WITH_WARNINGS commits raw file and chunks — chunks=1
+    [PASS] AC-F002-10: re-upload after SUCCESS_WITH_WARNINGS -> 409 — HTTP 409 FILE_ALREADY_EXISTS
+
+==============================================================================
+Required checks : 56/56 passed
+Informational guards : 0
+==============================================================================
+
+RESULT: PASS
+--- child stderr (filtered) ---
+Unhandled exception: simulated ChromaDB outage
+Traceback (most recent call last):
+  File "<PYTHON_ROOT>/Lib/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "<PYTHON_ROOT>/Lib/site-packages/starlette/middleware/cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "<PYTHON_ROOT>/Lib/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/starlette/routing.py", line 670, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 2734, in app
+    await route.handle(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 1780, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 2789, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 1791, in _handle_selected
+    await route.handle(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 1780, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 2789, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 1800, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 1279, in handle
+    await app(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 158, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "<PYTHON_ROOT>/Lib/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 144, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 706, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 354, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<PYTHON_ROOT>/Lib/site-packages/starlette/concurrency.py", line 34, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<PYTHON_ROOT>/Lib/site-packages/anyio/to_thread.py", line 65, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "<PYTHON_ROOT>/Lib/site-packages/anyio/_backends/_asyncio.py", line 2641, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "<PYTHON_ROOT>/Lib/site-packages/anyio/_backends/_asyncio.py", line 1033, in run
+    result = context.run(func, *args)
+  File "<REPO_ROOT>/backend/app/api/upload.py", line 199, in upload_file
+    result = IngestService.process(target, file_name, collection)
+  File "<REPO_ROOT>/backend/app/services/ingest.py", line 632, in process
+    store.add_texts(
+    ~~~~~~~~~~~~~~~^
+        collection=collection_name,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        metadatas=metadatas,
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "<REPO_ROOT>/backend/scripts/verify_t0503_rollback.py", line 364, in _raise_add
+    raise RuntimeError("simulated ChromaDB outage")
+RuntimeError: simulated ChromaDB outage
+
+Unhandled exception: simulated batch 2 failure after batch 1 committed
+Traceback (most recent call last):
+  File "<PYTHON_ROOT>/Lib/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "<PYTHON_ROOT>/Lib/site-packages/starlette/middleware/cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "<PYTHON_ROOT>/Lib/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/starlette/routing.py", line 670, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 2734, in app
+    await route.handle(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 1780, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 2789, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 1791, in _handle_selected
+    await route.handle(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 1780, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 2789, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 1800, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 1279, in handle
+    await app(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 158, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "<PYTHON_ROOT>/Lib/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "<PYTHON_ROOT>/Lib/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 144, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 706, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "<PYTHON_ROOT>/Lib/site-packages/fastapi/routing.py", line 354, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<PYTHON_ROOT>/Lib/site-packages/starlette/concurrency.py", line 34, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<PYTHON_ROOT>/Lib/site-packages/anyio/to_thread.py", line 65, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "<PYTHON_ROOT>/Lib/site-packages/anyio/_backends/_asyncio.py", line 2641, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "<PYTHON_ROOT>/Lib/site-packages/anyio/_backends/_asyncio.py", line 1033, in run
+    result = context.run(func, *args)
+  File "<REPO_ROOT>/backend/app/api/upload.py", line 199, in upload_file
+    result = IngestService.process(target, file_name, collection)
+  File "<REPO_ROOT>/backend/app/services/ingest.py", line 632, in process
+    store.add_texts(
+    ~~~~~~~~~~~~~~~^
+        collection=collection_name,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        metadatas=metadatas,
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "<REPO_ROOT>/backend/app/core/vector_store.py", line 446, in add_texts
+    col.add(
+    ~~~~~~~^
+        ids=ids[start : start + batch_size],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        metadatas=metadatas[start : start + batch_size],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "<REPO_ROOT>/backend/scripts/verify_t0503_rollback.py", line 440, in counting_add
+    raise RuntimeError("simulated batch 2 failure after batch 1 committed")
+RuntimeError: simulated batch 2 failure after batch 1 committed
+
+keyword index invalidation failed; collection marked dirty for rebuild: kb-kwidx
+Traceback (most recent call last):
+  File "<REPO_ROOT>/backend/app/services/keyword_index.py", line 19, in invalidate_keyword_index
+    KeywordRetriever.invalidate(collection_name)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "<REPO_ROOT>/backend/scripts/verify_t0503_rollback.py", line 478, in _raise_invalidate
+    raise RuntimeError("simulated keyword index outage")
+RuntimeError: simulated keyword index outage
+upload rollback: failed to delete <TEMP_DIR>/uploads/kb-cleanupfail/stuck.txt
+Traceback (most recent call last):
+  File "<REPO_ROOT>/backend/app/api/upload.py", line 199, in upload_file
+    result = IngestService.process(target, file_name, collection)
+  File "<REPO_ROOT>/backend/app/services/ingest.py", line 630, in process
+    embeddings = encode_chunks([chunk["content"] for chunk in chunks])
+  File "<REPO_ROOT>/backend/scripts/verify_t0503_rollback.py", line 349, in _raise_embedding
+    raise AppError("EMBEDDING_MODEL_ERROR")
+app.core.errors.AppError: 嵌入模型加载或编码失败
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<REPO_ROOT>/backend/app/api/upload.py", line 231, in _discard_saved_file
+    target.unlink(missing_ok=True)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "<REPO_ROOT>/backend/scripts/verify_t0503_rollback.py", line 504, in _raise_unlink
+    raise OSError("simulated undeletable raw file")
+OSError: simulated undeletable raw file
+
+EXIT_CODE: 0

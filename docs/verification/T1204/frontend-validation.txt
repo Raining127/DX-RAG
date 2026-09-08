@@ -1,0 +1,9 @@
+COMMAND: node -e "const fs=require('fs'),ts=require('./frontend/node_modules/typescript'),vm=require('vm');const m={exports:{}};vm.runInNewContext(ts.transpileModule(fs.readFileSync('frontend/lib/upload-validation.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{exports:m.exports});for(const [name,size,bad] of [['a.txt',51*1024*1024,true],['a.txt',50*1024*1024,false],['a.txt',0,true],['a.exe',1,true]]){const result=m.exports.validateUploadFile({name,size});if(Boolean(result)!==bad)throw Error(name);console.log(JSON.stringify({name,size,result,pass:true}));}console.log('SUMMARY: 4/4 PASS; UNIT validator; no network');"
+CWD: repository root
+{"name":"a.txt","size":53477376,"result":"文件大小超过 50MB 限制。","pass":true}
+{"name":"a.txt","size":52428800,"result":null,"pass":true}
+{"name":"a.txt","size":0,"result":"不能上传空文件。","pass":true}
+{"name":"a.exe","size":1,"result":"文件类型不受支持，请选择 TXT、MD、CSV、JSON、LOG、PDF、DOCX 或 Excel 文件。","pass":true}
+SUMMARY: 4/4 PASS; UNIT validator; no network
+
+EXIT_CODE: 0

@@ -1,0 +1,163 @@
+warning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
+EVIDENCE_MODE: REAL BGE + REAL DashScope; controlled network timeouts
+STARTED_UTC: 2026-09-07T09:04:11.194714+00:00
+    [PASS] AC-F007-02 lazy model is constructed once and reused — same model object reused
+    [PASS] AC-F007-02 configured model path reaches the loader — path=<REPO_ROOT>/backend/models/bge-small-zh-v1.5
+    [PASS] AC-F007-01 embedding count, width, and L2 normalization
+BGE_MODEL class=sentence_transformers.sentence_transformer.model.SentenceTransformer shape=3x512 norms=[1.0, 1.0000001, 1.0000001]
+    [PASS] probe storage is outside the repository — uploads=<TEMP_DIR>/uploads; chroma=<TEMP_DIR>/chroma
+
+--- Text formats, cleaning, and plain-text dispatch
+    [PASS] create isolated knowledge base t1201-text
+    [PASS] AC-F003-01 UTF-8 TXT upload — HTTP 200 SUCCESS
+    [PASS] AC-F005-01 cleaning removes blank lines and edge whitespace
+    [PASS] AC-F003-01/02 GBK fallback upload — HTTP 200 SUCCESS
+    [PASS] AC-F003-02 GBK text remains readable after the full pipeline
+    [PASS] F003 UTF-16 fallback — HTTP 200 SUCCESS
+    [PASS] UTF-16 decoded text is preserved
+    [PASS] supported plain-text format .csv — HTTP 200 SUCCESS
+    [PASS] supported plain-text format .json — HTTP 200 SUCCESS
+    [PASS] supported plain-text format .log — HTTP 200 SUCCESS
+    [PASS] AC-F005-02 cleaned-empty upload is rejected — HTTP 422 FILE_PARSE_ERROR
+    [PASS] AC-F005-02 cleaned-empty upload leaves no raw file
+
+--- Markdown and recursive chunking
+    [PASS] create isolated knowledge base t1201-chunk
+    [PASS] AC-F006-01 Markdown upload — HTTP 200 SUCCESS
+    [PASS] AC-F006-01 nested header path prefixes a chunk — chunks=['章节A\n\n正文 A', '章节A > 小节A1\n\n内容 A1']
+    [PASS] AC-F006-03 short text upload — HTTP 200 SUCCESS
+    [PASS] AC-F006-03 300-character text remains one chunk
+    [PASS] AC-F006-02 long text upload — HTTP 200 SUCCESS
+    [PASS] AC-F006-02 recursive chunks stay within 800 characters — sizes=[800, 800, 640]
+    [PASS] AC-F006-02 adjacent recursive chunks overlap by 120 characters
+
+--- DOCX and all Excel variants
+    [PASS] create isolated knowledge base t1201-office
+    [PASS] AC-F003-03/04 DOCX table upload — HTTP 200 SUCCESS
+    [PASS] AC-F003-03/04 DOCX paragraph and table cells are extracted — content='Document introduction\nName Value\nAlpha 42'
+    [PASS] supported Excel format .xlsx — HTTP 200 SUCCESS
+    [PASS] .xlsx cell content extracted
+    [PASS] AC-F003-05 XLSX skips empty sheet and reads later sheet — content='Alpha 1\nGamma 3'
+    [PASS] supported Excel format .xlsm — HTTP 200 SUCCESS
+    [PASS] .xlsm cell content extracted
+    [PASS] supported Excel format .xltx — HTTP 200 SUCCESS
+    [PASS] .xltx cell content extracted
+    [PASS] supported Excel format .xltm — HTTP 200 SUCCESS
+    [PASS] .xltm cell content extracted
+
+--- Native, scanned, mixed, warning, and FAILED PDFs
+    [PASS] create isolated knowledge base t1201-pdf
+FIXTURE name=native.pdf sha256=54eeee017e854f777d171e1a96abcb39c36dd28002490fea002414bda462a13c pages=[('native', 'NATIVE_PDF_TEXT'), ('native', 'NATIVE_SECOND_PAGE')]
+    [PASS] AC-F002-01 native PDF upload — HTTP 200 SUCCESS
+    [PASS] native PDF does not call OCR
+    [PASS] file-list API responds for t1201-pdf
+    [PASS] AC-F002-01 raw PDF, chunks, and file-list record persist
+    [PASS] native PDF text survives parsing and storage
+FIXTURE name=scanned.pdf sha256=e3769733b5f28904fed70990f2e2989140bb180554c58e7928f25557b711585f pages=[('scan', 'SCAN IMAGE ONE'), ('scan', 'SCAN IMAGE TWO')]
+    [PASS] scanned.pdf page 1 has no native text
+    [PASS] scanned.pdf page 2 has no native text
+LIVE_OCR attempt=1 controlled_timeout=False status=200 request_id=e4f25754-44b4-987d-a0ab-441ddd96c4cb elapsed=0.614s
+LIVE_OCR attempt=2 controlled_timeout=False status=200 request_id=ccc74c6d-96ae-935b-b83a-cfe03fdf3771 elapsed=0.382s
+    [PASS] AC-F004-01 scanned PDF OCR success — HTTP 200 SUCCESS
+OCR_STORED scanned='```\nSCAN IMAGE ONE\n```\n```\nSCAN IMAGE TWO\n```'
+    [PASS] AC-F004-01 scanned pages preserve OCR order with no warnings
+    [PASS] F004 real OCR adapter sends qwen-vl-plus, data URI, and frozen prompt
+FIXTURE name=mixed.pdf sha256=07875f18b5ad1cb0050bf18c427ff3e4b83737eea262524abc1ae273a6d28bbc pages=[('native', 'MIXED_NATIVE_FIRST'), ('scan', 'MIXED SCAN SECOND')]
+    [PASS] mixed.pdf page 2 has no native text
+LIVE_OCR attempt=1 controlled_timeout=False status=200 request_id=754b6e14-d615-9258-9889-49d88a3677dc elapsed=0.403s
+    [PASS] AC-F003-02 / AC-F004-02 mixed PDF — HTTP 200 SUCCESS
+OCR_STORED mixed='MIXED_NATIVE_FIRST\n图片中的文字为：\n```\nMIXED SCAN SECOND\n```'
+    [PASS] AC-F003-02 / AC-F004-02 native and OCR pages are ordered and OCR is selective
+FIXTURE name=partial.pdf sha256=b4a2c806c5702a33461f78b6ad43ea14d5ca8bf874138fc7a58d1c34c017523d pages=[('native', 'PARTIAL_PAGE_1'), ('native', 'PARTIAL_PAGE_2'), ('scan', 'PARTIAL SCAN PAGE 3'), ('native', 'PARTIAL_PAGE_4'), ('native', 'PARTIAL_PAGE_5')]
+    [PASS] partial.pdf page 3 has no native text
+LIVE_OCR attempt=1 controlled_timeout=True exception=ReadTimeout elapsed=0.002s
+LIVE_TRANSPORT_CAUSE type=ReadTimeoutError errno=None
+LIVE_BACKOFF seconds=1.0
+LIVE_OCR attempt=2 controlled_timeout=True exception=ReadTimeout elapsed=0.052s
+LIVE_TRANSPORT_CAUSE type=ReadTimeoutError errno=None
+LIVE_BACKOFF seconds=2.0
+LIVE_OCR attempt=3 controlled_timeout=True exception=ReadTimeout elapsed=0.055s
+LIVE_TRANSPORT_CAUSE type=ReadTimeoutError errno=None
+    [PASS] controlled failure is a real SDK transport timeout — exceptions=['ReadTimeout', 'ReadTimeout', 'ReadTimeout']
+    [PASS] AC-F002-07 / AC-F004-03 partial OCR failure — HTTP 200 SUCCESS_WITH_WARNINGS
+PARTIAL_RESULT status=SUCCESS_WITH_WARNINGS chunks=1 warnings=[{'page_number': 3, 'error_code': 'OCR_PAGE_FAILED'}] stored='PARTIAL_PAGE_1\nPARTIAL_PAGE_2\nPARTIAL_PAGE_4\nPARTIAL_PAGE_5'
+    [PASS] AC-F002-07 / AC-F004-03 returns SUCCESS_WITH_WARNINGS and keeps good pages
+    [PASS] AC-F004-05 failed OCR page is never silently omitted
+    [PASS] AC-F002-10 SUCCESS_WITH_WARNINGS remains duplicate-protected — HTTP 409 FILE_ALREADY_EXISTS
+FIXTURE name=all-failed.pdf sha256=0c8e0559da7b9ee155141de757ac8d58e2d0b9ea07286d0baf0adb2b0d5d5da6 pages=[('scan', 'FAILED SCAN 1'), ('scan', 'FAILED SCAN 2'), ('scan', 'FAILED SCAN 3')]
+    [PASS] all-failed.pdf page 1 has no native text
+    [PASS] all-failed.pdf page 2 has no native text
+    [PASS] all-failed.pdf page 3 has no native text
+LIVE_OCR attempt=1 controlled_timeout=True exception=ReadTimeout elapsed=0.067s
+LIVE_TRANSPORT_CAUSE type=ReadTimeoutError errno=None
+LIVE_BACKOFF seconds=1.0
+LIVE_OCR attempt=2 controlled_timeout=True exception=ReadTimeout elapsed=0.050s
+LIVE_TRANSPORT_CAUSE type=ReadTimeoutError errno=None
+LIVE_BACKOFF seconds=2.0
+LIVE_OCR attempt=3 controlled_timeout=True exception=ReadTimeout elapsed=0.071s
+LIVE_TRANSPORT_CAUSE type=ReadTimeoutError errno=None
+LIVE_OCR attempt=4 controlled_timeout=True exception=ReadTimeout elapsed=0.054s
+LIVE_TRANSPORT_CAUSE type=ReadTimeoutError errno=None
+LIVE_BACKOFF seconds=1.0
+LIVE_OCR attempt=5 controlled_timeout=True exception=ReadTimeout elapsed=0.080s
+LIVE_TRANSPORT_CAUSE type=ReadTimeoutError errno=None
+LIVE_BACKOFF seconds=2.0
+LIVE_OCR attempt=6 controlled_timeout=True exception=ReadTimeout elapsed=0.085s
+LIVE_TRANSPORT_CAUSE type=ReadTimeoutError errno=None
+LIVE_OCR attempt=7 controlled_timeout=True exception=ReadTimeout elapsed=0.060s
+LIVE_TRANSPORT_CAUSE type=ReadTimeoutError errno=None
+LIVE_BACKOFF seconds=1.0
+LIVE_OCR attempt=8 controlled_timeout=True exception=ReadTimeout elapsed=0.049s
+LIVE_TRANSPORT_CAUSE type=ReadTimeoutError errno=None
+LIVE_BACKOFF seconds=2.0
+LIVE_OCR attempt=9 controlled_timeout=True exception=ReadTimeout elapsed=0.072s
+LIVE_TRANSPORT_CAUSE type=ReadTimeoutError errno=None
+    [PASS] controlled failure is a real SDK transport timeout — exceptions=['ReadTimeout', 'ReadTimeout', 'ReadTimeout', 'ReadTimeout', 'ReadTimeout', 'ReadTimeout', 'ReadTimeout', 'ReadTimeout', 'ReadTimeout']
+FAILED_RESULT http=422 code=FILE_PARSE_ERROR warnings=[{'page_number': 1, 'error_code': 'OCR_PAGE_FAILED'}, {'page_number': 2, 'error_code': 'OCR_PAGE_FAILED'}, {'page_number': 3, 'error_code': 'OCR_PAGE_FAILED'}]
+    [PASS] AC-F002-08 / AC-F004-04 all OCR pages failing returns 422 with warnings — HTTP 422 FILE_PARSE_ERROR
+    [PASS] file-list API responds for t1201-pdf
+    [PASS] AC-F002-09 FAILED leaves no raw file, chunk/vector/metadata, or keyword entry — chunks_before=4; chunks_after=4; raw_exists=False; keyword_query_matches=0
+LIVE_OCR attempt=1 controlled_timeout=False status=200 request_id=ebfd8148-9bbe-911c-ae8e-57ba2d9ad290 elapsed=0.768s
+LIVE_OCR attempt=2 controlled_timeout=False status=200 request_id=689cec1a-3e9e-9aa2-8c65-a0de36a80572 elapsed=0.414s
+LIVE_OCR attempt=3 controlled_timeout=False status=200 request_id=31c3474f-5479-9205-9ffc-f166278219a7 elapsed=5.295s
+    [PASS] AC-F002-09 same-name retry succeeds after FAILED rollback — HTTP 200 SUCCESS
+OCR_STORED recovered='图片中的文字为：\n```\nFAILED SCAN 1\n```\n图片中的文字为：\n```\nFAILED SCAN 2\n```\n图片中的文字为：\n```\nFAILED SCAN 3\n```'
+    [PASS] same-name retry really OCRs all three scan pages
+
+--- Validation, duplicate scope, and keyword-index invalidation
+    [PASS] create isolated knowledge base t1201-valid
+    [PASS] AC-F002 validation rejects bad.exe — HTTP 400 UNSUPPORTED_FILE_TYPE
+    [PASS] AC-F002 validation rejects empty.txt — HTTP 400 EMPTY_FILE
+    [PASS] AC-F002 validation rejects oversized.txt — HTTP 413 FILE_TOO_LARGE
+    [PASS] AC-F002 validation rejects ../escape.txt — HTTP 400 INVALID_FILE_NAME
+    [PASS] AC-F002 validation rejects subdir/escape.txt — HTTP 400 INVALID_FILE_NAME
+    [PASS] AC-F002 validation rejects broken.pdf — HTTP 422 FILE_PARSE_ERROR
+    [PASS] AC-F002-04/05/06 validation failures have no persistence side effects — remaining_files=[]
+    [PASS] create isolated knowledge base t1201-kb-a
+    [PASS] create isolated knowledge base t1201-kb-b
+    [PASS] AC-F002-03 same filename succeeds independently in two knowledge bases
+    [PASS] AC-F002-02 case-variant duplicate in one knowledge base is rejected — HTTP 409 FILE_ALREADY_EXISTS
+    [PASS] create isolated knowledge base t1201-index
+    [PASS] keyword index starts empty
+    [PASS] upload after empty keyword index cache — HTTP 200 SUCCESS
+    [PASS] successful ingestion invalidates and rebuilds the keyword index
+
+--- Vector persistence contract through ingested chunks
+    [PASS] create isolated knowledge base t1201-vector
+    [PASS] ten-chunk vector fixture upload — HTTP 200 SUCCESS
+    [PASS] AC-F008-01 ingestion persisted ten chunks with immutable UUID identities — chunk_count=10
+    [PASS] F008 persisted metadata has the exact nine required fields
+    [PASS] AC-F008-01 public search returns top-3 similarity results with identities
+    [PASS] AC-F008-02 delete_by_file removes one file's chunks and preserves another — deleted=10
+    [PASS] create isolated knowledge base t1201-delete
+    [PASS] AC-F008-02 literal 5/3 deletion fixture
+    [PASS] AC-F008-03 application code does not access Chroma private attributes — violations=[]
+    [PASS] all 11 supported upload extensions complete the ingestion pipeline — observed=['.csv', '.docx', '.json', '.log', '.md', '.pdf', '.txt', '.xlsm', '.xlsx', '.xltm', '.xltx']
+
+==============================================================================
+Required checks: 91/91 passed
+RESULT: PASS
+==============================================================================
+ISOLATED_STORAGE_CLEANUP: PASS
+
+EXIT_CODE: 0

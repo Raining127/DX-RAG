@@ -1,0 +1,70 @@
+COMMAND: python backend/scripts/verify_t1204_spec_acceptance.py
+CWD: repository root
+warning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
+    [PASS] declared embedding boundary is isolated and 512-dimensional
+    [PASS] audit storage is outside the repository -- uploads=<TEMP_DIR>/uploads; chroma=<TEMP_DIR>/chroma
+
+--- Frozen SPEC inventory and mandatory DoD
+    [PASS] Section 5 contains the frozen 65 feature AC occurrences -- observed=65
+    [PASS] Section 12 contains the frozen 39 cross-feature AC occurrences -- observed=39
+    [PASS] full mandatory audit contains 85 unique AC identifiers -- observed=85
+    [PASS] mandatory DoD inventory is exactly DOD-01 through DOD-06
+
+--- Section 6 API and Section 9 error contracts
+    [PASS] GET /api/health returns the exact availability contract
+    [PASS] OpenAPI route/method surface matches SPEC Section 6 -- observed={'/api/health': {'get'}, '/api/collections': {'post', 'get'}, '/api/collections/{name}': {'put', 'delete'}, '/api/upload': {'post'}, '/api/query': {'post'}, '/api/files': {'get'}, '/api/files/{file_id}/preview': {'get'}, '/api/files/{file_id}': {'delete'}}
+    [PASS] Section 9 HTTP error catalog is complete with exact statuses
+    [PASS] Section 9 warning-only codes are represented for upload warnings
+
+--- Literal AC-F008-02 public VectorStore fixture
+    [PASS] AC-F008-02 literal fixture contains file_a=5 and file_b=3 chunks
+    [PASS] AC-F008-02 delete returns 5 and preserves all 3 file_b chunks -- deleted=5
+
+--- Literal F016 three-file list and 15-chunk deletion
+    [PASS] AC-F016-03 new collection returns an empty file list
+    [PASS] AC-F016-01 literal three persisted files have complete list metadata
+    [PASS] AC-F016-02 literal precondition is exactly 15 persisted PDF chunks
+    [PASS] AC-F016-02 deletes all 15 chunks/raw PDF and invalidates keyword cache
+
+--- Section 9 OCR errors (deterministic SDK fault injection)
+    [PASS] Section 9 real encrypted PDF maps to 422 ENCRYPTED_PDF
+    [PASS] Section 9 missing OCR key maps to 500 OCR_NOT_CONFIGURED without SDK call
+    [PASS] Section 9 injected OCR HTTP 401 maps error and obeys retry contract
+    [PASS] Section 9 injected OCR HTTP 403 maps error and obeys retry contract
+    [PASS] Section 9 injected OCR HTTP 400 maps error and obeys retry contract
+    [PASS] Section 9 injected OCR HTTP 429 maps error and obeys retry contract
+    [PASS] Section 9 injected OCR HTTP 503 maps error and obeys retry contract
+    [PASS] Section 9 render failure is a structured PAGE_RENDER_FAILED warning
+    [PASS] Section 9 rejected OCR uploads leave no persisted residual
+
+--- F001 create, list, and validation
+    [PASS] AC-F001-01 create returns 201 and creates both durable stores
+    [PASS] collection list exposes the created KB with file_count 0
+    [PASS] AC-F001-02 duplicate create is a side-effect-free 409
+    [PASS] AC-F001-03 invalid boundary names return 400 before side effects -- results=[('ab', 400, 'INVALID_COLLECTION_NAME', False), ('bad.name', 400, 'INVALID_COLLECTION_NAME', False), ('-bad', 400, 'INVALID_COLLECTION_NAME', False), ('knowledge-base-name-that-is-far-beyond-the-fifty-character-limit', 400, 'INVALID_COLLECTION_NAME', False)]
+    [PASS] create rename-conflict fixture
+    [PASS] rename preconditions expose exact 404/400/409 errors without mutation
+
+--- AC-F001-04 successful rename cascade and identity
+    [PASS] literal F001 fixture uploads doc.pdf with persisted chunks
+    [PASS] rename fixture has persisted vector and built keyword evidence
+    [PASS] AC-F001-04 collection, filesystem, and metadata cascade succeeds
+    [PASS] AC-F001-04 vector identity is preserved across rename -- before={'4e9f5952-2f9a-4b88-ae7d-44be1c17a921': 1.0}; after={'4e9f5952-2f9a-4b88-ae7d-44be1c17a921': 1.0}
+    [PASS] AC-F001-04 keyword cache is invalidated and retrieval rebuilds
+    [PASS] renamed KB remains listable with the original file identity
+
+--- AC-F001-06 injected rename failure and compensation
+    [PASS] AC-F001-06 injected mid-rename failure returns RENAME_FAILED
+    [PASS] AC-F001-06 compensation restores complete old observable state
+
+--- AC-F001-05 delete cascade
+    [PASS] AC-F001-05 delete removes collection, chunks, uploads, and list item
+    [PASS] deleting an absent KB returns the Section 6 error contract
+    [PASS] all surviving fixtures remain deletable through the public API -- statuses=[200, 200]
+
+==============================================================================
+Required checks: 42/42 passed
+RESULT: PASS
+==============================================================================
+
+EXIT_CODE: 0

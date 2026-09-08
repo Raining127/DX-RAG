@@ -1,0 +1,62 @@
+COMMAND: python backend/scripts/verify_t1202_retrieval_qa.py
+CWD: .
+    [PASS] declared embedding boundary is deterministic and normalized
+    [PASS] probe storage is outside the repository — uploads=<TEMP_DIR>/uploads; chroma=<TEMP_DIR>/chroma
+    [PASS] create isolated knowledge base t1202-qa — HTTP 201
+    [PASS] create isolated knowledge base t1202-empty — HTTP 201
+    [PASS] upload known content machine-learning.txt — HTTP 200; chunks=4
+    [PASS] upload known content related-ai.txt — HTTP 200; chunks=1
+    [PASS] upload known content python-guide.txt — HTTP 200; chunks=1
+    [PASS] upload known content untrusted-instructions.txt — HTTP 200; chunks=1
+    [PASS] known-content upload creates at least three machine-learning chunks — chunks=4
+
+--- Real keyword, vector, and hybrid retrieval
+    [PASS] keyword retrieval finds uploaded exact-match content
+    [PASS] vector retrieval finds uploaded semantic content with positive score
+    [PASS] AC-F011-01 real branch scores use the fixed 0.3/0.7 fusion formula
+    [PASS] AC-F011-01 dual retrieval hits are deduplicated by chunk_id
+    [PASS] AC-QA-04 exact content ranks above weaker semantic content — exact=[0.7715477108955382, 0.7715477108955382, 0.7715477108955382, 0.7715477108955382]; related=[0.5449747800827026]
+    [PASS] vector branch contributes a semantic match absent from keyword search
+    [PASS] vector_score is the VectorStore similarity_score without renormalizing
+    [PASS] vector retrieval over a real empty collection returns an empty list
+    [PASS] AC-F011-01 exact dual-hit example produces one result at 0.87 — results=[{'chunk_id': 'chunk-a', 'file_id': 'file-a', 'file_name': 'a.txt', 'content': 'keyword content', 'final_score': 0.87, 'metadata': {}}]
+    [PASS] AC-F011-02 keyword-only score 0.18 is removed below 0.30
+    [PASS] AC-F011-03 filter retains 20 candidates before top-5 truncation
+    [PASS] AC-F011-04 repeated chunk_id values collapse to one record
+
+--- Context and source assembly
+    [PASS] AC-QA-07 context keeps the first three complete chunks at 3800 chars — length=3800
+    [PASS] AC-QA-07 the overflowing fourth chunk and later chunks are absent
+    [PASS] AC-F015-01 source assembly keeps one source per chunk with exact fields
+
+--- FastAPI query, DeepSeek orchestration, history, and sources
+    [PASS] AC-QA-01 matching query returns HTTP 200, answer, and sources — HTTP 200; sources=3
+    [PASS] AC-F013-01 answer is structured Markdown based on retrieved context
+    [PASS] AC-F015-01 API sources use exact fields and descending scores
+    [PASS] AC-QA-04 larger relevance scores correspond to exact matching chunks
+    [PASS] AC-F015-02 sources are backend-owned retrieval records
+    [PASS] LLM answer contains no inline citation markers
+    [PASS] DeepSeek client uses the configured OpenAI-compatible boundary
+    [PASS] DeepSeek request uses frozen model settings and system-first messages
+    [PASS] AC-QA-02 and AC-F013-02 unrelated query returns no-information answer — HTTP 200
+    [PASS] empty filtered context still calls the LLM with its placeholder
+    [PASS] AC-QA-05 empty KB returns 409 COLLECTION_EMPTY — HTTP 409; code=COLLECTION_EMPTY
+    [PASS] AC-QA-05 empty KB skips retrieval and LLM
+    [PASS] AC-QA-06 top_k 0, 21, and -1 all return 400 INVALID_TOP_K — results=[(0, 400, 'INVALID_TOP_K'), (21, 400, 'INVALID_TOP_K'), (-1, 400, 'INVALID_TOP_K')]
+    [PASS] AC-QA-03 and AC-F014-01 history resolves '它' to Python
+    [PASS] AC-F014-02 API prompt keeps only the most recent 20 messages
+    [PASS] AC-F014-03 omitted history supports normal single-turn QA
+    [PASS] AC-F013-03 retrieved instructions stay below the system prompt
+    [PASS] AC-F013-03 malicious KB instruction does not override the answer
+    [PASS] AC-F013-04 a timeout is retried and the second attempt succeeds
+    [PASS] AC-F013-04 three failed attempts return 502 LLM_UNAVAILABLE — HTTP 502; code=LLM_UNAVAILABLE
+    [PASS] history formatter independently preserves its 20-message contract
+    [PASS] all seeded files remained distinct persisted identities
+
+==============================================================================
+Required checks: 46/46 passed
+RESULT: PASS
+==============================================================================
+ISOLATED_STORAGE_CLEANUP: PASS
+
+EXIT_CODE: 0
