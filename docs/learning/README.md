@@ -3,6 +3,8 @@
 > **适用于**: 正在通过 DX-RAG 项目学习现代全栈 + RAG 开发的学习者
 > **前置知识**: 基础 Python / JavaScript / TypeScript
 
+产品 V2 从 [docs/v2/README.md](../v2/README.md) 进入，当前契约为 `docs/v2/SPEC.md` / `docs/v2/TASKS.md`。Workflow V2 指学习工作流版本。Phase 0–12 地图及其中的 `docs/TASKS.md` 引用保留 V1 历史语境。
+
 ---
 
 ## 学习方式
@@ -63,6 +65,10 @@ Gate FAIL 后，按已有授权完成 remediation/tests，再独立 re-review；
 以下 Phase 地图保存既有历史状态；Task 当前状态仍以 `docs/TASKS.md` 为准。历史 Learning Review 早于 Gate 等情况不作为新工作流的默认例外。
 
 ---
+
+## 产品 V2 学习素材
+
+- [Phase 20 — 检索评估基础](./phase-20-evaluation-foundation.md)：T2001 Learning Pass，记录冻结数据集契约、Pilot 标注与覆盖语义、V1 代码边界和测量局限。当前为 Task 素材，尚非最终 Phase Learning Review；不表示 T2002/T2003 已启动或 Phase 20 Gate 已通过。
 
 ## Phase 学习地图
 
