@@ -1,0 +1,12 @@
+{
+  "decision_ref": "H-BC01-FREEZE-PROMOTION-1.0.0-2026-09-14",
+  "date": "2026-09-14",
+  "reviewer_role": "Human project owner",
+  "user_statement": "认可 freeze-review-1.0.0-rc1 审阅包及其 manifest 绑定的内容，批准生成并冻结正式数据集 novatech-retrieval-benchmark-1.0.0，批准 dataset promotion；沿用已批准范围和局限，不运行 Benchmark。",
+  "approved_rc_manifest_sha256": "51de201c1e65b9e27c163f6186d9b6510e07990ec39d5e52d2caffe9ce577265",
+  "approved_rc_dataset_sha256": "d3ff1c8720b0603fbb3614219b4b9f71219f05c58231c33493336e56099e85ae",
+  "formal_freeze": "APPROVED",
+  "dataset_promotion": "APPROVED",
+  "benchmark_authorized": false,
+  "scope": "Exact approved RC query/corpus/judgment/split content; release identity and final approval metadata only."
+}

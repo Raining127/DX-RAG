@@ -14,7 +14,7 @@ docs/v2/SPEC.md > docs/v2/TASKS.md > CLAUDE.md
 | Document | Role | Status |
 |----------|------|--------|
 | `docs/v2/SPEC.md` | Active V2 product & technical specification | Current Phase 20 scope approved; future V2 scope remains DRAFT; see Section 1.1 |
-| `docs/v2/TASKS.md` | Active V2 evaluation, experiment and implementation sequencing | T2001 DONE; Dataset Contract 0.3 FROZEN; Human Final Gate PASS (2026-09-10); T2002/T2003 TODO and not authorized |
+| `docs/v2/TASKS.md` | Active V2 evaluation, experiment and implementation sequencing | T2001 DONE; Dataset Contract 0.3 FROZEN; T2002 DONE (2026-09-11); T2003 TODO and not authorized |
 | `CLAUDE.md` | Current agent operational contract | Active |
 
 **Conflict resolution:** `docs/v2/SPEC.md` takes precedence for V2 product behavior; `docs/v2/TASKS.md` controls sequencing. If they conflict, block the affected Task and report; do not silently choose.
@@ -32,7 +32,9 @@ These define the released V1 baseline and are read-only historical references du
 - V1 released; historical Phase 12 PASS is recorded in `docs/verification/PHASE-12-GATE-CLOSURE.md`, not newly verified by this bootstrap.
 - V2: Evaluation-Driven RAG Optimization. Current Phase 20 scope approved. Human project owner approved T2001 DONE and Dataset Contract 0.3 FROZEN with T2001 Final Gate PASS on 2026-09-10. This does not authorize T2002/T2003, runner/metric implementation, dataset construction, benchmark execution, retrieval experiments or product changes.
 - Post-release README and Learning & Engineering Workflow improvements are retained.
+- Subsequent authorization: user `implement T2002`, recorded in SPEC §1.3, authorized its implementation and testing. T2002 DONE on 2026-09-11; historical T2001-only authorization statements do not revoke this later instruction. T2003/dataset construction/production changes remain separately gated.
 - Before starting any V2 Task, read `docs/v2/TASKS.md` for current status and approval/dependencies. Do not infer readiness from this file.
+- Benchmark construction approvals (2026-09-11–14): all 40 queries, 1,520 grades, coverage, core facts/20 families, Dev/Test, 20 dedup groups and SC01/SC02 scope were approved. Formal novatech-retrieval-benchmark-1.0.0 is FROZEN/promotion APPROVED. Five superseded review directories are now archived: `docs/v2/evaluation/archives/README.md`; original paths are historical. No complete T2003 Benchmark authorization.
 
 ## Core Rule — One Task At A Time
 
@@ -221,3 +223,11 @@ The following table describes released V1 exclusions. It does not automatically 
 ## Git Policy
 
 Do not commit or create branches unless explicitly asked. Do not create, move or recreate tags (especially `v1.0.0`), reset historical commits, merge branches, or delete historical evidence without explicit authorization. Inspect diff/status when useful. Do not rewrite history, force push, or discard user modifications.
+
+- Historical freeze-review RC (SPEC §1.6) is archived; its original pending status preceded the final approval in SPEC §1.7. Use `docs/v2/evaluation/novatech-retrieval-benchmark-1.0.0/README.md` for current frozen data and `docs/v2/evaluation/archives/README.md` for history. Do not edit frozen evidence.
+
+- Current dataset release (2026-09-14, SPEC §1.7): `docs/v2/evaluation/novatech-retrieval-benchmark-1.0.0/README.md` is FROZEN and promotion APPROVED under H-BC01-FREEZE-PROMOTION-1.0.0-2026-09-14. Full data validator and approved-RC content/hash checks PASS. Previous RC and evidence PENDING states are historical; do not mutate those captured artifacts. No Benchmark authorization/execution; T2003 remains TODO, live model/index/store readiness unchecked. Release files are uncommitted workspace artifacts.
+
+- T2003 preflight (2026-09-14, SPEC §1.8): `docs/v2/evaluation/t2003-preflight-0.1/README.md` records scoped PASS for frozen data, dependencies/config, 29 model file hashes, offline model loading and live 38-chunk public inventory matching. Chroma persistence file hashes changed during client reads (cause unproven); stored vectors/search remain unverified. No encode/retrieval/Benchmark executed; T2003 TODO and separate authorization required. CLI does not enforce dataset benchmark_authorized; workflow authorization remains mandatory.
+
+- Authorized minimal smoke (2026-09-14, SPEC §1.9): `docs/v2/evaluation/t2003-smoke-0.1/README.md` PASS. Exactly one neutral non-Benchmark encode (512 finite normalized values) and one public vector search top_k=1 succeeded. Frozen dataset/model unchanged; 38-chunk full public logical inventory unchanged before/after. Chroma persistence bytes changed, cause not established. This confirms basic vector path only, not Hybrid baseline or full vector integrity; T2003 Benchmark remains unauthorized/TODO.

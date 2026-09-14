@@ -1,0 +1,2503 @@
+{
+  "artifact_version": "reviewed-fact-split-0.1",
+  "created_date": "2026-09-14",
+  "status": "GROUPING_SPLIT_APPROVED_NOT_FROZEN",
+  "human_family_split_review": "APPROVED",
+  "dataset_promotion": "PENDING",
+  "benchmark_ready": false,
+  "benchmark_executed": false,
+  "corpus_expanded": false,
+  "source_annotations": {
+    "path": "../benchmark-candidate-0.1/reviewed-annotations-0.2.json",
+    "sha256": "f6201a86d1b91c4af00eaf91529549cd999776dc584cfd02cdabbbde0bc407e4"
+  },
+  "source_inventory_sha256": "ffff809843a84bfe6412321a6597d0f15301724db0c0866e32683695a4a08428",
+  "source_pilot_sha256": "68fbe00dbcc0fc7f018e330073ac8caec4eb15ebefc5e1e21f1b84eb55cf8789",
+  "source_snapshot_sha256": "a2d314a9a284a1782c77376e53702a610b22ae9a3160a213ca338a55637ddd80",
+  "snapshot_id": "t2001-novatech-pilot-01",
+  "method": "Connect shared core/premise facts including core-support overlaps; union each multi-fact query; associate U with policy anchors; audit support-only and chunk overlaps separately.",
+  "facts": [
+    {
+      "fact_id": "F01",
+      "policy_fact": "正常工作日到岗、午休、下班",
+      "evidence": [
+        {
+          "chunk_alias": "E2",
+          "chunk_id": "392ae2da-31b8-4baa-b7dc-03020e492488",
+          "content_sha256": "2311047204244db80088639d18ba2624ef8197c81dc192091a89b8453efbd986",
+          "quotes": [
+            "员工可在上午九点至十点之间到岗，午休一小时，下班时间按实际到岗时间顺延。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F02",
+      "policy_fact": "入职首周支持与试用期每月反馈",
+      "evidence": [
+        {
+          "chunk_alias": "E3",
+          "chunk_id": "299c5bed-e316-4cd2-89cd-49670607f802",
+          "content_sha256": "561c327c8b4f9681afcb0991793bdc86e21d1cbaf271f618c935741b83307f4f",
+          "quotes": [
+            "入职首周由负责人说明岗位目标并指定带教同事，人力资源部安排制度和安全培训。",
+            "试用期间每月进行一次反馈，围绕工作成果、协作和所需支持沟通，不以单次失误代替整体评价。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F03",
+      "policy_fact": "计划请假三天以内/超过三天的提前申请期限",
+      "evidence": [
+        {
+          "chunk_alias": "E4",
+          "chunk_id": "193a39de-16cc-456f-85b8-74e801991e28",
+          "content_sha256": "e70178e05eeb9d84efa4fce6f202ecea882fa475a75b8b8b96b7377154bc7913",
+          "quotes": [
+            "通常连续请假三天以内提前三个工作日申请，超过三天提前十个工作日申请。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F04",
+      "policy_fact": "年度体检预约与加项承担范围确认",
+      "evidence": [
+        {
+          "chunk_alias": "E7",
+          "chunk_id": "9adc2e17-14ed-407a-8d70-aaa61e65ca6c",
+          "content_sha256": "4ff1c49363121509a5d15a4a27ff2955405558d035a2ca30113ec08b617205b8",
+          "quotes": [
+            "健康检查由人力资源部统一预约；员工自行选择额外检查项目时，应先确认是否属于公司承担范围。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F05",
+      "policy_fact": "报销每周三批量付款与本人登记账户",
+      "evidence": [
+        {
+          "chunk_alias": "X3",
+          "chunk_id": "c59ef50b-ba8a-4ab0-8bc2-2bcb350c3bbf",
+          "content_sha256": "659409bd6714ebbc8eb0ff560126982905a1a84ee63a4074019f342de9d7d882",
+          "quotes": [
+            "财务审核通过后纳入下一次付款安排，每周三集中支付；遇非工作日顺延。",
+            "员工垫付返还至本人登记账户。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F06",
+      "policy_fact": "境内发票原始文件、信息正确与更正",
+      "evidence": [
+        {
+          "chunk_alias": "X2",
+          "chunk_id": "e3075f5f-eb85-4faf-9c1e-c560dfdcfb45",
+          "content_sha256": "4d69693d94ea47ca22ec4bc97d2fd59a5f7206b5ecb7bfd3c903ec97c7a5486e",
+          "quotes": [
+            "境内采购和消费应取得抬头及识别信息正确的有效发票，电子发票直接提交原始电子文件。",
+            "仅有付款截图不能替代发票；同时提供订单、支付记录或明细，以说明实际购买内容。",
+            "发票信息错误时应联系开票方更正，不得自行修改文件内容。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F07",
+      "policy_fact": "境内高铁二等座/经济舱与升级预先批准",
+      "evidence": [
+        {
+          "chunk_alias": "T3",
+          "chunk_id": "9c9bf530-eb9c-4aeb-8e0f-a634fc217662",
+          "content_sha256": "8e9088ea4acd1c49331003f5242920ec8342a488bca0f9ed14023b1ea7ac95c3",
+          "quotes": [
+            "境内出行优先选择能够合理到达的高铁二等座或飞机经济舱。",
+            "无普通席位而确需升级时，应在购买前说明可选方案，由预算负责人批准。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F08",
+      "policy_fact": "公司邮箱、VPN、远程访问的 MFA 要求",
+      "evidence": [
+        {
+          "chunk_alias": "I1",
+          "chunk_id": "176b8225-18b7-479d-b02b-aa3d0be7f724",
+          "content_sha256": "b294bc2a7445d4cbf5716b0bf58e654f35a10cb1247057125238f850158e7f15",
+          "quotes": [
+            "公司邮箱、VPN 及远程访问系统必须启用多因素认证（MFA）。"
+          ]
+        },
+        {
+          "chunk_alias": "I2",
+          "chunk_id": "8bc6437d-8da4-43c0-8ad6-9d04b1bee39f",
+          "content_sha256": "728b7e289bc9d68d553c2fe06d0cab290f3b5943bf1244e3fdb8a7f945319b37",
+          "quotes": [
+            "通过公共或不可信网络访问公司内部系统，必须先连接公司 VPN，并使用 MFA 完成认证。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F09",
+      "policy_fact": "更换认证设备后的身份核验恢复",
+      "evidence": [
+        {
+          "chunk_alias": "I1",
+          "chunk_id": "176b8225-18b7-479d-b02b-aa3d0be7f724",
+          "content_sha256": "b294bc2a7445d4cbf5716b0bf58e654f35a10cb1247057125238f850158e7f15",
+          "quotes": [
+            "手机更换或认证设备遗失，应通过身份核验恢复访问，不通过关闭 MFA 作为日常替代方案。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F10",
+      "policy_fact": "转正且岗位合适才可申请每周最多两天远程",
+      "evidence": [
+        {
+          "chunk_alias": "E5",
+          "chunk_id": "992fccef-928e-4c84-9233-3f45b900a0ad",
+          "content_sha256": "f85d4e1ce46cf3ceacc7ec831e64c8a4c049990fad24e87d1afb5d2044a94f2c",
+          "quotes": [
+            "完成试用期且岗位适合远程协作的员工，可以申请每周最多两天远程办公；负责人根据客户服务、现场工作和团队协作需要审批。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F11",
+      "policy_fact": "远程申请期限与负责人审批",
+      "evidence": [
+        {
+          "chunk_alias": "E5",
+          "chunk_id": "992fccef-928e-4c84-9233-3f45b900a0ad",
+          "content_sha256": "f85d4e1ce46cf3ceacc7ec831e64c8a4c049990fad24e87d1afb5d2044a94f2c",
+          "quotes": [
+            "完成试用期且岗位适合远程协作的员工，可以申请每周最多两天远程办公；负责人根据客户服务、现场工作和团队协作需要审批。",
+            "常规申请在前一工作日下班前提交，临时照护或交通异常可以单独说明。"
+          ]
+        },
+        {
+          "chunk_alias": "I9",
+          "chunk_id": "6332122f-aa36-4c49-ac9a-f36d252171df",
+          "content_sha256": "e4b34c63dc4df19497256027cc72305c0fd470c0ebd034dc2333217d21217323",
+          "quotes": [
+            "远程办公申请按 [员工手册](employee_handbook.md) 办理，批准办公地点不等于批准使用个人设备或个人存储。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F12",
+      "policy_fact": "远程使用公司设备，不因地点获批而允许个人设备/存储",
+      "evidence": [
+        {
+          "chunk_alias": "E5",
+          "chunk_id": "992fccef-928e-4c84-9233-3f45b900a0ad",
+          "content_sha256": "f85d4e1ce46cf3ceacc7ec831e64c8a4c049990fad24e87d1afb5d2044a94f2c",
+          "quotes": [
+            "远程办公原则上使用公司设备。",
+            "员工不得因为获得远程办公批准，就将内部资料复制到个人网盘或借用他人设备处理。"
+          ]
+        },
+        {
+          "chunk_alias": "I3",
+          "chunk_id": "dbc829fc-563c-440d-af99-f9b1ccaffa5b",
+          "content_sha256": "930f65a831c86951b0aa08c76222141f705dc72de149e1a8ab741e204fba110a",
+          "quotes": [
+            "工作原则上使用公司配置的电脑和移动设备，保持磁盘加密、终端防护及自动锁屏开启。"
+          ]
+        },
+        {
+          "chunk_alias": "I9",
+          "chunk_id": "6332122f-aa36-4c49-ac9a-f36d252171df",
+          "content_sha256": "e4b34c63dc4df19497256027cc72305c0fd470c0ebd034dc2333217d21217323",
+          "quotes": [
+            "远程办公申请按 [员工手册](employee_handbook.md) 办理，批准办公地点不等于批准使用个人设备或个人存储。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F13",
+      "policy_fact": "家庭/公共网络访问内部系统必须 VPN 与 MFA",
+      "evidence": [
+        {
+          "chunk_alias": "I2",
+          "chunk_id": "8bc6437d-8da4-43c0-8ad6-9d04b1bee39f",
+          "content_sha256": "728b7e289bc9d68d553c2fe06d0cab290f3b5943bf1244e3fdb8a7f945319b37",
+          "quotes": [
+            "通过公共或不可信网络访问公司内部系统，必须先连接公司 VPN，并使用 MFA 完成认证。",
+            "酒店、机场和咖啡馆网络属于此类环境；家庭网络未纳入公司受管网络，也按不可信网络处理。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F14",
+      "policy_fact": "关键更新两工作日内完成，例外提前联系 IT",
+      "evidence": [
+        {
+          "chunk_alias": "I3",
+          "chunk_id": "dbc829fc-563c-440d-af99-f9b1ccaffa5b",
+          "content_sha256": "930f65a831c86951b0aa08c76222141f705dc72de149e1a8ab741e204fba110a",
+          "quotes": [
+            "IT 推送的关键安全更新应在两个工作日内完成。",
+            "确因现场业务无法按期更新时，提前联系 IT 确认临时保护措施和补装时间。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F15",
+      "policy_fact": "文件按实际内容分类，医疗材料属于保密信息",
+      "evidence": [
+        {
+          "chunk_alias": "I4",
+          "chunk_id": "6f911609-ca55-4da1-a326-60c2dd8d9dfa",
+          "content_sha256": "29157d07e0af99e27244e24bfa72f6d41aeefe6b78e6d802c8bc7ee02782ca83",
+          "quotes": [
+            "已正式发布的产品介绍可作为公开资料；未公开的内部流程和会议安排属于内部信息；客户合同、产品源代码、账号凭据及员工个人资料属于保密信息。",
+            "对分类不确定时先向资料负责人确认，不自行降低等级以方便发送。",
+            "财务票据可能包含账户、行程和客户信息，人事假期材料可能包含医疗信息；即使文件标题看似普通，也应按实际内容分类，而不是仅按文件扩展名判断。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F16",
+      "policy_fact": "资料负责人确定访问范围，最小必要权限",
+      "evidence": [
+        {
+          "chunk_alias": "I4",
+          "chunk_id": "6f911609-ca55-4da1-a326-60c2dd8d9dfa",
+          "content_sha256": "29157d07e0af99e27244e24bfa72f6d41aeefe6b78e6d802c8bc7ee02782ca83",
+          "quotes": [
+            "资料负责人决定访问范围，团队按最小必要权限开展协作。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F17",
+      "policy_fact": "内部文档按人/组授权，不使用任何人可访问链接",
+      "evidence": [
+        {
+          "chunk_alias": "I5",
+          "chunk_id": "3554a997-36e8-4376-b16c-6b353976e167",
+          "content_sha256": "881cc61813bdeb61fb122dd1af007e4bb21e806c5f0bb6312429e0cd2d204c2f",
+          "quotes": [
+            "内部协作使用公司批准的文档空间，按人员或工作组授权。",
+            "不得使用“任何人持链接可访问”的方式发送内部或保密文件。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F18",
+      "policy_fact": "报销票据、账户和客户信息不得公开",
+      "evidence": [
+        {
+          "chunk_alias": "X8",
+          "chunk_id": "0a7b4a44-4ac1-49da-a973-6ee14d4792a8",
+          "content_sha256": "c5ee7d7154996c596f223732ac40399ada143a09688d4735c390b2c22508c36c",
+          "quotes": [
+            "财务需要核实时，员工应提供与业务相关的证明；提交资料须遵守 [信息安全制度](it_security_policy.md)，不得将发票、账户信息和客户材料公开分享。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F19",
+      "policy_fact": "只能使用本人授权账号，办公网络也不得借账号",
+      "evidence": [
+        {
+          "chunk_alias": "I1",
+          "chunk_id": "176b8225-18b7-479d-b02b-aa3d0be7f724",
+          "content_sha256": "b294bc2a7445d4cbf5716b0bf58e654f35a10cb1247057125238f850158e7f15",
+          "quotes": [
+            "员工使用本人公司账号开展工作，不得共享账号、代收验证码或借用同事权限。"
+          ]
+        },
+        {
+          "chunk_alias": "I2",
+          "chunk_id": "8bc6437d-8da4-43c0-8ad6-9d04b1bee39f",
+          "content_sha256": "728b7e289bc9d68d553c2fe06d0cab290f3b5943bf1244e3fdb8a7f945319b37",
+          "quotes": [
+            "在受管办公网络中，员工按已有授权访问内部系统；不能因为处于办公室就借用他人账号。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F20",
+      "policy_fact": "疑似恶意软件停止操作、断网、可信设备报告，不反复输入新密码",
+      "evidence": [
+        {
+          "chunk_alias": "I8",
+          "chunk_id": "d111e21f-b2a6-461a-9cec-b7189635546f",
+          "content_sha256": "512a734992351625efc48c1c04e52b3a1c454850f79d5fa5498d8ccb036529ea",
+          "quotes": [
+            "若怀疑当前设备感染恶意软件，先停止敏感操作并断开网络，使用另一台可信设备或电话报告。",
+            "不要在疑似受控设备上反复输入新密码。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F21",
+      "policy_fact": "安全事件报告 IT 并保留记录，不自行清除证据",
+      "evidence": [
+        {
+          "chunk_alias": "I8",
+          "chunk_id": "d111e21f-b2a6-461a-9cec-b7189635546f",
+          "content_sha256": "512a734992351625efc48c1c04e52b3a1c454850f79d5fa5498d8ccb036529ea",
+          "quotes": [
+            "发现非本人登录、意外 MFA 请求或疑似凭据泄露时，应立即通过可信渠道联系 IT 服务台。",
+            "IT 根据情况暂停账号会话、协助更换凭据并保存日志；员工提供发生时间和已进行的操作，不自行删除邮件、重装系统或清空记录。"
+          ]
+        },
+        {
+          "chunk_alias": "E9",
+          "chunk_id": "b7ad1041-2858-4162-b4cc-7b40961751c8",
+          "content_sha256": "83d4b546ee265ea42a85b43da2f8a8c611c25c24a83a1afd217b8889c0e4fd59",
+          "quotes": [
+            "离开工位应锁屏，发现可疑邮件、设备遗失或账号异常应及时联系 IT 服务台，不自行删除线索。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F22",
+      "policy_fact": "普通差旅和外部培训行程结束十工作日内交费",
+      "evidence": [
+        {
+          "chunk_alias": "X1",
+          "chunk_id": "605740ab-0d52-4655-81db-b9bcb008f6ed",
+          "content_sha256": "f6b4e5dcdcb856c24775bd47f08e51b905ea1eb74d36349a096e06707ea032b1",
+          "quotes": [
+            "普通零星费用应在发生后十五个工作日内提交；普通差旅及外部培训行程的费用，应在行程结束后十个工作日内集中提交。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F23",
+      "policy_fact": "待补发票需期限内登记资料及预计补齐时间",
+      "evidence": [
+        {
+          "chunk_alias": "X1",
+          "chunk_id": "605740ab-0d52-4655-81db-b9bcb008f6ed",
+          "content_sha256": "f6b4e5dcdcb856c24775bd47f08e51b905ea1eb74d36349a096e06707ea032b1",
+          "quotes": [
+            "因商家补票等客观原因延迟，应在期限内向财务登记待补材料和预计补交时间，不能无说明长期积压。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F24",
+      "policy_fact": "公司卡支出仍需材料归集对账，不返还个人",
+      "evidence": [
+        {
+          "chunk_alias": "X4",
+          "chunk_id": "ff9dca7a-cc8b-41d6-a0ae-ed591b1d252f",
+          "content_sha256": "f11bac20737b77bdddcdb83927a21cb24cbc7cfa88c29613b79caa26a01b6176",
+          "quotes": [
+            "使用公司卡同样需要业务批准、发票及消费明细。",
+            "公司卡已支付的金额不再向员工个人返款，但必须提交费用归属并完成对账。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F25",
+      "policy_fact": "同一支出不得重复申报/由第三方承担后再报",
+      "evidence": [
+        {
+          "chunk_alias": "X4",
+          "chunk_id": "ff9dca7a-cc8b-41d6-a0ae-ed591b1d252f",
+          "content_sha256": "f11bac20737b77bdddcdb83927a21cb24cbc7cfa88c29613b79caa26a01b6176",
+          "quotes": [
+            "一次消费不得既申报员工垫付又登记公司卡报销。"
+          ]
+        },
+        {
+          "chunk_alias": "X8",
+          "chunk_id": "0a7b4a44-4ac1-49da-a973-6ee14d4792a8",
+          "content_sha256": "c5ee7d7154996c596f223732ac40399ada143a09688d4735c390b2c22508c36c",
+          "quotes": [
+            "虚假票据、重复申报、私人消费、个人罚款和已由第三方承担的支出不予报销。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F26",
+      "policy_fact": "退款应冲减实际费用，报销后也要退还或冲减",
+      "evidence": [
+        {
+          "chunk_alias": "T7",
+          "chunk_id": "5a501652-d3dd-46bf-bba0-9a3ded2c093b",
+          "content_sha256": "a420399097594b0136b81b55cf87494bdbc0a2b909fc4be87b3fe408d9d5ed1a",
+          "quotes": [
+            "退款必须在结算时冲减，不得按原价报销已退回的款项。"
+          ]
+        },
+        {
+          "chunk_alias": "X4",
+          "chunk_id": "ff9dca7a-cc8b-41d6-a0ae-ed591b1d252f",
+          "content_sha256": "f11bac20737b77bdddcdb83927a21cb24cbc7cfa88c29613b79caa26a01b6176",
+          "quotes": [
+            "退款、折扣和商家返还金额均应在账目中如实冲减。"
+          ]
+        },
+        {
+          "chunk_alias": "X8",
+          "chunk_id": "0a7b4a44-4ac1-49da-a973-6ee14d4792a8",
+          "content_sha256": "c5ee7d7154996c596f223732ac40399ada143a09688d4735c390b2c22508c36c",
+          "quotes": [
+            "报销完成后收到退款也必须退还公司或在后续结算中冲减。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F27",
+      "policy_fact": "业务取消退改损失提供证明审核，个人原因自担",
+      "evidence": [
+        {
+          "chunk_alias": "T7",
+          "chunk_id": "5a501652-d3dd-46bf-bba0-9a3ded2c093b",
+          "content_sha256": "a420399097594b0136b81b55cf87494bdbc0a2b909fc4be87b3fe408d9d5ed1a",
+          "quotes": [
+            "业务安排变化后，应及时取消不再需要的交通和住宿，减少退改损失。",
+            "因客户变更或不可抗力发生的合理退改费用，提供变更原因及订单记录后可申请报销；个人原因导致的费用由个人承担。"
+          ]
+        },
+        {
+          "chunk_alias": "X8",
+          "chunk_id": "0a7b4a44-4ac1-49da-a973-6ee14d4792a8",
+          "content_sha256": "c5ee7d7154996c596f223732ac40399ada143a09688d4735c390b2c22508c36c",
+          "quotes": [
+            "培训取消或行程变更取得退款时，应及时告知财务；业务原因产生的必要退改损失提供证明后审核，个人原因产生的损失由个人承担。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F28",
+      "policy_fact": "国内普通商务住宿城市上限与按实报销，培训不得套用",
+      "evidence": [
+        {
+          "chunk_alias": "T4",
+          "chunk_id": "e9289ccd-a3ca-4c8e-9f29-910dbd49018c",
+          "content_sha256": "e5b749908d7e66e25bc254f786bd60f04e24568b3f7b60d666d81bfbd3abb9d3",
+          "quotes": [
+            "境内普通商务出差，一线城市按每间每晚人民币 500 元为住宿报销上限，其他境内城市按每间每晚人民币 350 元为上限。",
+            "本制度中的一线城市指北京、上海、广州和深圳。",
+            "费用按实际发生额报销，上限不是固定发放的住宿补贴；自行免费住宿不领取住宿费。",
+            "连续住宿跨越不同业务目的时，订单及费用说明应能够区分每晚用途；外部培训住宿按培训费用条款核验，不能仅凭培训地点在一线城市申请普通商务出差的 500 元上限。"
+          ]
+        },
+        {
+          "chunk_alias": "X5",
+          "chunk_id": "8d63e548-66a8-41c7-83f3-778a0b66c9d5",
+          "content_sha256": "922023a9af0850090e5416ef821162771e10569e9dd9d65b933608dcf9fca577",
+          "quotes": [
+            "报销时附差旅申请、实际行程及住宿明细；交通、住宿等实报实销项目在限额内按实际金额结算。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F29",
+      "policy_fact": "培训住宿350按实非补贴，包住宿不得再领，不套普通500",
+      "evidence": [
+        {
+          "chunk_alias": "X7",
+          "chunk_id": "7b2fbf99-8274-4610-ac08-3c3e7259ad09",
+          "content_sha256": "5326015894192bf8f2589cd95bd5c22852fd49f59eadb7aae883ba27d5ed7017",
+          "quotes": [
+            "外部培训住宿按每间每晚人民币 350 元上限、凭票据实报实销，不发放定额住宿补贴。",
+            "该标准适用于获批外部培训所需住宿，不区分境内一线城市与其他城市；不能引用普通商务出差的一线城市 500 元上限。",
+            "主办方已包住宿或公司已统一支付时，不得再次申报个人住宿费。"
+          ]
+        },
+        {
+          "chunk_alias": "E6",
+          "chunk_id": "ca1a91b1-f45e-4527-9857-277ec4304ed9",
+          "content_sha256": "0b310823e266a22a38f43aa52292d7b4fb0cb06474c31c2d35281e4b7b5a087c",
+          "quotes": [
+            "外出参训还需完成行程和工作交接登记，但不因此自动套用普通差旅住宿标准。"
+          ]
+        },
+        {
+          "chunk_alias": "T1",
+          "chunk_id": "14f54027-316e-4f40-b50d-022696ec4f77",
+          "content_sha256": "bc8d977a86b90d16012f2c6e152a77f9a78182d389bc5a29a8cbf7665a026028",
+          "quotes": [
+            "已获批准的外部培训，其课程费、交通、住宿和其他费用适用 [费用报销制度](expense_policy.md) 的外部培训条款，不适用本制度的普通差旅住宿限额和餐费补助。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F30",
+      "policy_fact": "普通差旅每日80及每餐扣30、最低零",
+      "evidence": [
+        {
+          "chunk_alias": "T6",
+          "chunk_id": "de7f21a2-36a6-4ecf-ad67-5e201cae01b4",
+          "content_sha256": "722faa58f53598bbb37d41077261c585f993d8075f905b18c18632d7755f1b01",
+          "quotes": [
+            "境内普通商务出差餐费补助为每人每天人民币 80 元，按批准的实际出差自然日计算。",
+            "客户或会议主办方提供工作餐时，每餐扣减 30 元，当日补助最低为零；不得同时申报已由他方承担的同一餐费用。"
+          ]
+        },
+        {
+          "chunk_alias": "X5",
+          "chunk_id": "8d63e548-66a8-41c7-83f3-778a0b66c9d5",
+          "content_sha256": "922023a9af0850090e5416ef821162771e10569e9dd9d65b933608dcf9fca577",
+          "quotes": [
+            "餐费补助按差旅制度规定的日标准及扣减规则计算，无需逐餐提交个人餐饮发票。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F31",
+      "policy_fact": "公司承担招待餐后扣个人差旅餐补",
+      "evidence": [
+        {
+          "chunk_alias": "X6",
+          "chunk_id": "baf22e41-98da-4746-9765-55e7e437a3a0",
+          "content_sha256": "6de56218878468d2203598cec83b573909e53e88adeb26cc384bb6ca2e7ff057",
+          "quotes": [
+            "同一餐由公司承担招待费用后，参加该餐的出差员工应按差旅制度扣减个人餐费补助。"
+          ]
+        },
+        {
+          "chunk_alias": "T6",
+          "chunk_id": "de7f21a2-36a6-4ecf-ad67-5e201cae01b4",
+          "content_sha256": "722faa58f53598bbb37d41077261c585f993d8075f905b18c18632d7755f1b01",
+          "quotes": [
+            "客户或会议主办方提供工作餐时，每餐扣减 30 元，当日补助最低为零；不得同时申报已由他方承担的同一餐费用。"
+          ]
+        },
+        {
+          "chunk_alias": "X5",
+          "chunk_id": "8d63e548-66a8-41c7-83f3-778a0b66c9d5",
+          "content_sha256": "922023a9af0850090e5416ef821162771e10569e9dd9d65b933608dcf9fca577",
+          "quotes": [
+            "餐费补助按差旅制度规定的日标准及扣减规则计算，无需逐餐提交个人餐饮发票。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F32",
+      "policy_fact": "紧急国内出差先负责人书面确认，下一工作日补单",
+      "evidence": [
+        {
+          "chunk_alias": "T2",
+          "chunk_id": "330edce0-9b09-47ef-b371-9fa470b74dd0",
+          "content_sha256": "768a404fcb480eca2aeffbc4a96fef6ffb6c6d35a8daae5871af814e7b54cb11",
+          "quotes": [
+            "紧急客户故障等无法提前办理的情况，可先通过公司沟通渠道取得负责人书面确认，并在下一个工作日补交申请。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F33",
+      "policy_fact": "可疑付款邮件用已知渠道核实，不用邮件所留电话",
+      "evidence": [
+        {
+          "chunk_alias": "I7",
+          "chunk_id": "f7017394-093c-4e03-98b4-2513089a96b2",
+          "content_sha256": "434391396bf53f2e689661e30d1501416b7fd973b43f4f92e83a80e1de8c892c",
+          "quotes": [
+            "遇到要求紧急付款、修改收款账户或输入密码的邮件，应通过已知联系方式另行核实，不直接使用可疑邮件提供的电话号码。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F34",
+      "policy_fact": "离线交付申请 IT 登记加密介质，不用个人 U 盘",
+      "evidence": [
+        {
+          "chunk_alias": "I6",
+          "chunk_id": "02a3ade4-c272-4212-b5de-f512437f75a7",
+          "content_sha256": "3aaccd19581022f3b846924ec61f41b83e7f449ea4aebc69a3d1ef8c3728a492",
+          "quotes": [
+            "默认不使用个人 U 盘或移动硬盘搬运工作文件。",
+            "现场交付确需离线介质时，应向 IT 申请公司登记的加密介质，记录资料用途，交付完成后归还或按要求清除。",
+            "未知来源的存储设备不得接入公司电脑。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F35",
+      "policy_fact": "离职文件入团队空间、设备交 IT、HR 通知 IT 停账号",
+      "evidence": [
+        {
+          "chunk_alias": "E9",
+          "chunk_id": "b7ad1041-2858-4162-b4cc-7b40961751c8",
+          "content_sha256": "83d4b546ee265ea42a85b43da2f8a8c611c25c24a83a1afd217b8889c0e4fd59",
+          "quotes": [
+            "岗位调整或离职时，应将项目文件交回团队指定空间，归还公司设备和门禁介质，并与负责人、人力资源部和 IT 完成交接。"
+          ]
+        },
+        {
+          "chunk_alias": "I9",
+          "chunk_id": "6332122f-aa36-4c49-ac9a-f36d252171df",
+          "content_sha256": "e4b34c63dc4df19497256027cc72305c0fd470c0ebd034dc2333217d21217323",
+          "quotes": [
+            "离职或岗位变动前，将工作成果移交至团队指定空间，由负责人核对权限和资料归属。",
+            "公司设备、加密介质及认证设备交还 IT 登记，账号停用由人力资源部通知 IT 办理。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F36",
+      "policy_fact": "协作者退出由资料负责人及时撤销访问",
+      "evidence": [
+        {
+          "chunk_alias": "I5",
+          "chunk_id": "3554a997-36e8-4376-b16c-6b353976e167",
+          "content_sha256": "881cc61813bdeb61fb122dd1af007e4bb21e806c5f0bb6312429e0cd2d204c2f",
+          "quotes": [
+            "项目结束或协作人员退出后，资料负责人应及时撤销访问权限。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F37",
+      "policy_fact": "病假返岗三工作日补记录，超过两日证明只交 HR",
+      "evidence": [
+        {
+          "chunk_alias": "E4",
+          "chunk_id": "193a39de-16cc-456f-85b8-74e801991e28",
+          "content_sha256": "e70178e05eeb9d84efa4fce6f202ecea882fa475a75b8b8b96b7377154bc7913",
+          "quotes": [
+            "突发疾病无法工作时，应在能够联系的情况下及时告知负责人，并在返岗后三个工作日内补办病假记录；连续病假超过两天时提供就诊或休养证明。",
+            "医疗材料只提交人力资源部，不应在团队群里传播。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F38",
+      "policy_fact": "收费外训负责人及 HR 资格确认，预算负责人批费",
+      "evidence": [
+        {
+          "chunk_alias": "E6",
+          "chunk_id": "ca1a91b1-f45e-4527-9857-277ec4304ed9",
+          "content_sha256": "0b310823e266a22a38f43aa52292d7b4fb0cb06474c31c2d35281e4b7b5a087c",
+          "quotes": [
+            "参加收费的外部课程，应先提交课程内容、业务关联、时间和费用预算，由负责人及人力资源部确认。"
+          ]
+        },
+        {
+          "chunk_alias": "X7",
+          "chunk_id": "7b2fbf99-8274-4610-ac08-3c3e7259ad09",
+          "content_sha256": "5326015894192bf8f2589cd95bd5c22852fd49f59eadb7aae883ba27d5ed7017",
+          "quotes": [
+            "收费的外部培训须先由直属负责人和人力资源部确认课程及参加资格，再由预算负责人批准费用。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F39",
+      "policy_fact": "境外出差十工作日申请及三方批准",
+      "evidence": [
+        {
+          "chunk_alias": "T8",
+          "chunk_id": "1be0cf45-bf45-40f7-8975-0a3deb987696",
+          "content_sha256": "09f3fc5d55351cae52a469bc2e71af5eb5bcec02a279398bda42d8f39e996fed",
+          "quotes": [
+            "境外出差应提前十个工作日提交申请，由部门负责人、财务负责人和总经理批准。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F40",
+      "policy_fact": "境外费用当地收据、支付及业务证明，外币实际结算",
+      "evidence": [
+        {
+          "chunk_alias": "X2",
+          "chunk_id": "e3075f5f-eb85-4faf-9c1e-c560dfdcfb45",
+          "content_sha256": "4d69693d94ea47ca22ec4bc97d2fd59a5f7206b5ecb7bfd3c903ec97c7a5486e",
+          "quotes": [
+            "确实无法取得境内发票的境外费用，可提交当地收据、支付凭证及业务说明，由财务按专项预算核验。",
+            "外币金额需注明币种和交易日期，使用实际结算记录确认人民币成本。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F41",
+      "policy_fact": "招待事前负责人及预算批准，200每人每次，超额特别批准",
+      "evidence": [
+        {
+          "chunk_alias": "X6",
+          "chunk_id": "baf22e41-98da-4746-9765-55e7e437a3a0",
+          "content_sha256": "6de56218878468d2203598cec83b573909e53e88adeb26cc384bb6ca2e7ff057",
+          "quotes": [
+            "客户或合作方招待应在发生前说明业务目的、参加人数及预算，由直属负责人和预算负责人批准。",
+            "餐饮招待通常每人每次不超过人民币 200 元；预计超过该标准时，须另获财务负责人特别批准。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F42",
+      "policy_fact": "培训/商务混合行程分日期、每晚用途及预算",
+      "evidence": [
+        {
+          "chunk_alias": "X7",
+          "chunk_id": "7b2fbf99-8274-4610-ac08-3c3e7259ad09",
+          "content_sha256": "5326015894192bf8f2589cd95bd5c22852fd49f59eadb7aae883ba27d5ed7017",
+          "quotes": [
+            "培训与客户拜访合并出行时，应事先分开列明各阶段日期及住宿用途。"
+          ]
+        },
+        {
+          "chunk_alias": "T1",
+          "chunk_id": "14f54027-316e-4f40-b50d-022696ec4f77",
+          "content_sha256": "bc8d977a86b90d16012f2c6e152a77f9a78182d389bc5a29a8cbf7665a026028",
+          "quotes": [
+            "兼有培训与客户拜访的行程，应在申请中分别列明日期、住宿用途和预算；同一晚住宿不能按两个目的重复申报。"
+          ]
+        },
+        {
+          "chunk_alias": "T4",
+          "chunk_id": "e9289ccd-a3ca-4c8e-9f29-910dbd49018c",
+          "content_sha256": "e5b749908d7e66e25bc254f786bd60f04e24568b3f7b60d666d81bfbd3abb9d3",
+          "quotes": [
+            "连续住宿跨越不同业务目的时，订单及费用说明应能够区分每晚用途；外部培训住宿按培训费用条款核验，不能仅凭培训地点在一线城市申请普通商务出差的 500 元上限。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F43",
+      "policy_fact": "混合活动同一天餐费经 HR/预算/财务确认一种方式",
+      "evidence": [
+        {
+          "chunk_alias": "X7",
+          "chunk_id": "7b2fbf99-8274-4610-ac08-3c3e7259ad09",
+          "content_sha256": "5326015894192bf8f2589cd95bd5c22852fd49f59eadb7aae883ba27d5ed7017",
+          "quotes": [
+            "同一自然日兼有培训和客户拜访时，还须事先由上述人员确认当日按普通差旅餐补还是培训餐费预算结算，只能选择一种方式，不得就同一餐重复计领。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F44",
+      "policy_fact": "预计超过总预算，说明增加原因并补预算审批",
+      "evidence": [
+        {
+          "chunk_alias": "T2",
+          "chunk_id": "330edce0-9b09-47ef-b371-9fa470b74dd0",
+          "content_sha256": "768a404fcb480eca2aeffbc4a96fef6ffb6c6d35a8daae5871af814e7b54cb11",
+          "quotes": [
+            "预计费用超出预算时，应说明增加原因并补充预算审批；差旅审批不替代 [费用报销制度](expense_policy.md) 要求的票据审核。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F45",
+      "policy_fact": "普通住宿超限预订前报价原因晚数总额及预算/财务特别批准",
+      "evidence": [
+        {
+          "chunk_alias": "T5",
+          "chunk_id": "d62a0153-11c5-434e-b15d-7b12ddb5d208",
+          "content_sha256": "670844934bdfcd9657e4336772baf3b297d11d9e0c9fa4386850771a5e185e52",
+          "quotes": [
+            "展会期间房源紧张、客户指定现场住宿或安全条件限制导致无法在标准内预订时，应保留可选酒店报价，说明超限原因、晚数和预计总额，在预订前取得预算负责人及财务负责人的特别批准。"
+          ]
+        },
+        {
+          "chunk_alias": "X8",
+          "chunk_id": "0a7b4a44-4ac1-49da-a973-6ee14d4792a8",
+          "content_sha256": "c5ee7d7154996c596f223732ac40399ada143a09688d4735c390b2c22508c36c",
+          "quotes": [
+            "普通差旅住宿例外依差旅制度处理，外部培训例外依本制度培训条款处理；其他费用在发生前由预算负责人及财务负责人批准。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F46",
+      "policy_fact": "出差获批不豁免费用限额，超限需相应特别批准",
+      "evidence": [
+        {
+          "chunk_alias": "E8",
+          "chunk_id": "424e7665-108d-45da-b26f-6687c39c0834",
+          "content_sha256": "ada29b23844387b8787145652a2c57bd2e3092ae5df14b449cb629ffa338d947",
+          "quotes": [
+            "负责人负责业务真实性，财务部负责票据与标准核验；批准出差不等于豁免费用限额。"
+          ]
+        },
+        {
+          "chunk_alias": "X8",
+          "chunk_id": "0a7b4a44-4ac1-49da-a973-6ee14d4792a8",
+          "content_sha256": "c5ee7d7154996c596f223732ac40399ada143a09688d4735c390b2c22508c36c",
+          "quotes": [
+            "超出已批准标准或预算的费用，应补充原因和特别批准记录。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F47",
+      "policy_fact": "普通差旅/培训分别按各自条款处理，不可改费用类别规避",
+      "evidence": [
+        {
+          "chunk_alias": "X8",
+          "chunk_id": "0a7b4a44-4ac1-49da-a973-6ee14d4792a8",
+          "content_sha256": "c5ee7d7154996c596f223732ac40399ada143a09688d4735c390b2c22508c36c",
+          "quotes": [
+            "普通差旅住宿例外依差旅制度处理，外部培训例外依本制度培训条款处理；其他费用在发生前由预算负责人及财务负责人批准。",
+            "拆分发票、分次提交或改写费用类别不能使超限费用自动合规。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "fact_id": "F48",
+      "policy_fact": "外出参训需完成行程和工作交接登记",
+      "evidence": [
+        {
+          "chunk_alias": "E6",
+          "chunk_id": "ca1a91b1-f45e-4527-9857-277ec4304ed9",
+          "content_sha256": "0b310823e266a22a38f43aa52292d7b4fb0cb06474c31c2d35281e4b7b5a087c",
+          "quotes": [
+            "外出参训还需完成行程和工作交接登记，但不因此自动套用普通差旅住宿标准。"
+          ]
+        }
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    }
+  ],
+  "queries": [
+    {
+      "query_id": "BC01-Q001",
+      "query_text": "不涉及客户现场排班时，正常工作日允许几点到岗？午休多长，下班时间怎样确定？",
+      "query_text_sha256": "7c8022da70148269013b916203b449b153834b73cf8759d431d205946d8ee740",
+      "category": "Direct Fact",
+      "answerable": true,
+      "core_facts": [
+        "F01"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "E2": [
+          "F01"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF01",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q002",
+      "query_text": "新员工入职首周由谁说明岗位目标、安排带教和培训？试用期间多久反馈一次？",
+      "query_text_sha256": "3c77405f6eb8c7c6d94d88696f343c066c4b89a69dcbed3eebe9a38332188125",
+      "category": "Direct Fact",
+      "answerable": true,
+      "core_facts": [
+        "F02"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "E3": [
+          "F02"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF02",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q003",
+      "query_text": "非紧急情况下，计划连续请假三天和四天，通常各需提前多少个工作日申请？",
+      "query_text_sha256": "98413dc183c2f65f489b87ec9ff268b673c97ef49a5622f7062dedd6bf05e8b5",
+      "category": "Direct Fact",
+      "answerable": true,
+      "core_facts": [
+        "F03"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "E4": [
+          "F03"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF03",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q004",
+      "query_text": "年度体检由谁统一预约？自己加做检查前需要确认什么？",
+      "query_text_sha256": "2465ce0f0e16ea30c93c5cedcfdc11bb52530c9eb830c92cc957ae557bc7de8b",
+      "category": "Direct Fact",
+      "answerable": true,
+      "core_facts": [
+        "F04"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "E7": [
+          "F04"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF04",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q005",
+      "query_text": "财务审核通过的员工垫付款通常哪天集中支付，返还到哪个账户？",
+      "query_text_sha256": "511a0cf22b2cc182fbce3729395bbd43020aa2fa5f2d7323cfd184839dbdc493",
+      "category": "Direct Fact",
+      "answerable": true,
+      "core_facts": [
+        "F05"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "X3": [
+          "F05"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF05",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q006",
+      "query_text": "境内消费的电子发票要交什么文件？只有付款截图可以吗，发票信息错了怎么办？",
+      "query_text_sha256": "f212e0a7929a6335acfab4b7dbe3cdc988f0af4060b0f73a5b713dde7b9180da",
+      "category": "Direct Fact",
+      "answerable": true,
+      "core_facts": [
+        "F06"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "X2": [
+          "F06"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF06",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q007",
+      "query_text": "境内普通商务出差一般选什么高铁席位或飞机舱位？没有普通席位而必须升级时谁批准？",
+      "query_text_sha256": "e1e6edb53ba5fa70ce14edbacf42a431024eee866a47a85dc4f68252f7f38233",
+      "category": "Direct Fact",
+      "answerable": true,
+      "core_facts": [
+        "F07"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "T3": [
+          "F07"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF07",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q008",
+      "query_text": "哪些公司系统必须启用 MFA？更换手机后怎样恢复认证访问？",
+      "query_text_sha256": "5ac458f378f8cea9f6e39ab67b4a6afac837667ce1c29c85b5908709ac46dbeb",
+      "category": "Direct Fact",
+      "answerable": true,
+      "core_facts": [
+        "F08",
+        "F09"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "I1": [
+          "F08",
+          "F09"
+        ],
+        "I2": [
+          "F08"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF08",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [
+        "F08"
+      ],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q009",
+      "query_text": "我还在试用期，想固定每周在家干两天，可以按常规远程办公安排申请吗？",
+      "query_text_sha256": "48ef794f7170e003445974ca23276c549c145f18cf964c3508ab81b473e55e54",
+      "category": "Paraphrase",
+      "answerable": true,
+      "core_facts": [
+        "F10"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "E5": [
+          "F10"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF08",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [
+        "F10"
+      ],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q010",
+      "query_text": "IT 催我装关键更新，但这两天要在客户现场工作，赶不及怎么办？",
+      "query_text_sha256": "a05c5d881c25800a891c7b4783210504ab183c68bd0e3180fde8579ad8e4d65b",
+      "category": "Paraphrase",
+      "answerable": true,
+      "core_facts": [
+        "F14"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "I3": [
+          "F14"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF09",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q011",
+      "query_text": "一张普通报销单里带着银行账号和客户信息，能只看它叫“报销单”就当作普通公开文件吗？",
+      "query_text_sha256": "1cc5dac4278aff8ae0d00273a68fd14b1d3d462b0b848fcd1227117a21bc72b5",
+      "category": "Paraphrase",
+      "answerable": true,
+      "core_facts": [
+        "F15"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [
+        "F17",
+        "F18"
+      ],
+      "positive_chunk_fact_mapping": {
+        "I4": [
+          "F15"
+        ],
+        "I5": [
+          "F17"
+        ],
+        "X8": [
+          "F18"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF08",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q012",
+      "query_text": "电脑可能中了恶意软件，我是不是该在这台电脑上赶紧反复改密码、重装系统，把痕迹清掉？",
+      "query_text_sha256": "748f68fddf9dc721063aed3ae03d19cc8daca6f270953eee1818dbceb2dea696",
+      "category": "Paraphrase",
+      "answerable": true,
+      "core_facts": [
+        "F20",
+        "F21"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "I8": [
+          "F20",
+          "F21"
+        ],
+        "E9": [
+          "F21"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF10",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [
+        "F21"
+      ],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q013",
+      "query_text": "跑完一趟客户行程，商家还没补开发票，我能一直等票齐了再报吗？",
+      "query_text_sha256": "aa34674651bac003b26d997002450fc008a863ce0bbc324c19753aeaeb180470",
+      "category": "Paraphrase",
+      "answerable": true,
+      "core_facts": [
+        "F22",
+        "F23"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "X1": [
+          "F22",
+          "F23"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF11",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q014",
+      "query_text": "这笔钱已经刷公司卡付了，我还要报费用吗，能再打到我个人账户吗？",
+      "query_text_sha256": "0dc2409b2e94e7992996807c67aef60f2dd44630c1e682857e6b526f51a89664",
+      "category": "Paraphrase",
+      "answerable": true,
+      "core_facts": [
+        "F24"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [
+        "F25"
+      ],
+      "positive_chunk_fact_mapping": {
+        "X4": [
+          "F24",
+          "F25"
+        ],
+        "X8": [
+          "F25"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF12",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q015",
+      "query_text": "客户突然出故障，需要我立即进行境内普通商务出差，来不及提前申请，先要留什么确认、之后何时补单？",
+      "query_text_sha256": "de76b40b19b9116d3e3860f7408b152c1e16aaace3b05719d943b9133fd66c15",
+      "category": "Paraphrase",
+      "answerable": true,
+      "core_facts": [
+        "F32"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "T2": [
+          "F32"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF13",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q016",
+      "query_text": "客户临时改了安排，原来的车票和酒店不用了，退改损失和拿回的退款该怎样报？",
+      "query_text_sha256": "040c60823f6a80dbf53a9526d14ec7f47d6ac8eb978a5c433bb3e88cd9e30e57",
+      "category": "Paraphrase",
+      "answerable": true,
+      "core_facts": [
+        "F26",
+        "F27"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "T7": [
+          "F26",
+          "F27"
+        ],
+        "X4": [
+          "F26"
+        ],
+        "X8": [
+          "F26",
+          "F27"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF14",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q017",
+      "query_text": "去上海普通商务出差，酒店实际每晚 420 元，我能按 500 元上限领满吗？",
+      "query_text_sha256": "f40e4792951e4ef900a3b05064f57d20a84a3c5856014b5b62348c4610fd1579",
+      "category": "Distractor",
+      "answerable": true,
+      "core_facts": [
+        "F28"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "T4": [
+          "F28"
+        ],
+        "X5": [
+          "F28"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF15",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [
+        "F28"
+      ],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q018",
+      "query_text": "获批外部培训的主办方已经包住宿了，我还能按每晚 350 元向公司领一份住宿补贴吗？",
+      "query_text_sha256": "8e1c46552081bcd0b4740e4e0d5c5928990f7d77cd924ba0a82399f58795e511",
+      "category": "Distractor",
+      "answerable": true,
+      "core_facts": [
+        "F29"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [
+        "F25"
+      ],
+      "positive_chunk_fact_mapping": {
+        "X7": [
+          "F29"
+        ],
+        "X8": [
+          "F25"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF15",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [
+        "F29"
+      ],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q019",
+      "query_text": "境内普通出差一天，客户提供了午餐和晚餐，我还能领全天 80 元餐补吗？",
+      "query_text_sha256": "14ae78f5320318342f02dcb6249adc5c6949c0133f83d0591f0d5b50e3db128e",
+      "category": "Distractor",
+      "answerable": true,
+      "core_facts": [
+        "F30"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "T6": [
+          "F30"
+        ],
+        "X5": [
+          "F30"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF15",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q020",
+      "query_text": "报销已经到账，后来商家又退了一部分钱，这笔退款可以自己留下吗？",
+      "query_text_sha256": "10cb3d99b23a15521afc45bcb420230afcec58e85857a93d5d95c7762eba1d40",
+      "category": "Distractor",
+      "answerable": true,
+      "core_facts": [
+        "F26"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "X8": [
+          "F26"
+        ],
+        "X4": [
+          "F26"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF14",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q021",
+      "query_text": "在家用的是我自己设密码的 Wi-Fi，访问公司内部系统就可以不连 VPN 吗？",
+      "query_text_sha256": "fd2f05ed9a7333e24c7f0a3b35867154b3f36b6982cddd14ee610d404f267ac7",
+      "category": "Distractor",
+      "answerable": true,
+      "core_facts": [
+        "F13"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "I2": [
+          "F13"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF08",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [
+        "F13"
+      ],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q022",
+      "query_text": "邮件显示是领导，让我马上修改收款账户，还留了核实电话，照着邮件里的号码打过去就能确认靠谱吗？",
+      "query_text_sha256": "6232eda205443b3c8b143a9d5201b9f8ea64f7910fd53f3e16dd961da1501a7e",
+      "category": "Distractor",
+      "answerable": true,
+      "core_facts": [
+        "F33"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "I7": [
+          "F33"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF16",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q023",
+      "query_text": "客户现场没网，我能把工作文件拷到自己的 U 盘交付吗？如果确实需要离线介质该怎么做？",
+      "query_text_sha256": "627365c76ef4308620fa12fdbab5db6eeae6a09df32aae40e7dc9b9145fdf474",
+      "category": "Distractor",
+      "answerable": true,
+      "core_facts": [
+        "F34"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "I6": [
+          "F34"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF17",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q024",
+      "query_text": "我人在公司受管办公网络，同事让我借他的账号临时查资料，这样可以省去权限申请吗？",
+      "query_text_sha256": "6e449fe96cbdef2d13bf0e9b055d6ee79559ef649b26a7f9131b983a95f33f74",
+      "category": "Distractor",
+      "answerable": true,
+      "core_facts": [
+        "F19"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [
+        "F16"
+      ],
+      "positive_chunk_fact_mapping": {
+        "I1": [
+          "F19"
+        ],
+        "I2": [
+          "F19"
+        ],
+        "I4": [
+          "F16"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF08",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q025",
+      "query_text": "已转正且岗位适合远程办公，我想下周固定在家工作两天：何时申请、谁批准，获批后用什么设备、怎样接入内部系统？",
+      "query_text_sha256": "493ede6b1973c2c218caa61047284cd282131d2a45a78a638b8c40f0c9e306b3",
+      "category": "Multi-chunk",
+      "answerable": true,
+      "core_facts": [
+        "F11",
+        "F12",
+        "F13"
+      ],
+      "premise_facts": [
+        "F10"
+      ],
+      "supporting_facts": [
+        "F08",
+        "F19"
+      ],
+      "positive_chunk_fact_mapping": {
+        "E5": [
+          "F10",
+          "F11",
+          "F12"
+        ],
+        "I2": [
+          "F13"
+        ],
+        "I1": [
+          "F08",
+          "F19"
+        ],
+        "I3": [
+          "F12"
+        ],
+        "I9": [
+          "F11",
+          "F12"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF08",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [
+        "F08",
+        "F10",
+        "F11",
+        "F13"
+      ],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q026",
+      "query_text": "离职前工作文件、电脑和认证设备分别怎么交接，谁办理账号停用，旧合作链接的权限又由谁撤销？",
+      "query_text_sha256": "9ebd8a230f44b03973823fd039b57af0eb94c4f55e644c5274efcf85a30eccb1",
+      "category": "Multi-chunk",
+      "answerable": true,
+      "core_facts": [
+        "F35",
+        "F36"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "E9": [
+          "F35"
+        ],
+        "I5": [
+          "F36"
+        ],
+        "I9": [
+          "F35"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF18",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q027",
+      "query_text": "连续病假三天，返岗后记录和医疗证明要怎样提交？人力资源部接收这些材料后，应如何分类并控制内部访问权限？",
+      "query_text_sha256": "17d0fbfcd804777f5e791757b3df9727427b25a559c2c54a99b0727b9256eaa5",
+      "category": "Multi-chunk",
+      "answerable": true,
+      "core_facts": [
+        "F37",
+        "F15",
+        "F16",
+        "F17"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "E4": [
+          "F37"
+        ],
+        "I4": [
+          "F15",
+          "F16"
+        ],
+        "I5": [
+          "F17"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF08",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q028",
+      "query_text": "参加收费的外部课程，从报名到预算应找谁确认？参训行程结束后多久提交费用？",
+      "query_text_sha256": "be4781dedec4e03236525e75418c89719c46f9c749d4d05a4c60f057b53c0dcf",
+      "category": "Multi-chunk",
+      "answerable": true,
+      "core_facts": [
+        "F38",
+        "F22"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "E6": [
+          "F38"
+        ],
+        "X1": [
+          "F22"
+        ],
+        "X7": [
+          "F38"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF11",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q029",
+      "query_text": "去境外拜访客户，要提前多久申请、经谁批准？当地拿不到境内发票时，用什么凭证说明外币费用？",
+      "query_text_sha256": "dc26055ccd799072cff9c38b3095712079a3ab9892630add27605efff9281acd",
+      "category": "Multi-chunk",
+      "answerable": true,
+      "core_facts": [
+        "F39",
+        "F40"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "X2": [
+          "F40"
+        ],
+        "T8": [
+          "F39"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF19",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q030",
+      "query_text": "我在境内普通出差期间用公司费用请客户吃饭，招待应事先经谁批准、通常每人上限多少，参加这餐的员工个人餐补如何处理？",
+      "query_text_sha256": "64e48fc3a2aaf1892e45a0ac27d62295a4039a3780261086253ea3423d70df48",
+      "category": "Multi-chunk",
+      "answerable": true,
+      "core_facts": [
+        "F41",
+        "F31",
+        "F30"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {
+        "X6": [
+          "F41",
+          "F31"
+        ],
+        "T6": [
+          "F30",
+          "F31"
+        ],
+        "X5": [
+          "F30",
+          "F31"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF15",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q031",
+      "query_text": "同一趟上海行程先培训后拜访客户，均无住宿超限特别批准，两段住宿各适用多少报销上限、预订时怎样区分用途；同一天两种活动都有，餐费能按两套规则各领一次吗？",
+      "query_text_sha256": "e050badbc69f6381c691de9a55788cdbc9f6a0c2baa48f363d8b2b61023f6322",
+      "category": "Multi-chunk",
+      "answerable": true,
+      "core_facts": [
+        "F28",
+        "F29",
+        "F42",
+        "F43"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [
+        "F25",
+        "F30",
+        "F47",
+        "F48"
+      ],
+      "positive_chunk_fact_mapping": {
+        "X7": [
+          "F29",
+          "F42",
+          "F43"
+        ],
+        "T1": [
+          "F42",
+          "F29"
+        ],
+        "T4": [
+          "F28",
+          "F42"
+        ],
+        "E6": [
+          "F29",
+          "F48"
+        ],
+        "X8": [
+          "F25",
+          "F47"
+        ],
+        "T6": [
+          "F30"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF15",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [
+        "F28",
+        "F29"
+      ],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q032",
+      "query_text": "境内普通商务出差申请已经批了，但展会酒店都超住宿限额，预计总预算也要增加，订房前应补哪些批准和证明？",
+      "query_text_sha256": "5d31328607df13aca0cc1cc27d0c8a8fd2287cd61d2854d3bf9efd0894526cc1",
+      "category": "Multi-chunk",
+      "answerable": true,
+      "core_facts": [
+        "F44",
+        "F45",
+        "F46"
+      ],
+      "premise_facts": [],
+      "supporting_facts": [
+        "F47"
+      ],
+      "positive_chunk_fact_mapping": {
+        "T2": [
+          "F44"
+        ],
+        "T5": [
+          "F45"
+        ],
+        "E8": [
+          "F46"
+        ],
+        "X8": [
+          "F45",
+          "F46",
+          "F47"
+        ]
+      },
+      "review_status": "APPROVED",
+      "family_id": "FF20",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q033",
+      "query_text": "按公司规定，我这次获批用私家车出差，每公里具体报销多少元？",
+      "query_text_sha256": "104a075d9e1cfe7662acc0c023623e1aeca3e14e2d58dd4a9c74f66ba1915256",
+      "category": "Direct Fact",
+      "answerable": false,
+      "core_facts": [],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {},
+      "review_status": "APPROVED",
+      "unanswerable_association": {
+        "with_query": "BC01-Q007",
+        "policy_anchor": "T3",
+        "missing_requested_value": "获批私家车出差的每公里金额",
+        "reason": "私家车与公共交通是不同事实；暂按同一交通费用政策对象保守关联，未声称原文给出里程单价。"
+      },
+      "family_id": "FF07",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q034",
+      "query_text": "我要让商家给公司开票，公司发票抬头的完整名称和纳税人识别号分别是什么？",
+      "query_text_sha256": "ff7bed5520043b912743af0f75453be616ed524b1eb3a2ce23fb6bc4c82336be",
+      "category": "Paraphrase",
+      "answerable": false,
+      "core_facts": [],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {},
+      "review_status": "APPROVED",
+      "unanswerable_association": {
+        "with_query": "BC01-Q006",
+        "policy_anchor": "X2",
+        "missing_requested_value": "公司实际发票全称和税号",
+        "reason": "同属境内开票信息，正文仅要求信息正确，未提供具体值。"
+      },
+      "family_id": "FF06",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q035",
+      "query_text": "我的报销已通过财务审核，公司承诺最迟几个工作日一定到账？",
+      "query_text_sha256": "3068255ddabfbfb6e1db92b33c263a1c34267e6d44fba74aeb71246155b096e8",
+      "category": "Direct Fact",
+      "answerable": false,
+      "core_facts": [],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {},
+      "review_status": "APPROVED",
+      "unanswerable_association": {
+        "with_query": "BC01-Q005",
+        "policy_anchor": "X3",
+        "missing_requested_value": "审核后保证到账的最迟工作日数",
+        "reason": "批次安排不等于到账承诺。"
+      },
+      "family_id": "FF05",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q036",
+      "query_text": "这次去新加坡见客户，公司已经批下来的专项预算里，每晚酒店上限是多少新加坡元？",
+      "query_text_sha256": "5af02c6463a0d45bcc7b2dfc7478f29555162a6ebc2a9402f0fdb0407bafa1ef",
+      "category": "Paraphrase",
+      "answerable": false,
+      "core_facts": [],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {},
+      "review_status": "APPROVED",
+      "unanswerable_association": {
+        "with_query": "BC01-Q029",
+        "policy_anchor": "T8",
+        "missing_requested_value": "本次新加坡已批专项预算中的酒店金额",
+        "reason": "申请规则不能推出某次已批预算。"
+      },
+      "family_id": "FF19",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q037",
+      "query_text": "我今年获批的带薪年假额度具体是多少天？",
+      "query_text_sha256": "1d7c54dffe66cdf37cd47014be1696bfae23dae35db2554c7bb1f4f4a9be554a",
+      "category": "Direct Fact",
+      "answerable": false,
+      "core_facts": [],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {},
+      "review_status": "APPROVED",
+      "unanswerable_association": {
+        "with_query": "BC01-Q003",
+        "policy_anchor": "E4",
+        "missing_requested_value": "个人本年度核定年假天数",
+        "reason": "年假额度与请假提前期是不同事实；暂按休假政策对象保守关联。"
+      },
+      "family_id": "FF03",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q038",
+      "query_text": "我签的这份劳动合同里，试用期具体约定了几个月？",
+      "query_text_sha256": "2f0d805b5293ed546ee4ec8d8929f4654f2be437aa54858239389483bf817ca0",
+      "category": "Paraphrase",
+      "answerable": false,
+      "core_facts": [],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {},
+      "review_status": "APPROVED",
+      "unanswerable_association": {
+        "with_query": "BC01-Q002",
+        "policy_anchor": "E3",
+        "missing_requested_value": "个人合同约定试用期月数",
+        "reason": "反馈频率与合同期限是不同事实；暂按试用期政策对象保守关联。"
+      },
+      "family_id": "FF02",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q039",
+      "query_text": "公司今年年度体检套餐给每位员工安排的预算具体是多少元？",
+      "query_text_sha256": "5049eb7699afb71e1c28b036a488017e3a7c8eeefb854bd65900487c227793bb",
+      "category": "Direct Fact",
+      "answerable": false,
+      "core_facts": [],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {},
+      "review_status": "APPROVED",
+      "unanswerable_association": {
+        "with_query": "BC01-Q004",
+        "policy_anchor": "E7",
+        "missing_requested_value": "本年公司体检套餐每人预算",
+        "reason": "预约和承担范围规则不能推出预算数值。"
+      },
+      "family_id": "FF04",
+      "draft_split": "Test",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "query_id": "BC01-Q040",
+      "query_text": "我要装公司 VPN，公司批准使用的客户端品牌和官方下载地址是什么？",
+      "query_text_sha256": "8da171b50aafea086d1ba2b697b31ea9f4922417e54477234143fd8694fc8955",
+      "category": "Paraphrase",
+      "answerable": false,
+      "core_facts": [],
+      "premise_facts": [],
+      "supporting_facts": [],
+      "positive_chunk_fact_mapping": {},
+      "review_status": "APPROVED",
+      "unanswerable_association": {
+        "with_query": "BC01-Q021",
+        "policy_anchor": "I2",
+        "missing_requested_value": "公司批准 VPN 品牌及官方下载地址",
+        "reason": "接入义务不提供产品品牌和地址。"
+      },
+      "family_id": "FF08",
+      "draft_split": "Dev",
+      "pilot_core_overlap_facts": [],
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    }
+  ],
+  "families": [
+    {
+      "family_id": "FF01",
+      "query_ids": [
+        "BC01-Q001"
+      ],
+      "draft_split": "Test",
+      "core_facts": [
+        "F01"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "family_id": "FF02",
+      "query_ids": [
+        "BC01-Q002",
+        "BC01-Q038"
+      ],
+      "draft_split": "Test",
+      "core_facts": [
+        "F02"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "family_id": "FF03",
+      "query_ids": [
+        "BC01-Q003",
+        "BC01-Q037"
+      ],
+      "draft_split": "Dev",
+      "core_facts": [
+        "F03"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "family_id": "FF04",
+      "query_ids": [
+        "BC01-Q004",
+        "BC01-Q039"
+      ],
+      "draft_split": "Test",
+      "core_facts": [
+        "F04"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "family_id": "FF05",
+      "query_ids": [
+        "BC01-Q005",
+        "BC01-Q035"
+      ],
+      "draft_split": "Dev",
+      "core_facts": [
+        "F05"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "family_id": "FF06",
+      "query_ids": [
+        "BC01-Q006",
+        "BC01-Q034"
+      ],
+      "draft_split": "Test",
+      "core_facts": [
+        "F06"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "family_id": "FF07",
+      "query_ids": [
+        "BC01-Q007",
+        "BC01-Q033"
+      ],
+      "draft_split": "Dev",
+      "core_facts": [
+        "F07"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "family_id": "FF08",
+      "query_ids": [
+        "BC01-Q008",
+        "BC01-Q009",
+        "BC01-Q011",
+        "BC01-Q021",
+        "BC01-Q024",
+        "BC01-Q025",
+        "BC01-Q027",
+        "BC01-Q040"
+      ],
+      "draft_split": "Dev",
+      "core_facts": [
+        "F08",
+        "F09",
+        "F10",
+        "F11",
+        "F12",
+        "F13",
+        "F15",
+        "F16",
+        "F17",
+        "F19",
+        "F37"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "family_id": "FF09",
+      "query_ids": [
+        "BC01-Q010"
+      ],
+      "draft_split": "Test",
+      "core_facts": [
+        "F14"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "family_id": "FF10",
+      "query_ids": [
+        "BC01-Q012"
+      ],
+      "draft_split": "Dev",
+      "core_facts": [
+        "F20",
+        "F21"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "family_id": "FF11",
+      "query_ids": [
+        "BC01-Q013",
+        "BC01-Q028"
+      ],
+      "draft_split": "Test",
+      "core_facts": [
+        "F22",
+        "F23",
+        "F38"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "family_id": "FF12",
+      "query_ids": [
+        "BC01-Q014"
+      ],
+      "draft_split": "Test",
+      "core_facts": [
+        "F24"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "family_id": "FF13",
+      "query_ids": [
+        "BC01-Q015"
+      ],
+      "draft_split": "Test",
+      "core_facts": [
+        "F32"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "family_id": "FF14",
+      "query_ids": [
+        "BC01-Q016",
+        "BC01-Q020"
+      ],
+      "draft_split": "Test",
+      "core_facts": [
+        "F26",
+        "F27"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "family_id": "FF15",
+      "query_ids": [
+        "BC01-Q017",
+        "BC01-Q018",
+        "BC01-Q019",
+        "BC01-Q030",
+        "BC01-Q031"
+      ],
+      "draft_split": "Dev",
+      "core_facts": [
+        "F28",
+        "F29",
+        "F30",
+        "F31",
+        "F41",
+        "F42",
+        "F43"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "family_id": "FF16",
+      "query_ids": [
+        "BC01-Q022"
+      ],
+      "draft_split": "Test",
+      "core_facts": [
+        "F33"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "family_id": "FF17",
+      "query_ids": [
+        "BC01-Q023"
+      ],
+      "draft_split": "Test",
+      "core_facts": [
+        "F34"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "family_id": "FF18",
+      "query_ids": [
+        "BC01-Q026"
+      ],
+      "draft_split": "Test",
+      "core_facts": [
+        "F35",
+        "F36"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "family_id": "FF19",
+      "query_ids": [
+        "BC01-Q029",
+        "BC01-Q036"
+      ],
+      "draft_split": "Test",
+      "core_facts": [
+        "F39",
+        "F40"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    },
+    {
+      "family_id": "FF20",
+      "query_ids": [
+        "BC01-Q032"
+      ],
+      "draft_split": "Test",
+      "core_facts": [
+        "F44",
+        "F45",
+        "F46"
+      ],
+      "review_status": "APPROVED",
+      "human_decision_ref": "H-BC01-FACT-SPLIT-2026-09-14"
+    }
+  ],
+  "family_edges": [
+    {
+      "left": "BC01-Q008",
+      "right": "BC01-Q025",
+      "reason": "shared core/premise fact: F08"
+    },
+    {
+      "left": "BC01-Q009",
+      "right": "BC01-Q025",
+      "reason": "shared core/premise fact: F10"
+    },
+    {
+      "left": "BC01-Q011",
+      "right": "BC01-Q027",
+      "reason": "shared core/premise fact: F15,F17"
+    },
+    {
+      "left": "BC01-Q013",
+      "right": "BC01-Q028",
+      "reason": "shared core/premise fact: F22"
+    },
+    {
+      "left": "BC01-Q016",
+      "right": "BC01-Q020",
+      "reason": "shared core/premise fact: F26"
+    },
+    {
+      "left": "BC01-Q017",
+      "right": "BC01-Q031",
+      "reason": "shared core/premise fact: F28"
+    },
+    {
+      "left": "BC01-Q018",
+      "right": "BC01-Q031",
+      "reason": "shared core/premise fact: F29"
+    },
+    {
+      "left": "BC01-Q019",
+      "right": "BC01-Q030",
+      "reason": "shared core/premise fact: F30"
+    },
+    {
+      "left": "BC01-Q019",
+      "right": "BC01-Q031",
+      "reason": "shared core/premise fact: F30"
+    },
+    {
+      "left": "BC01-Q021",
+      "right": "BC01-Q025",
+      "reason": "shared core/premise fact: F13"
+    },
+    {
+      "left": "BC01-Q024",
+      "right": "BC01-Q025",
+      "reason": "shared core/premise fact: F19"
+    },
+    {
+      "left": "BC01-Q024",
+      "right": "BC01-Q027",
+      "reason": "shared core/premise fact: F16"
+    },
+    {
+      "left": "BC01-Q030",
+      "right": "BC01-Q031",
+      "reason": "shared core/premise fact: F30"
+    },
+    {
+      "left": "BC01-Q033",
+      "right": "BC01-Q007",
+      "reason": "conservative U policy association"
+    },
+    {
+      "left": "BC01-Q034",
+      "right": "BC01-Q006",
+      "reason": "conservative U policy association"
+    },
+    {
+      "left": "BC01-Q035",
+      "right": "BC01-Q005",
+      "reason": "conservative U policy association"
+    },
+    {
+      "left": "BC01-Q036",
+      "right": "BC01-Q029",
+      "reason": "conservative U policy association"
+    },
+    {
+      "left": "BC01-Q037",
+      "right": "BC01-Q003",
+      "reason": "conservative U policy association"
+    },
+    {
+      "left": "BC01-Q038",
+      "right": "BC01-Q002",
+      "reason": "conservative U policy association"
+    },
+    {
+      "left": "BC01-Q039",
+      "right": "BC01-Q004",
+      "reason": "conservative U policy association"
+    },
+    {
+      "left": "BC01-Q040",
+      "right": "BC01-Q021",
+      "reason": "conservative U policy association"
+    }
+  ],
+  "counts": {
+    "Dev": {
+      "total": 20,
+      "answerable": 16,
+      "unanswerable": 4,
+      "answerable_categories": {
+        "Direct Fact": 4,
+        "Paraphrase": 3,
+        "Distractor": 5,
+        "Multi-chunk": 4
+      },
+      "unanswerable_categories": {
+        "Direct Fact": 3,
+        "Paraphrase": 1
+      }
+    },
+    "Test": {
+      "total": 20,
+      "answerable": 16,
+      "unanswerable": 4,
+      "answerable_categories": {
+        "Direct Fact": 4,
+        "Paraphrase": 5,
+        "Distractor": 3,
+        "Multi-chunk": 4
+      },
+      "unanswerable_categories": {
+        "Paraphrase": 3,
+        "Direct Fact": 1
+      }
+    }
+  },
+  "human_decision": {
+    "decision_ref": "H-BC01-FACT-SPLIT-2026-09-14",
+    "date": "2026-09-14",
+    "reviewer_role": "Human project owner",
+    "user_statement": "认可本次核心事实划分、20 个分组及 Dev/Test 草案；接受已列明的共享证据和非盲测局限。语义去重、规模差额、最终语料及正式冻结暂不确认，不运行 Benchmark。",
+    "source_draft_sha256": "a9e84fc015a2bb8f010fa06f1500ac47bf0f50f6dabc8d1fd76591eda2ecd277",
+    "source_audit_sha256": "267e7d6eb19f4a19e77d6b04a98a92461cf0ba84c8a4f2044adaad2f44e34d3c",
+    "fact_boundaries": "APPROVED",
+    "family_assignment": "APPROVED",
+    "dev_test_assignment": "APPROVED",
+    "shared_evidence_and_nonblind_limitations": "ACCEPTED",
+    "semantic_deduplication": "PENDING",
+    "size_gap_acceptance": "PENDING",
+    "final_corpus": "PENDING",
+    "formal_freeze": "PENDING",
+    "dataset_promotion": "PENDING",
+    "benchmark_authorized": false
+  }
+}

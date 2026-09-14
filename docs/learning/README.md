@@ -68,7 +68,7 @@ Gate FAIL 后，按已有授权完成 remediation/tests，再独立 re-review；
 
 ## 产品 V2 学习素材
 
-- [Phase 20 — 检索评估基础](./phase-20-evaluation-foundation.md)：T2001 Learning Pass，记录冻结数据集契约、Pilot 标注与覆盖语义、V1 代码边界和测量局限。当前为 Task 素材，尚非最终 Phase Learning Review；不表示 T2002/T2003 已启动或 Phase 20 Gate 已通过。
+- [Phase 20 — 检索评估基础](./phase-20-evaluation-foundation.md)：T2001 契约/Pilot 与 T2002 Runner/metrics/repeatability 的 Task Learning Pass；T2002 已 DONE，新增素材的独立 reader test PENDING。当前尚非最终 Phase Learning Review；T2003 未启动，Phase 20 Gate 未通过。
 
 ## Phase 学习地图
 

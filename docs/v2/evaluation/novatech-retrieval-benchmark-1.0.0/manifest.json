@@ -1,0 +1,51 @@
+{
+  "dataset_version": "novatech-retrieval-benchmark-1.0.0",
+  "status": "FROZEN",
+  "dataset_promotion": "APPROVED",
+  "decision_ref": "H-BC01-FREEZE-PROMOTION-1.0.0-2026-09-14",
+  "dataset_sha256": "fc20e41444e76137c2ed39eb054ba8fce3eea8f6b8334567452f834539426cde",
+  "approved_rc_manifest_sha256": "51de201c1e65b9e27c163f6186d9b6510e07990ec39d5e52d2caffe9ce577265",
+  "git_context": {
+    "head": "fe23d3846c276a7c127c29bc0ea3456b89ebbb89",
+    "branch": "v2/evaluation",
+    "v1_tag_commit": "da8be59a60d7f35a2e3c1ab835624946c53d2a55",
+    "working_tree_status": "M CLAUDE.md\n M docs/learning/README.md\n M docs/learning/phase-20-evaluation-foundation.md\n M docs/v2/README.md\n M docs/v2/SPEC.md\n M docs/v2/TASKS.md\n M docs/v2/evaluation/README.md\n?? backend/evaluation/\n?? backend/tests/fixtures/\n?? backend/tests/test_evaluation.py\n?? docs/v2/evaluation/benchmark-candidate-0.1/\n?? docs/v2/evaluation/fact-split-draft-0.1/\n?? docs/v2/evaluation/freeze-review-1.0.0-rc1/\n?? docs/v2/evaluation/novatech-retrieval-benchmark-1.0.0/\n?? docs/v2/evaluation/semantic-dedup-review-0.1/\n?? docs/v2/evaluation/size-corpus-review-0.1/\n?? docs/v2/evaluation/t2002-runner.md"
+  },
+  "tool_hashes": {
+    "backend/evaluation/__init__.py": "15f71d3a1db67ac788a70611120b392761078cd353394ca29af6ac5c444247a8",
+    "backend/evaluation/__main__.py": "15e87c17cc9993d58f9c42f6576d06d60845dd49333b1ffad16e66e2cbb23089",
+    "backend/evaluation/dataset.py": "f0f9da1b5deeed5968e5b2b1862949dc435c52153a6727fd7a0614a411914ee2",
+    "backend/evaluation/metrics.py": "55143151173d04af7854c77ce7b7d66b448ba957a1ad336aeb4d3f730b01be2e",
+    "backend/evaluation/runner.py": "3ef134fe8253101baf5de8fe5f85f33ee99472e6cbee9c6a5d05fcb01684a4b0",
+    "backend/evaluation/v1.py": "e3e5804ceee24652f793149821ac04bb6f3ff3b6e9c773d9a5f061b2e6f98a95"
+  },
+  "files_sha256": {
+    "approval-input/dataset.json": "d3ff1c8720b0603fbb3614219b4b9f71219f05c58231c33493336e56099e85ae",
+    "approval-input/manifest.json": "51de201c1e65b9e27c163f6186d9b6510e07990ec39d5e52d2caffe9ce577265",
+    "approval.json": "cfa040086dd4500e981fb4525389dbab6a0d360a3bcbe8ad085f58c4541a9bfc",
+    "dataset.json": "fc20e41444e76137c2ed39eb054ba8fce3eea8f6b8334567452f834539426cde",
+    "evidence/annotation-decisions.md": "a8c7c377c6b31dfc43bcde5dc4c573a4f706aac45e94c68f2815f31d3755bb49",
+    "evidence/annotations.json": "f6201a86d1b91c4af00eaf91529549cd999776dc584cfd02cdabbbde0bc407e4",
+    "evidence/contract.md": "6c09605e01242b0658da85a7d49dfdc52ce5ca0f491ff0ca68c22130f0d7fd40",
+    "evidence/corpus/employee_handbook.md": "4aeb39679a4714f4289aa3ffab1a9324616b0396ea01693faf01ca6d803a5057",
+    "evidence/corpus/expense_policy.md": "ab8061b1b369ce9148770dc239bc138f4629af46069c7efe7ab96fb5a8465de4",
+    "evidence/corpus/it_security_policy.md": "74bd596f2909db288d9ac6d857e702fde0e0757fa73dcba62ddf6a5ce3c6761b",
+    "evidence/corpus/travel_policy.md": "a418e9bb9141beb2d7b426f4ee6ed07e8f2843488e6e8ce9b1dc6a9da7aad81f",
+    "evidence/corpus-provenance.md": "3a8a5f27fc8d15fc80d0e83da6df5476cdf19b648851fb65226877b183bdc639",
+    "evidence/dataset-validator.py": "f0f9da1b5deeed5968e5b2b1862949dc435c52153a6727fd7a0614a411914ee2",
+    "evidence/dedup-decisions.md": "668993e35f3f99faf49e56ec9992bd94134bc5be04eb9585d2f133bbcdbbc17e",
+    "evidence/dedup.json": "7852cc22ae157c271a3bb87dbeb9dc5eb0156a8edfb44af8febd4c8546e417d8",
+    "evidence/initial-candidates.json": "ffff809843a84bfe6412321a6597d0f15301724db0c0866e32683695a4a08428",
+    "evidence/overlap-audit.json": "267e7d6eb19f4a19e77d6b04a98a92461cf0ba84c8a4f2044adaad2f44e34d3c",
+    "evidence/size-corpus-decision.md": "9a10f69fdfee1fde48a5266cc87eb6a0628675d9e5e546841f189663209d0f8a",
+    "evidence/size-corpus-proposal.json": "49e3a0d77f4205269b56a625fde885fbb459e1a972ea52ccfefa8f216660a909",
+    "evidence/size-corpus.json": "c0c68cfaff5eea30e9ee1a58005decb398ca921aecea641518bc26285e0b9783",
+    "evidence/snapshot.json": "a2d314a9a284a1782c77376e53702a610b22ae9a3160a213ca338a55637ddd80",
+    "evidence/split-decision.md": "a1262930da43a9dc0cf0c0d4369fe02a833bf6f90237a5dedbebbacea03c85b2",
+    "evidence/split.json": "577c3f9b08c767733b9bb8a1702f374dbbc5f50b8debbccc1477f8a9a03f8d51",
+    "README.md": "dc2cb18a7769fd09f34fea79bf9dfbc8f9782fc69e33a6e6e6a485999b57a9ab",
+    "verify.py": "e55671604ca2aa7023c1620b42a028e809f34853b91153868fd4ed4557781778"
+  },
+  "benchmark_authorized": false,
+  "hash_scope": "All release files except manifest itself and subsequently generated verification.json; Python cache files excluded."
+}

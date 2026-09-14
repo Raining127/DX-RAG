@@ -1,6 +1,10 @@
 # V2 评估协议
 
-本目录存放经过审阅的数据集契约与评估协议。[T2001 Retrieval Evaluation Dataset Contract](retrieval-evaluation-dataset-contract.md) 已记录本次人工确认的设计决定；T2001 已 DONE，Contract 0.3 FROZEN，Human Final Gate PASS（2026-09-10）。批准及授权边界见 [docs/v2/SPEC.md 第 1.1 节](../SPEC.md)。[docs/v2/TASKS.md](../TASKS.md) 中的 T2002/T2003 仍为 TODO，未获本次执行授权。当前目录有 Pilot 审阅证据，尚无完成 promotion 的正式 Benchmark Dataset 或已实现的评估器。
+**当前正式数据集（2026-09-14）：** [novatech-retrieval-benchmark-1.0.0](novatech-retrieval-benchmark-1.0.0/README.md) 已 FROZEN / promotion APPROVED，40 题、38 块、1,520 项等级；完整数据校验通过。仅批准数据发布，未运行 Benchmark，T2003 仍 TODO。
+
+本目录存放经过审阅的数据集契约与评估协议。[T2001 Retrieval Evaluation Dataset Contract](retrieval-evaluation-dataset-contract.md) 已 DONE / 0.3 FROZEN。[T2002 Runner 0.1.0](t2002-runner.md) 已于 2026-09-11 完成实现与验证，独立授权见 [SPEC §1.3](../SPEC.md)。[T2003](../TASKS.md) 仍 TODO、未获执行授权；正式数据集 novatech-retrieval-benchmark-1.0.0 已冻结且 promotion APPROVED；尚无真实 Baseline。下文历史记录保留各次授权当时的状态。
+
+**历史候选准备（2026-09-11）：** 按 [SPEC §1.4](../SPEC.md) 的新授权交付 [Benchmark 候选审阅包 0.1](archives/README.md#benchmark-candidate-0.1)，含 32 Answerable +8 Unanswerable、全快照建议矩阵、family/split 草案和待填人工决定。全部 Human 状态仍 PENDING；正式语料复用、标签、coverage、划分及 promotion 未批准。历史文字中的数据构建未授权指各次当时状态；本次候选准备未启动 T2003。历史第一批材料见 [第一批](archives/README.md#benchmark-candidate-0.1) 开始人工审题。
 
 协议必须明确数据集 / 语料 / 查询版本、来源、相关性判断、审阅与数据泄漏边界、指标定义，以及可复现的执行要求。测试样例必须标为 test fixtures，不得将其作为有代表性的 Benchmark 数据。遵循 [docs/v2/SPEC.md](../SPEC.md) 第 3–4 节及第 6 节。
 
@@ -19,3 +23,5 @@
 
 
 **最终状态（2026-09-10）：** Human project owner 明确批准 [T2001 Final Human Gate PASS、T2001 DONE、Dataset Contract 0.3 FROZEN](retrieval-evaluation-dataset-contract.md)。AC-2001-1/2/3 均 SATISFIED；Pilot 6/6 Coverage APPROVED、30 显式和 198 隐式判断保持不变，全部 readiness READY、无剩余 T2001 blocker。冻结定义不得为适应实现/结果静默修改，真实缺陷须显式 Human-reviewed revision。此批准只适用于 T2001，T2002/T2003 TODO 且未获执行授权；正式 40+8 质量目标数据尚未构建，六题 Pilot 不自动成为正式 V1 Baseline Dataset。T2003 前必须存在真实版本化、Human-reviewed evaluation dataset。
+
+**目录整理（2026-09-14）：** 五个已完成的审阅目录共 74 个文件已打包到 [历史归档](archives/README.md)，原目录移至 Git 忽略的本地备份。正式数据集及核验方式不变。

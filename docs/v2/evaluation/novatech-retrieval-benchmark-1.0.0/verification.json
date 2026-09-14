@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "dataset_version": "novatech-retrieval-benchmark-1.0.0",
+  "dataset_sha256": "fc20e41444e76137c2ed39eb054ba8fce3eea8f6b8334567452f834539426cde",
+  "manifest_sha256": "76baf53489414b9427e90569bc3b196a7d0a49ba9974ab4d867d9c733ebd9622",
+  "validator": "Full validate_dataset/load_dataset PASS; pure data validation only",
+  "approved_rc_content_comparison": "PASS: release/approval metadata only",
+  "query_count": 40,
+  "judgment_count": 1520,
+  "chunk_count": 38,
+  "counts": {
+    "Dev": {
+      "answerable": 16,
+      "unanswerable": 4
+    },
+    "Test": {
+      "answerable": 16,
+      "unanswerable": 4
+    }
+  },
+  "formal_freeze": "FROZEN",
+  "dataset_promotion": "APPROVED",
+  "benchmark_authorized": false,
+  "benchmark_executed": false,
+  "live_model_index_store": "NOT_CHECKED"
+}

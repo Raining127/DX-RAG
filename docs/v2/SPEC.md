@@ -2,7 +2,7 @@
 
 > 版本：V2 Bootstrap 规格，2026-09-09；Phase 20 范围批准记录见第 1.1 节。
 > 状态：**Phase 20 Evaluation Foundation 当前范围已获批；其余未来 V2 范围仍为 DRAFT，未自动冻结或批准。**
-> 执行授权：T2001 已由 2026-09-10 Human Final Gate 批准 DONE；不授权 T2002、T2003、检索 Experiment 或生产行为变更。
+> 执行授权：T2001 已 DONE；2026-09-10 用户明确授权实现 T2002（见第 1.3 节）；T2003、检索 Experiment 和生产行为变更未获授权。
 
 ## 1. 权威层级与生命周期
 
@@ -30,6 +30,34 @@
 ### 1.2 T2001 Final Human Gate（2026-09-10）
 
 Human project owner 明确批准 T2001 IN_PROGRESS → DONE、Dataset Contract 0.3 FROZEN、T2001 Final Human Gate PASS。AC-2001-1/2/3 均 SATISFIED，Pilot coverage 6/6 APPROVED、全部 readiness READY、无剩余契约/Pilot blocker；完整决定与冻结边界见 [Dataset Contract 第 16 节](evaluation/retrieval-evaluation-dataset-contract.md)。不虚构 reviewer 姓名；此批准仅适用于 T2001，不授权 T2002/T2003，也不等于 Phase 20 Gate PASS 或正式 Benchmark Dataset 已存在。
+
+### 1.3 T2002 执行授权（2026-09-10）
+
+决策来源：Human project owner 本次指令 `implement T2002`。依赖 T2001 DONE、Contract 0.3 FROZEN 已满足；授权实现并验证 T2002 指标、输入校验、Runner、合成 test fixtures 和 repeatability check，记录执行协议及 Task Learning Pass。沿用已批准的 EVAL-01/02、SAFE-01 和冻结 Contract 0.3，不变更指标定义。此授权不包含 T2003 正式 Benchmark、正式数据集构建或生产策略变更。此前“不授权 T2002”的段落保留为各次历史批准的边界。
+
+### 1.4 Benchmark 候选数据与人工审阅材料授权（2026-09-11）
+
+决策来源：Human project owner 指令「准备正式 Benchmark 数据集构建工作，先生成候选数据与人工审阅材料。」授权按冻结 Contract 0.3 准备候选 queries、LLM 建议标注、完整快照 screening、拟议 evidence-family / Dev-Test 划分及人工审阅材料。作为第 7 节及 Contract 第 14 节的 T2003 前数据构建检查点执行，不新增 Task ID，不启动 T2003。以现有冻结 Pilot corpus/snapshot 准备首批材料；复用建议不等于批准其为最终 Benchmark corpus。Human 最终等级、coverage confirmation、split 和 dataset promotion 仍待实际人工决定。本次不运行 Retrieval / Benchmark、不更改产品或冻结指标定义；此前未授权数据构建的文字保留各次历史授权边界。产物及待决事项见 [候选审阅包 0.1](evaluation/archives/README.md#benchmark-candidate-0.1)。
+
+### 1.5 核心事实分组与 Dev/Test 草案授权（2026-09-11）
+
+Human project owner 指令：「按核心政策事实细化分组，准备 Dev/Test 划分草案；先不扩充语料、不运行 Benchmark。」本轮沿用第 1.4 节的 T2003 前数据构建检查点，以已批准的 40 题问法、1,520 项等级及 full-snapshot coverage 为输入，准备核心事实映射、evidence-family / split 草案、Pilot 暴露及重叠检查；不改变人工标签，不新增语料或快照，不执行 Retrieval/Benchmark，不自动批准分组、去重或最终数据集。草案路径为 `docs/v2/evaluation/fact-split-draft-0.1/`。
+
+### 1.6 正式版本冻结审阅包准备（2026-09-14）
+
+Human project owner 指令：「准备正式版本冻结审阅包」。在已获批问法、等级、coverage、核心事实/划分、SD01–SD20 去重及 SC01/SC02 规模与最终语料选择的范围内，准备版本候选文件、来源/批准记录清单和本地校验结果。交付路径为 `docs/v2/evaluation/freeze-review-1.0.0-rc1/`。只授权审阅材料准备；正式冻结、dataset promotion 仍需真实最终决定，不授权 T2003、Retrieval/Benchmark、重建快照或生产变更。
+
+### 1.7 正式数据集 1.0.0 冻结与 promotion 批准（2026-09-14）
+
+Human project owner 原文：「认可 freeze-review-1.0.0-rc1 审阅包及其 manifest 绑定的内容，批准生成并冻结正式数据集 novatech-retrieval-benchmark-1.0.0，批准 dataset promotion；沿用已批准范围和局限，不运行 Benchmark。」决定引用 `H-BC01-FREEZE-PROMOTION-1.0.0-2026-09-14`。已核对获批 RC manifest 与文件 hash，正式版本仅更新发布身份和最终批准元数据，内容沿用已批 40 题、1,520 项等级、20 个 family、四份原文/38 块及 Dev/Test 各 16A+4U；不含六道 Pilot 题。发布文件、来源 hash 和实际批准原文见 [正式版本](evaluation/novatech-retrieval-benchmark-1.0.0/README.md)。本次批准正式冻结及 dataset promotion，不授权 Benchmark 或 T2003；模型/索引/存储实时就绪另行核对。原审阅包及此前 pending 记录保留历史状态。
+
+### 1.8 T2003 前环境与索引就绪检查（2026-09-14）
+
+Human project owner 要求「T2003 前的环境与索引就绪检查」。授权读取当前有效非敏感配置、核查依赖和模型文件身份、离线加载本地模型、通过现有 VectorStore 公开读取接口核对冻结 collection 的 chunk 身份/文本/文件映射，以及校验 V1/工具版本。报告在 `docs/v2/evaluation/t2003-preflight-0.1/`。此项是 T2003 前检查，不执行查询、embedding encode、检索/指标或 Benchmark，不创建/重建 collection，不改变产品或冻结数据集，不构成 T2003 执行授权。
+
+### 1.9 最小 embedding / 向量检索冒烟授权（2026-09-14）
+
+Human project owner 原文：「授权最小 embedding 与向量检索冒烟检查，使用非 Benchmark 查询；不修改语料、不重建索引、不运行完整 Benchmark。」仅使用一条中性、非 BC01/Pilot 查询，经现有 embedding 接口产生一次向量，再通过 VectorStore 公开 search 接口进行一次 top_k=1 搜索，核对向量有效性、返回身份和检查前后逻辑数据一致性；记录持久化文件变化。证据位于 `docs/v2/evaluation/t2003-smoke-0.1/`。该授权不包含 Hybrid baseline、指标计算、重建索引或完整 T2003 Benchmark；正式数据集内容不变。
 
 ## 2. 目标与范围
 

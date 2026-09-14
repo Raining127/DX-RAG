@@ -1,0 +1,945 @@
+{
+  "snapshot_id": "t2001-novatech-pilot-01",
+  "evidence_type": "T2001 Pilot ingestion snapshot; not Benchmark",
+  "ground_truth_created": false,
+  "started_at_utc": "2026-09-09T13:06:19.206169+00:00",
+  "execution": "FastAPI TestClient in-process real API; no mocks; backend working directory; one POST per source; no retrieval",
+  "git": {
+    "head": "f9817817a602caf24ad95e500fe08e44224ffc2d",
+    "branch": "v2/evaluation",
+    "v1_tag_commit": "da8be59a60d7f35a2e3c1ab835624946c53d2a55",
+    "status_before": [
+      " M ../CLAUDE.md",
+      " M ../docs/learning/README.md",
+      " M ../docs/learning/templates/phase-gate-review-template.md",
+      " M ../docs/learning/templates/phase-learning-pass-workflow.md",
+      "?? ../docs/v2/"
+    ]
+  },
+  "runtime_confirmed": {
+    "MAX_CHUNK_SIZE": 800,
+    "CHUNK_OVERLAP": 120,
+    "DEFAULT_TOP_K": 5,
+    "MIN_RELEVANCE_SCORE": 0.3,
+    "MAX_UPLOAD_SIZE_MB": 50,
+    "EMBED_MODEL": "models/bge-small-zh-v1.5",
+    "UPLOAD_DIR": "uploads",
+    "CHROMA_PERSIST_DIR": "chroma_db"
+  },
+  "source_defaults": {
+    "MAX_CHUNK_SIZE": 800,
+    "CHUNK_OVERLAP": 120,
+    "DEFAULT_TOP_K": 5,
+    "MIN_RELEVANCE_SCORE": 0.3,
+    "MAX_UPLOAD_SIZE_MB": 50,
+    "EMBED_MODEL": "models/bge-small-zh-v1.5",
+    "UPLOAD_DIR": "uploads",
+    "CHROMA_PERSIST_DIR": "chroma_db"
+  },
+  "path_base": "backend/ (all configuration paths are relative to this directory)",
+  "embedding_runtime": {
+    "class": "SentenceTransformer",
+    "dimension": 512,
+    "max_seq_length": 512
+  },
+  "packages": {
+    "fastapi": "0.141.1",
+    "httpx": "0.28.1",
+    "chromadb": "1.5.9",
+    "sentence-transformers": "6.0.1",
+    "langchain-text-splitters": "1.1.2",
+    "torch": "2.14.0",
+    "transformers": "5.16.1"
+  },
+  "python": "3.14.6",
+  "sources": [
+    {
+      "file_name": "employee_handbook.md",
+      "repository_path": "docs/v2/evaluation/pilot-corpus/employee_handbook.md",
+      "sha256": "4aeb39679a4714f4289aa3ffab1a9324616b0396ea01693faf01ca6d803a5057",
+      "bytes": 5279
+    },
+    {
+      "file_name": "travel_policy.md",
+      "repository_path": "docs/v2/evaluation/pilot-corpus/travel_policy.md",
+      "sha256": "a418e9bb9141beb2d7b426f4ee6ed07e8f2843488e6e8ce9b1dc6a9da7aad81f",
+      "bytes": 5210
+    },
+    {
+      "file_name": "expense_policy.md",
+      "repository_path": "docs/v2/evaluation/pilot-corpus/expense_policy.md",
+      "sha256": "ab8061b1b369ce9148770dc239bc138f4629af46069c7efe7ab96fb5a8465de4",
+      "bytes": 6215
+    },
+    {
+      "file_name": "it_security_policy.md",
+      "repository_path": "docs/v2/evaluation/pilot-corpus/it_security_policy.md",
+      "sha256": "74bd596f2909db288d9ac6d857e702fde0e0757fa73dcba62ddf6a5ce3c6761b",
+      "bytes": 5799
+    }
+  ],
+  "implementation_sha256": {
+    "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend/app/api/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend/app/api/collections.py": "11b42c546e0b71e98a97f7d3bbf3714b30ca7ffd29e0bb874532f15345211193",
+    "backend/app/api/files.py": "b9633634dc0b4dc748a06797b0cf731b387c4758f495b808cc2f9eb307c66800",
+    "backend/app/api/query.py": "bfc959c2c93f9d09acedabd1662942d71616d1be31a154807b2b88de2bca0356",
+    "backend/app/api/router.py": "08e047a0c1e9dcf464a4c49181f1590adc26098fcc0cda2e48b6296ed7e678ee",
+    "backend/app/api/upload.py": "273716e6191fd820167f50ae91c27fea8367af6edc382e7323919d4e95e1c952",
+    "backend/app/core/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend/app/core/config.py": "16bb23a907f1d6c9f48dd5d689b19d35fa96a490619ff1dbc302ee50ff63b32b",
+    "backend/app/core/errors.py": "f56ef17aa4f5cedf12d9ad8f42c0db79aecdad3149b9d2ed4750b5ac117f32bd",
+    "backend/app/core/vector_store.py": "c3c798a219e324911bfb9d3b02ce7427834066fb9a5677d8a28009d598c5adad",
+    "backend/app/main.py": "531b9ce43fe43bfe23d481180fc219dadf5f208a130d1bd2c2fc02e7d817be83",
+    "backend/app/models/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend/app/models/schemas.py": "c3d720ff2e4e70150bdf42a03ed1b85dd2abb84875ca1359244816536d137edd",
+    "backend/app/services/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend/app/services/embedding.py": "decf161aa7c6a2fab87581aefd45bc16ea5c8626a8eaf4f23e5ccb151d69319c",
+    "backend/app/services/ingest.py": "50cffaff449866c166fa80717124237e2a64506cfe887a6ebd315389ae3b9666",
+    "backend/app/services/keyword_index.py": "dfbb69a0c4b9ef2c1155e2b575f2cafb87c254ba3bff188683a68646b1ee812b",
+    "backend/app/services/qa.py": "1b09bd00b11730894cac11271da7242c3532e59522d3150649c6aca62ed8e57f"
+  },
+  "model_files_sha256": {
+    ".cache/huggingface/.gitignore": "684888c0ebb17f374298b65ee2807526c066094c701bcc7ebbe1c1095f494fc1",
+    ".cache/huggingface/CACHEDIR.TAG": "e8893e2dcb3f4545ef67a0a5b7b769113d38eef1aa61c7c7ba14659b02af955f",
+    ".cache/huggingface/download/.gitattributes.metadata": "b6734d58a8c2735b47fddc5658d3439ee7ce1574470f523d5991ad962a7fa51b",
+    ".cache/huggingface/download/1_Pooling/config.json.metadata": "d963d66df04c689260d0eef8c75477eee080118bd08b3241d0d8f9ba642c6112",
+    ".cache/huggingface/download/config.json.metadata": "1c616713024fc988c63d353b3ccd9455710f20734f825b5f7e442c4482375676",
+    ".cache/huggingface/download/config_sentence_transformers.json.metadata": "ccd142f7bed256f16fa06e9316f8a54674aea388937053a36fb2d3765597789d",
+    ".cache/huggingface/download/model.safetensors.metadata": "930fdc61b91ab4adb888c3ecd343e35d9e694f8a420ed2709c6980a55bc75505",
+    ".cache/huggingface/download/modules.json.metadata": "722821d6288965964cb482550703097c4ebf817e731c63d1bc189b7f2ba43d01",
+    ".cache/huggingface/download/pytorch_model.bin.metadata": "c24d795481160d1c09a15980119471e671a6a1621f36810388dc24e9ce9d985d",
+    ".cache/huggingface/download/README.md.metadata": "af3d53139b9c8c99c7600d94f8b718ace2f40807c67c373543231f772867b2d5",
+    ".cache/huggingface/download/sentence_bert_config.json.metadata": "3464c7dc2a4dbf2f400eec318be64c45a81e1b4c60633bcd86ee9a132dbccd1a",
+    ".cache/huggingface/download/special_tokens_map.json.metadata": "4828561575711f79d7ee996236d125efbb14c7b6c3b31ded04a9446b6251bf93",
+    ".cache/huggingface/download/tokenizer.json.metadata": "16e0fb4b5bbc9acc6b67625ae69bf260f4b7de0fa3d940fc324b76057ffc4221",
+    ".cache/huggingface/download/tokenizer_config.json.metadata": "a2084ac285c84fbf9778e1f8c161881f7f728a5549b9ebc475079badf40fc30a",
+    ".cache/huggingface/download/vocab.txt.metadata": "0c5ffb04650572e309c061434fa4dc6f9a388d2ec5beefc82f86f7089b8d7965",
+    ".cache/huggingface/trees/7999e1d3359715c523056ef9478215996d62a620.json": "2346229ecde3983842cb8e070285e8aae7d6680819af7d7aa17e56bc0f48cbc9",
+    ".gitattributes": "11ad7efa24975ee4b0c3c3a38ed18737f0658a5f75a0a96787b576a78a023361",
+    "1_Pooling/config.json": "aaa8861589f80c961a03cc86c7eeaef7605c1676b9ab55329d33a304738769c6",
+    "config.json": "3853a7979202c348751b753e36f579c41d8da7d36af617d3d907e1fc9b441f2a",
+    "config_sentence_transformers.json": "940d5f50db195fa6e5e6a4f122c095f77880de259d74b14a65779ed48bdd7c56",
+    "model.safetensors": "354763b9b1357bc9c44f62c6be2276321081ed2567773608c0d0785b61d5a026",
+    "modules.json": "84e40c8e006c9b1d6c122e02cba9b02458120b5fb0c87b746c41e0207cf642cf",
+    "pytorch_model.bin": "7c5fe667bbed05dc10e246e229b701ad266fe4d95ab946e9e5aa402056611b88",
+    "README.md": "c48a4eeea77f6b1d38b48ec1c5b8d4f86d5550cc43fa345a0db1b2ca1d082369",
+    "sentence_bert_config.json": "84e39fda68ccbff05bfa723ae9c0e70e23e2ec373b76e0f8c6e71af72a693cbf",
+    "special_tokens_map.json": "b6d346be366a7d1d48332dbc9fdf3bf8960b5d879522b7799ddba59e76237ee3",
+    "tokenizer.json": "48cea5d44424912a6fd1ea647bf4fe50b55ab8b1e5879c3275f80e339e8fae26",
+    "tokenizer_config.json": "e6f3b96db926a37d4039995fbf5ad17de158dfb8f6343d607e4dbaad18d75f5a",
+    "vocab.txt": "45bbac6b341c319adc98a532532882e91a9cefc0329aa57bac9ae761c27b291c"
+  },
+  "upload_responses": [
+    {
+      "http_status": 200,
+      "status": "SUCCESS",
+      "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+      "file_name": "employee_handbook.md",
+      "chunks": 10,
+      "collection_name": "t2001-novatech-pilot-01",
+      "warnings": []
+    },
+    {
+      "http_status": 200,
+      "status": "SUCCESS",
+      "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1",
+      "file_name": "travel_policy.md",
+      "chunks": 9,
+      "collection_name": "t2001-novatech-pilot-01",
+      "warnings": []
+    },
+    {
+      "http_status": 200,
+      "status": "SUCCESS",
+      "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+      "file_name": "expense_policy.md",
+      "chunks": 9,
+      "collection_name": "t2001-novatech-pilot-01",
+      "warnings": []
+    },
+    {
+      "http_status": 200,
+      "status": "SUCCESS",
+      "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+      "file_name": "it_security_policy.md",
+      "chunks": 10,
+      "collection_name": "t2001-novatech-pilot-01",
+      "warnings": []
+    }
+  ],
+  "status": "VERIFIED",
+  "collection_create_http_status": 201,
+  "chunks": [
+    {
+      "chunk_id": "5ce01f7c-a91d-48e6-a10b-0086bc62f552",
+      "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+      "file_name": "employee_handbook.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 0,
+      "content": "NovaTech（诺瓦科技）员工手册\n\n> 本文是 DX-RAG 项目原创、可公开分发的合成评估材料。NovaTech（诺瓦科技）为虚构组织，以下内容不代表真实公司的政策。",
+      "metadata": {
+        "upload_time": "2026-09-09T13:06:23.474500+00:00",
+        "chunk_index": 0,
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_size": 5279,
+        "source_file": "uploads/t2001-novatech-pilot-01/employee_handbook.md",
+        "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+        "ingestion_status": "SUCCESS",
+        "file_name": "employee_handbook.md",
+        "chunk_id": "5ce01f7c-a91d-48e6-a10b-0086bc62f552"
+      }
+    },
+    {
+      "chunk_id": "2392bb84-3ae9-452b-b044-1a538b99e939",
+      "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+      "file_name": "employee_handbook.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 1,
+      "content": "NovaTech（诺瓦科技）员工手册 > 适用范围与服务渠道\n\n本手册介绍员工日常工作安排和共同责任。人力资源部负责考勤、假期和福利咨询，部门负责人协调人员安排；具体费用由财务部按费用制度审核，账号和设备问题由 IT 服务台处理。员工应在入职时阅读手册，联系方式变更后及时更新人事资料。",
+      "metadata": {
+        "file_size": 5279,
+        "file_name": "employee_handbook.md",
+        "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+        "ingestion_status": "SUCCESS",
+        "chunk_id": "2392bb84-3ae9-452b-b044-1a538b99e939",
+        "chunk_index": 1,
+        "upload_time": "2026-09-09T13:06:23.474500+00:00",
+        "collection_name": "t2001-novatech-pilot-01",
+        "source_file": "uploads/t2001-novatech-pilot-01/employee_handbook.md"
+      }
+    },
+    {
+      "chunk_id": "392ae2da-31b8-4baa-b7dc-03020e492488",
+      "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+      "file_name": "employee_handbook.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 2,
+      "content": "NovaTech（诺瓦科技）员工手册 > 工作时间与考勤\n\n公司通常每周一至周五工作，每日工作八小时。员工可在上午九点至十点之间到岗，午休一小时，下班时间按实际到岗时间顺延。团队需要共同协作的时间为上午十点至十二点、下午两点至五点，客户现场服务另按事先确认的排班执行。\n需要临时离岗、调整班次或因交通中断无法按时到岗时，应尽快告知直属负责人。考勤漏记可在三个工作日内提交说明，由负责人核实。延长工作时间应提前确认业务原因及安排，不以在线状态代替工作记录，也不鼓励未经安排的长期加班。",
+      "metadata": {
+        "source_file": "uploads/t2001-novatech-pilot-01/employee_handbook.md",
+        "chunk_index": 2,
+        "file_size": 5279,
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_name": "employee_handbook.md",
+        "upload_time": "2026-09-09T13:06:23.474500+00:00",
+        "ingestion_status": "SUCCESS",
+        "chunk_id": "392ae2da-31b8-4baa-b7dc-03020e492488",
+        "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7"
+      }
+    },
+    {
+      "chunk_id": "299c5bed-e316-4cd2-89cd-49670607f802",
+      "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+      "file_name": "employee_handbook.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 3,
+      "content": "NovaTech（诺瓦科技）员工手册 > 试用期与岗位支持\n\n试用期按员工签署的劳动合同约定执行。入职首周由负责人说明岗位目标并指定带教同事，人力资源部安排制度和安全培训。试用期间每月进行一次反馈，围绕工作成果、协作和所需支持沟通，不以单次失误代替整体评价。\n转正评估前，员工与负责人共同整理阶段成果和后续发展计划。如岗位要求发生变化，应及时沟通目标，而不是在评估时临时增加此前未说明的考核项目。",
+      "metadata": {
+        "file_size": 5279,
+        "upload_time": "2026-09-09T13:06:23.474500+00:00",
+        "ingestion_status": "SUCCESS",
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_name": "employee_handbook.md",
+        "chunk_index": 3,
+        "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+        "chunk_id": "299c5bed-e316-4cd2-89cd-49670607f802",
+        "source_file": "uploads/t2001-novatech-pilot-01/employee_handbook.md"
+      }
+    },
+    {
+      "chunk_id": "193a39de-16cc-456f-85b8-74e801991e28",
+      "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+      "file_name": "employee_handbook.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 4,
+      "content": "NovaTech（诺瓦科技）员工手册 > 年假与病假\n\n年度带薪假期额度由人力资源部依据适用规定、员工履历和公司福利安排核定，并在员工系统中公布。通常连续请假三天以内提前三个工作日申请，超过三天提前十个工作日申请。负责人应结合项目交接安排休假，不要求员工在休假期间持续在线。\n突发疾病无法工作时，应在能够联系的情况下及时告知负责人，并在返岗后三个工作日内补办病假记录；连续病假超过两天时提供就诊或休养证明。医疗材料只提交人力资源部，不应在团队群里传播。紧急情况可以先报告、后补手续，考勤记录由人力资源部协助更正。",
+      "metadata": {
+        "source_file": "uploads/t2001-novatech-pilot-01/employee_handbook.md",
+        "file_name": "employee_handbook.md",
+        "collection_name": "t2001-novatech-pilot-01",
+        "chunk_id": "193a39de-16cc-456f-85b8-74e801991e28",
+        "file_size": 5279,
+        "chunk_index": 4,
+        "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+        "upload_time": "2026-09-09T13:06:23.474500+00:00",
+        "ingestion_status": "SUCCESS"
+      }
+    },
+    {
+      "chunk_id": "992fccef-928e-4c84-9233-3f45b900a0ad",
+      "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+      "file_name": "employee_handbook.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 5,
+      "content": "NovaTech（诺瓦科技）员工手册 > 远程办公\n\n完成试用期且岗位适合远程协作的员工，可以申请每周最多两天远程办公；负责人根据客户服务、现场工作和团队协作需要审批。常规申请在前一工作日下班前提交，临时照护或交通异常可以单独说明。远程办公不是休假，员工应保持约定协作时段可联系，并做好任务交接。\n远程办公原则上使用公司设备。接入内部系统、文件共享和信息保护须遵守 [信息安全制度](it_security_policy.md)。员工不得因为获得远程办公批准，就将内部资料复制到个人网盘或借用他人设备处理。",
+      "metadata": {
+        "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+        "ingestion_status": "SUCCESS",
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_size": 5279,
+        "chunk_id": "992fccef-928e-4c84-9233-3f45b900a0ad",
+        "file_name": "employee_handbook.md",
+        "chunk_index": 5,
+        "upload_time": "2026-09-09T13:06:23.474500+00:00",
+        "source_file": "uploads/t2001-novatech-pilot-01/employee_handbook.md"
+      }
+    },
+    {
+      "chunk_id": "ca1a91b1-f45e-4527-9857-277ec4304ed9",
+      "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+      "file_name": "employee_handbook.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 6,
+      "content": "NovaTech（诺瓦科技）员工手册 > 培训与职业发展\n\n公司为新员工安排入职培训，为在岗员工提供内部分享和岗位技能学习机会。部门负责人在季度沟通中讨论能力发展需求，内部培训通常在工作时间内进行，参与人员应提前协调手头任务。\n参加收费的外部课程，应先提交课程内容、业务关联、时间和费用预算，由负责人及人力资源部确认。获批参加课程不等于所有附带开支都可报销；课程费、交通与住宿的具体要求见 [费用报销制度](expense_policy.md)。外出参训还需完成行程和工作交接登记，但不因此自动套用普通差旅住宿标准。",
+      "metadata": {
+        "upload_time": "2026-09-09T13:06:23.474500+00:00",
+        "file_name": "employee_handbook.md",
+        "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+        "chunk_id": "ca1a91b1-f45e-4527-9857-277ec4304ed9",
+        "chunk_index": 6,
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_size": 5279,
+        "source_file": "uploads/t2001-novatech-pilot-01/employee_handbook.md",
+        "ingestion_status": "SUCCESS"
+      }
+    },
+    {
+      "chunk_id": "9adc2e17-14ed-407a-8d70-aaa61e65ca6c",
+      "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+      "file_name": "employee_handbook.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 7,
+      "content": "NovaTech（诺瓦科技）员工手册 > 员工福利\n\n公司提供年度健康检查、工作日办公区茶水及员工关怀活动。健康检查由人力资源部统一预约；员工自行选择额外检查项目时，应先确认是否属于公司承担范围。部门团建需在部门预算内安排，不以个人垫付代替活动审批。\n福利名额或活动日期发生调整时，人力资源部通过员工公告说明。员工应只提交办理福利必要的信息，体检报告等个人敏感材料不作为部门活动报名附件。",
+      "metadata": {
+        "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+        "source_file": "uploads/t2001-novatech-pilot-01/employee_handbook.md",
+        "file_size": 5279,
+        "file_name": "employee_handbook.md",
+        "upload_time": "2026-09-09T13:06:23.474500+00:00",
+        "collection_name": "t2001-novatech-pilot-01",
+        "chunk_id": "9adc2e17-14ed-407a-8d70-aaa61e65ca6c",
+        "chunk_index": 7,
+        "ingestion_status": "SUCCESS"
+      }
+    },
+    {
+      "chunk_id": "424e7665-108d-45da-b26f-6687c39c0834",
+      "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+      "file_name": "employee_handbook.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 8,
+      "content": "NovaTech（诺瓦科技）员工手册 > 出差与费用责任\n\n员工外出前应说明业务目的、地点、时间及预计费用，按 [差旅管理制度](travel_policy.md) 取得批准。出行中保留与业务相关的订单、票据和变更记录，返回后按 [费用报销制度](expense_policy.md) 办理结算。负责人负责业务真实性，财务部负责票据与标准核验；批准出差不等于豁免费用限额。",
+      "metadata": {
+        "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+        "chunk_id": "424e7665-108d-45da-b26f-6687c39c0834",
+        "ingestion_status": "SUCCESS",
+        "upload_time": "2026-09-09T13:06:23.474500+00:00",
+        "chunk_index": 8,
+        "file_name": "employee_handbook.md",
+        "collection_name": "t2001-novatech-pilot-01",
+        "source_file": "uploads/t2001-novatech-pilot-01/employee_handbook.md",
+        "file_size": 5279
+      }
+    },
+    {
+      "chunk_id": "b7ad1041-2858-4162-b4cc-7b40961751c8",
+      "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+      "file_name": "employee_handbook.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 9,
+      "content": "NovaTech（诺瓦科技）员工手册 > 信息保护与离职交接\n\n员工对工作中接触的客户、产品和人员信息承担保密责任。离开工位应锁屏，发现可疑邮件、设备遗失或账号异常应及时联系 IT 服务台，不自行删除线索。具体处置与外部共享要求见 [信息安全制度](it_security_policy.md)。\n岗位调整或离职时，应将项目文件交回团队指定空间，归还公司设备和门禁介质，并与负责人、人力资源部和 IT 完成交接。不得通过交出个人密码完成账号交接，也不得将客户资料留作私人备份。",
+      "metadata": {
+        "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+        "file_size": 5279,
+        "collection_name": "t2001-novatech-pilot-01",
+        "chunk_id": "b7ad1041-2858-4162-b4cc-7b40961751c8",
+        "upload_time": "2026-09-09T13:06:23.474500+00:00",
+        "ingestion_status": "SUCCESS",
+        "chunk_index": 9,
+        "source_file": "uploads/t2001-novatech-pilot-01/employee_handbook.md",
+        "file_name": "employee_handbook.md"
+      }
+    },
+    {
+      "chunk_id": "ea76f783-595b-4535-89ae-748258020c85",
+      "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+      "file_name": "expense_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 0,
+      "content": "NovaTech（诺瓦科技）费用报销制度\n\n> 本文是 DX-RAG 项目原创、可公开分发的合成评估材料。NovaTech（诺瓦科技）为虚构组织，以下内容不代表真实公司的政策。",
+      "metadata": {
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_name": "expense_policy.md",
+        "source_file": "uploads/t2001-novatech-pilot-01/expense_policy.md",
+        "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+        "ingestion_status": "SUCCESS",
+        "chunk_index": 0,
+        "chunk_id": "ea76f783-595b-4535-89ae-748258020c85",
+        "file_size": 6215,
+        "upload_time": "2026-09-09T13:06:27.076028+00:00"
+      }
+    },
+    {
+      "chunk_id": "605740ab-0d52-4655-81db-b9bcb008f6ed",
+      "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+      "file_name": "expense_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 1,
+      "content": "NovaTech（诺瓦科技）费用报销制度 > 费用原则与提交期限\n\n可报销费用应与公司业务直接相关、实际发生，并具备必要批准和有效凭证。员工应优先使用公司采购或统一预订渠道，确需垫付时说明用途，不将未经批准的个人消费转作公司支出。\n普通零星费用应在发生后十五个工作日内提交；普通差旅及外部培训行程的费用，应在行程结束后十个工作日内集中提交。跨月费用仍按对应期限办理。因商家补票等客观原因延迟，应在期限内向财务登记待补材料和预计补交时间，不能无说明长期积压。",
+      "metadata": {
+        "chunk_index": 1,
+        "ingestion_status": "SUCCESS",
+        "source_file": "uploads/t2001-novatech-pilot-01/expense_policy.md",
+        "upload_time": "2026-09-09T13:06:27.076028+00:00",
+        "chunk_id": "605740ab-0d52-4655-81db-b9bcb008f6ed",
+        "file_name": "expense_policy.md",
+        "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_size": 6215
+      }
+    },
+    {
+      "chunk_id": "e3075f5f-eb85-4faf-9c1e-c560dfdcfb45",
+      "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+      "file_name": "expense_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 2,
+      "content": "NovaTech（诺瓦科技）费用报销制度 > 发票与证明材料\n\n境内采购和消费应取得抬头及识别信息正确的有效发票，电子发票直接提交原始电子文件。仅有付款截图不能替代发票；同时提供订单、支付记录或明细，以说明实际购买内容。发票信息错误时应联系开票方更正，不得自行修改文件内容。\n确实无法取得境内发票的境外费用，可提交当地收据、支付凭证及业务说明，由财务按专项预算核验。外币金额需注明币种和交易日期，使用实际结算记录确认人民币成本。遗失票据应如实说明并申请补开，不得借用他人发票抵补。",
+      "metadata": {
+        "source_file": "uploads/t2001-novatech-pilot-01/expense_policy.md",
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+        "file_name": "expense_policy.md",
+        "file_size": 6215,
+        "ingestion_status": "SUCCESS",
+        "chunk_id": "e3075f5f-eb85-4faf-9c1e-c560dfdcfb45",
+        "upload_time": "2026-09-09T13:06:27.076028+00:00",
+        "chunk_index": 2
+      }
+    },
+    {
+      "chunk_id": "c59ef50b-ba8a-4ab0-8bc2-2bcb350c3bbf",
+      "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+      "file_name": "expense_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 3,
+      "content": "NovaTech（诺瓦科技）费用报销制度 > 审批与结算\n\n申请人填写费用类别、业务事项、项目或部门归属，并关联事前批准。直属负责人确认业务真实性，预算负责人核验额度，财务检查票据、标准和重复申报。材料不完整时退回补充，不将退回修改视为最终拒付。\n财务审核通过后纳入下一次付款安排，每周三集中支付；遇非工作日顺延。员工垫付返还至本人登记账户。对审核意见有异议时，可补充业务材料请求复核，不通过拆分报销单绕过审批。",
+      "metadata": {
+        "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+        "source_file": "uploads/t2001-novatech-pilot-01/expense_policy.md",
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_name": "expense_policy.md",
+        "file_size": 6215,
+        "ingestion_status": "SUCCESS",
+        "chunk_index": 3,
+        "upload_time": "2026-09-09T13:06:27.076028+00:00",
+        "chunk_id": "c59ef50b-ba8a-4ab0-8bc2-2bcb350c3bbf"
+      }
+    },
+    {
+      "chunk_id": "ff9dca7a-cc8b-41d6-a0ae-ed591b1d252f",
+      "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+      "file_name": "expense_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 4,
+      "content": "NovaTech（诺瓦科技）费用报销制度 > 员工垫付与公司卡\n\n员工垫付前应确认项目预算；大额采购宜由采购部门统一下单，不要求员工长期承担公司资金周转。需预借差旅款的，提交获批预算并在行程结算时核销，多余款项退回公司。\n使用公司卡同样需要业务批准、发票及消费明细。公司卡已支付的金额不再向员工个人返款，但必须提交费用归属并完成对账。一次消费不得既申报员工垫付又登记公司卡报销。退款、折扣和商家返还金额均应在账目中如实冲减。",
+      "metadata": {
+        "file_size": 6215,
+        "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+        "chunk_id": "ff9dca7a-cc8b-41d6-a0ae-ed591b1d252f",
+        "collection_name": "t2001-novatech-pilot-01",
+        "upload_time": "2026-09-09T13:06:27.076028+00:00",
+        "source_file": "uploads/t2001-novatech-pilot-01/expense_policy.md",
+        "file_name": "expense_policy.md",
+        "chunk_index": 4,
+        "ingestion_status": "SUCCESS"
+      }
+    },
+    {
+      "chunk_id": "8d63e548-66a8-41c7-83f3-778a0b66c9d5",
+      "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+      "file_name": "expense_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 5,
+      "content": "NovaTech（诺瓦科技）费用报销制度 > 普通差旅费用\n\n普通商务出差的交通、住宿和餐费补助按 [差旅管理制度](travel_policy.md) 审核。报销时附差旅申请、实际行程及住宿明细；交通、住宿等实报实销项目在限额内按实际金额结算。餐费补助按差旅制度规定的日标准及扣减规则计算，无需逐餐提交个人餐饮发票。未经批准的私人延住、观光和同行亲友费用不属于公务支出。",
+      "metadata": {
+        "upload_time": "2026-09-09T13:06:27.076028+00:00",
+        "file_name": "expense_policy.md",
+        "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_size": 6215,
+        "ingestion_status": "SUCCESS",
+        "chunk_id": "8d63e548-66a8-41c7-83f3-778a0b66c9d5",
+        "chunk_index": 5,
+        "source_file": "uploads/t2001-novatech-pilot-01/expense_policy.md"
+      }
+    },
+    {
+      "chunk_id": "baf22e41-98da-4746-9765-55e7e437a3a0",
+      "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+      "file_name": "expense_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 6,
+      "content": "NovaTech（诺瓦科技）费用报销制度 > 业务招待\n\n客户或合作方招待应在发生前说明业务目的、参加人数及预算，由直属负责人和预算负责人批准。餐饮招待通常每人每次不超过人民币 200 元；预计超过该标准时，须另获财务负责人特别批准。\n报销时提供实际人数、业务事项及消费明细，避免记录不必要的客户个人信息。同一餐由公司承担招待费用后，参加该餐的出差员工应按差旅制度扣减个人餐费补助。与业务无关的聚餐、私人礼物以及违反公司廉洁要求的支出不予报销。",
+      "metadata": {
+        "file_size": 6215,
+        "upload_time": "2026-09-09T13:06:27.076028+00:00",
+        "chunk_id": "baf22e41-98da-4746-9765-55e7e437a3a0",
+        "file_name": "expense_policy.md",
+        "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+        "ingestion_status": "SUCCESS",
+        "source_file": "uploads/t2001-novatech-pilot-01/expense_policy.md",
+        "collection_name": "t2001-novatech-pilot-01",
+        "chunk_index": 6
+      }
+    },
+    {
+      "chunk_id": "7b2fbf99-8274-4610-ac08-3c3e7259ad09",
+      "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+      "file_name": "expense_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 7,
+      "content": "NovaTech（诺瓦科技）费用报销制度 > 获批外部培训费用\n\n收费的外部培训须先由直属负责人和人力资源部确认课程及参加资格，再由预算负责人批准费用。课程费按获批课程报价和实际支付额核销，交通费用按培训预算及有效票据报销；培训报名获批不代表允许更换高价课程或无预算增加陪同人员。\n外部培训住宿按每间每晚人民币 350 元上限、凭票据实报实销，不发放定额住宿补贴。该标准适用于获批外部培训所需住宿，不区分境内一线城市与其他城市；不能引用普通商务出差的一线城市 500 元上限。主办方已包住宿或公司已统一支付时，不得再次申报个人住宿费。\n外部培训不自动发放普通差旅每日餐费补助。未含在课程中的必要餐费，应在培训预算中单列，经批准后按实际票据报销。课程安排要求境外住宿、指定酒店或确需超过培训住宿上限时，应在订房前由人力资源部说明必要性，取得预算负责人和财务负责人的特别批准；其标准以明确批准的培训预算为准，不套用普通境外商务差旅预算。\n培训与客户拜访合并出行时，应事先分开列明各阶段日期及住宿用途。住宿按该晚服务的获批业务目的核销；无法明确归属的，应在预订前请人力资源部、预算负责人及财务确认，不得自行选用更高上限，也不得重复申报。同一自然日兼有培训和客户拜访时，还须事先由上述人员确认当日按普通差旅餐补还是培训餐费预算结算，只能选择一种方式，不得就同一餐重复计领。",
+      "metadata": {
+        "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+        "ingestion_status": "SUCCESS",
+        "file_size": 6215,
+        "source_file": "uploads/t2001-novatech-pilot-01/expense_policy.md",
+        "chunk_id": "7b2fbf99-8274-4610-ac08-3c3e7259ad09",
+        "upload_time": "2026-09-09T13:06:27.076028+00:00",
+        "collection_name": "t2001-novatech-pilot-01",
+        "chunk_index": 7,
+        "file_name": "expense_policy.md"
+      }
+    },
+    {
+      "chunk_id": "0a7b4a44-4ac1-49da-a973-6ee14d4792a8",
+      "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+      "file_name": "expense_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 8,
+      "content": "NovaTech（诺瓦科技）费用报销制度 > 超限、变更与不予报销事项\n\n超出已批准标准或预算的费用，应补充原因和特别批准记录。普通差旅住宿例外依差旅制度处理，外部培训例外依本制度培训条款处理；其他费用在发生前由预算负责人及财务负责人批准。拆分发票、分次提交或改写费用类别不能使超限费用自动合规。\n培训取消或行程变更取得退款时，应及时告知财务；业务原因产生的必要退改损失提供证明后审核，个人原因产生的损失由个人承担。报销完成后收到退款也必须退还公司或在后续结算中冲减。\n虚假票据、重复申报、私人消费、个人罚款和已由第三方承担的支出不予报销。财务需要核实时，员工应提供与业务相关的证明；提交资料须遵守 [信息安全制度](it_security_policy.md)，不得将发票、账户信息和客户材料公开分享。",
+      "metadata": {
+        "upload_time": "2026-09-09T13:06:27.076028+00:00",
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_size": 6215,
+        "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+        "chunk_id": "0a7b4a44-4ac1-49da-a973-6ee14d4792a8",
+        "file_name": "expense_policy.md",
+        "source_file": "uploads/t2001-novatech-pilot-01/expense_policy.md",
+        "ingestion_status": "SUCCESS",
+        "chunk_index": 8
+      }
+    },
+    {
+      "chunk_id": "03cecd2d-125a-4454-80b3-19bb40296df2",
+      "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+      "file_name": "it_security_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 0,
+      "content": "NovaTech（诺瓦科技）信息安全制度\n\n> 本文是 DX-RAG 项目原创、可公开分发的合成评估材料。NovaTech（诺瓦科技）为虚构组织，以下内容不代表真实公司的政策。",
+      "metadata": {
+        "chunk_id": "03cecd2d-125a-4454-80b3-19bb40296df2",
+        "file_name": "it_security_policy.md",
+        "source_file": "uploads/t2001-novatech-pilot-01/it_security_policy.md",
+        "ingestion_status": "SUCCESS",
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+        "upload_time": "2026-09-09T13:06:28.878648+00:00",
+        "chunk_index": 0,
+        "file_size": 5799
+      }
+    },
+    {
+      "chunk_id": "176b8225-18b7-479d-b02b-aa3d0be7f724",
+      "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+      "file_name": "it_security_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 1,
+      "content": "NovaTech（诺瓦科技）信息安全制度 > 账号、密码与 MFA\n\n员工使用本人公司账号开展工作，不得共享账号、代收验证码或借用同事权限。密码至少十四位，应避免姓名、生日和连续数字，不得与个人网站密码重复。公司提供密码管理工具保存工作凭据；不得把密码写入共享文档、聊天记录或源代码。\n公司邮箱、VPN 及远程访问系统必须启用多因素认证（MFA）。员工应只确认由本人发起的登录请求；收到意外推送时拒绝批准并联系 IT 服务台。手机更换或认证设备遗失，应通过身份核验恢复访问，不通过关闭 MFA 作为日常替代方案。",
+      "metadata": {
+        "file_size": 5799,
+        "upload_time": "2026-09-09T13:06:28.878648+00:00",
+        "ingestion_status": "SUCCESS",
+        "file_name": "it_security_policy.md",
+        "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+        "chunk_id": "176b8225-18b7-479d-b02b-aa3d0be7f724",
+        "source_file": "uploads/t2001-novatech-pilot-01/it_security_policy.md",
+        "collection_name": "t2001-novatech-pilot-01",
+        "chunk_index": 1
+      }
+    },
+    {
+      "chunk_id": "8bc6437d-8da4-43c0-8ad6-9d04b1bee39f",
+      "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+      "file_name": "it_security_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 2,
+      "content": "NovaTech（诺瓦科技）信息安全制度 > 网络接入与 VPN\n\n通过公共或不可信网络访问公司内部系统，必须先连接公司 VPN，并使用 MFA 完成认证。酒店、机场和咖啡馆网络属于此类环境；家庭网络未纳入公司受管网络，也按不可信网络处理。连接 VPN 不意味着可以忽略设备更新、屏幕遮挡和文件权限。\n在受管办公网络中，员工按已有授权访问内部系统；不能因为处于办公室就借用他人账号。VPN 不可用时应联系 IT 服务台，必要时暂停内部系统操作，不使用个人代理、临时端口映射或未经批准的远程控制工具绕过限制。",
+      "metadata": {
+        "chunk_id": "8bc6437d-8da4-43c0-8ad6-9d04b1bee39f",
+        "chunk_index": 2,
+        "file_name": "it_security_policy.md",
+        "source_file": "uploads/t2001-novatech-pilot-01/it_security_policy.md",
+        "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+        "ingestion_status": "SUCCESS",
+        "file_size": 5799,
+        "collection_name": "t2001-novatech-pilot-01",
+        "upload_time": "2026-09-09T13:06:28.878648+00:00"
+      }
+    },
+    {
+      "chunk_id": "dbc829fc-563c-440d-af99-f9b1ccaffa5b",
+      "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+      "file_name": "it_security_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 3,
+      "content": "NovaTech（诺瓦科技）信息安全制度 > 公司设备与软件\n\n工作原则上使用公司配置的电脑和移动设备，保持磁盘加密、终端防护及自动锁屏开启。离开工位立即锁屏，系统空闲五分钟后自动锁定。员工不得自行关闭安全软件、使用未经批准的管理员权限或安装来源不明的插件。\nIT 推送的关键安全更新应在两个工作日内完成。确因现场业务无法按期更新时，提前联系 IT 确认临时保护措施和补装时间。设备故障、遗失或被盗应尽快报告设备编号及最后使用情况，不私自送交不明维修点处理含公司数据的设备。",
+      "metadata": {
+        "ingestion_status": "SUCCESS",
+        "chunk_id": "dbc829fc-563c-440d-af99-f9b1ccaffa5b",
+        "chunk_index": 3,
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_size": 5799,
+        "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+        "source_file": "uploads/t2001-novatech-pilot-01/it_security_policy.md",
+        "file_name": "it_security_policy.md",
+        "upload_time": "2026-09-09T13:06:28.878648+00:00"
+      }
+    },
+    {
+      "chunk_id": "6f911609-ca55-4da1-a326-60c2dd8d9dfa",
+      "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+      "file_name": "it_security_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 4,
+      "content": "NovaTech（诺瓦科技）信息安全制度 > 数据分类与处理\n\n公司信息按公开、内部、保密三个等级管理。已正式发布的产品介绍可作为公开资料；未公开的内部流程和会议安排属于内部信息；客户合同、产品源代码、账号凭据及员工个人资料属于保密信息。对分类不确定时先向资料负责人确认，不自行降低等级以方便发送。\n资料负责人决定访问范围，团队按最小必要权限开展协作。财务票据可能包含账户、行程和客户信息，人事假期材料可能包含医疗信息；即使文件标题看似普通，也应按实际内容分类，而不是仅按文件扩展名判断。",
+      "metadata": {
+        "file_size": 5799,
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+        "source_file": "uploads/t2001-novatech-pilot-01/it_security_policy.md",
+        "ingestion_status": "SUCCESS",
+        "chunk_index": 4,
+        "upload_time": "2026-09-09T13:06:28.878648+00:00",
+        "chunk_id": "6f911609-ca55-4da1-a326-60c2dd8d9dfa",
+        "file_name": "it_security_policy.md"
+      }
+    },
+    {
+      "chunk_id": "3554a997-36e8-4376-b16c-6b353976e167",
+      "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+      "file_name": "it_security_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 5,
+      "content": "NovaTech（诺瓦科技）信息安全制度 > 文件共享与外部协作\n\n内部协作使用公司批准的文档空间，按人员或工作组授权。对外共享内部资料，应先取得资料负责人批准，使用实名访问的受控链接并设置到期时间；保密资料对外提供还需安全负责人确认目的和保护措施。不得使用“任何人持链接可访问”的方式发送内部或保密文件。\n项目结束或协作人员退出后，资料负责人应及时撤销访问权限。禁止通过个人邮箱、个人网盘或未获批准的公共 AI 服务上传公司内部和保密信息。发送合同或报销材料前应核对收件人，移除与该次业务无关的附件。",
+      "metadata": {
+        "ingestion_status": "SUCCESS",
+        "source_file": "uploads/t2001-novatech-pilot-01/it_security_policy.md",
+        "file_size": 5799,
+        "chunk_index": 5,
+        "upload_time": "2026-09-09T13:06:28.878648+00:00",
+        "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+        "chunk_id": "3554a997-36e8-4376-b16c-6b353976e167",
+        "file_name": "it_security_policy.md",
+        "collection_name": "t2001-novatech-pilot-01"
+      }
+    },
+    {
+      "chunk_id": "02a3ade4-c272-4212-b5de-f512437f75a7",
+      "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+      "file_name": "it_security_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 6,
+      "content": "NovaTech（诺瓦科技）信息安全制度 > 可移动存储与打印\n\n默认不使用个人 U 盘或移动硬盘搬运工作文件。现场交付确需离线介质时，应向 IT 申请公司登记的加密介质，记录资料用途，交付完成后归还或按要求清除。未知来源的存储设备不得接入公司电脑。\n打印保密材料应选择受控打印设备，及时取走并核对份数；废弃副本投入保密销毁箱。出差期间不得把合同、设备或工作介质留在无人看管的公共区域。",
+      "metadata": {
+        "upload_time": "2026-09-09T13:06:28.878648+00:00",
+        "collection_name": "t2001-novatech-pilot-01",
+        "chunk_index": 6,
+        "file_size": 5799,
+        "file_name": "it_security_policy.md",
+        "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+        "source_file": "uploads/t2001-novatech-pilot-01/it_security_policy.md",
+        "chunk_id": "02a3ade4-c272-4212-b5de-f512437f75a7",
+        "ingestion_status": "SUCCESS"
+      }
+    },
+    {
+      "chunk_id": "f7017394-093c-4e03-98b4-2513089a96b2",
+      "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+      "file_name": "it_security_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 7,
+      "content": "NovaTech（诺瓦科技）信息安全制度 > 钓鱼邮件与可疑链接\n\n遇到要求紧急付款、修改收款账户或输入密码的邮件，应通过已知联系方式另行核实，不直接使用可疑邮件提供的电话号码。未知附件、二维码和登录页面在核实前不要打开或输入信息。客户或领导的显示姓名不能单独证明邮件可信。\n发现可疑邮件可通过公司邮件举报入口或 IT 服务台报告，保留原邮件，不在团队群中继续转发危险链接。已经点击或下载时也应如实说明，不因担心追责而延迟报告。",
+      "metadata": {
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_name": "it_security_policy.md",
+        "source_file": "uploads/t2001-novatech-pilot-01/it_security_policy.md",
+        "ingestion_status": "SUCCESS",
+        "chunk_index": 7,
+        "chunk_id": "f7017394-093c-4e03-98b4-2513089a96b2",
+        "file_size": 5799,
+        "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+        "upload_time": "2026-09-09T13:06:28.878648+00:00"
+      }
+    },
+    {
+      "chunk_id": "d111e21f-b2a6-461a-9cec-b7189635546f",
+      "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+      "file_name": "it_security_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 8,
+      "content": "NovaTech（诺瓦科技）信息安全制度 > 账号异常与安全事件\n\n发现非本人登录、意外 MFA 请求或疑似凭据泄露时，应立即通过可信渠道联系 IT 服务台。若怀疑当前设备感染恶意软件，先停止敏感操作并断开网络，使用另一台可信设备或电话报告。不要在疑似受控设备上反复输入新密码。\nIT 根据情况暂停账号会话、协助更换凭据并保存日志；员工提供发生时间和已进行的操作，不自行删除邮件、重装系统或清空记录。涉及客户资料时，由安全负责人协调通知范围，员工不私自向外发布事件细节。",
+      "metadata": {
+        "chunk_id": "d111e21f-b2a6-461a-9cec-b7189635546f",
+        "source_file": "uploads/t2001-novatech-pilot-01/it_security_policy.md",
+        "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+        "file_name": "it_security_policy.md",
+        "chunk_index": 8,
+        "upload_time": "2026-09-09T13:06:28.878648+00:00",
+        "file_size": 5799,
+        "collection_name": "t2001-novatech-pilot-01",
+        "ingestion_status": "SUCCESS"
+      }
+    },
+    {
+      "chunk_id": "6332122f-aa36-4c49-ac9a-f36d252171df",
+      "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+      "file_name": "it_security_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 9,
+      "content": "NovaTech（诺瓦科技）信息安全制度 > 远程办公、出差与离职\n\n远程办公申请按 [员工手册](employee_handbook.md) 办理，批准办公地点不等于批准使用个人设备或个人存储。出差连接酒店网络访问内部系统仍须使用公司 VPN；在公共场所应避免旁人看到屏幕或听到客户敏感信息。\n离职或岗位变动前，将工作成果移交至团队指定空间，由负责人核对权限和资料归属。公司设备、加密介质及认证设备交还 IT 登记，账号停用由人力资源部通知 IT 办理。不得以共享密码代替工作交接，设备数据清理由 IT 执行，员工不自行格式化后交还。",
+      "metadata": {
+        "file_name": "it_security_policy.md",
+        "upload_time": "2026-09-09T13:06:28.878648+00:00",
+        "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+        "ingestion_status": "SUCCESS",
+        "chunk_id": "6332122f-aa36-4c49-ac9a-f36d252171df",
+        "collection_name": "t2001-novatech-pilot-01",
+        "source_file": "uploads/t2001-novatech-pilot-01/it_security_policy.md",
+        "file_size": 5799,
+        "chunk_index": 9
+      }
+    },
+    {
+      "chunk_id": "72a1bf30-caec-42ee-ab67-31108e9d1e86",
+      "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1",
+      "file_name": "travel_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 0,
+      "content": "NovaTech（诺瓦科技）差旅管理制度\n\n> 本文是 DX-RAG 项目原创、可公开分发的合成评估材料。NovaTech（诺瓦科技）为虚构组织，以下内容不代表真实公司的政策。",
+      "metadata": {
+        "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1",
+        "upload_time": "2026-09-09T13:06:26.017705+00:00",
+        "source_file": "uploads/t2001-novatech-pilot-01/travel_policy.md",
+        "ingestion_status": "SUCCESS",
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_size": 5210,
+        "chunk_index": 0,
+        "chunk_id": "72a1bf30-caec-42ee-ab67-31108e9d1e86",
+        "file_name": "travel_policy.md"
+      }
+    },
+    {
+      "chunk_id": "14f54027-316e-4f40-b50d-022696ec4f77",
+      "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1",
+      "file_name": "travel_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 1,
+      "content": "NovaTech（诺瓦科技）差旅管理制度 > 适用范围与出行目的\n\n本制度适用于客户拜访、项目交付、供应商沟通等普通商务出差。员工应根据实际业务目的登记行程，不因出行地点相同就将不同活动合并申报。\n已获批准的外部培训，其课程费、交通、住宿和其他费用适用 [费用报销制度](expense_policy.md) 的外部培训条款，不适用本制度的普通差旅住宿限额和餐费补助。兼有培训与客户拜访的行程，应在申请中分别列明日期、住宿用途和预算；同一晚住宿不能按两个目的重复申报。",
+      "metadata": {
+        "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1",
+        "chunk_index": 1,
+        "collection_name": "t2001-novatech-pilot-01",
+        "source_file": "uploads/t2001-novatech-pilot-01/travel_policy.md",
+        "chunk_id": "14f54027-316e-4f40-b50d-022696ec4f77",
+        "file_name": "travel_policy.md",
+        "ingestion_status": "SUCCESS",
+        "upload_time": "2026-09-09T13:06:26.017705+00:00",
+        "file_size": 5210
+      }
+    },
+    {
+      "chunk_id": "330edce0-9b09-47ef-b371-9fa470b74dd0",
+      "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1",
+      "file_name": "travel_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 2,
+      "content": "NovaTech（诺瓦科技）差旅管理制度 > 差旅申请与审批\n\n境内普通出差原则上提前三个工作日提交申请，注明业务目标、客户或项目、城市、起止日期及费用预算，经直属负责人和预算负责人批准后再预订。申请人应确认现场接待安排，避免仅因交通优惠而提前购买不可退改的行程。\n紧急客户故障等无法提前办理的情况，可先通过公司沟通渠道取得负责人书面确认，并在下一个工作日补交申请。预计费用超出预算时，应说明增加原因并补充预算审批；差旅审批不替代 [费用报销制度](expense_policy.md) 要求的票据审核。",
+      "metadata": {
+        "source_file": "uploads/t2001-novatech-pilot-01/travel_policy.md",
+        "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1",
+        "chunk_id": "330edce0-9b09-47ef-b371-9fa470b74dd0",
+        "file_size": 5210,
+        "upload_time": "2026-09-09T13:06:26.017705+00:00",
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_name": "travel_policy.md",
+        "ingestion_status": "SUCCESS",
+        "chunk_index": 2
+      }
+    },
+    {
+      "chunk_id": "9c9bf530-eb9c-4aeb-8e0f-a634fc217662",
+      "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1",
+      "file_name": "travel_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 3,
+      "content": "NovaTech（诺瓦科技）差旅管理制度 > 城际交通\n\n境内出行优先选择能够合理到达的高铁二等座或飞机经济舱。选择航班时综合考虑出发时间、接驳成本和退改条件，不要求员工为节省少量票价搭乘影响正常休息的行程。无普通席位而确需升级时，应在购买前说明可选方案，由预算负责人批准。\n个人行程与公务行程衔接时，私人部分费用由员工承担。使用私家车开展公务应事先说明路线和用途，经批准后按可核验的业务里程和实际必要通行费用结算，不重复申报同一路段公共交通票据。",
+      "metadata": {
+        "upload_time": "2026-09-09T13:06:26.017705+00:00",
+        "chunk_id": "9c9bf530-eb9c-4aeb-8e0f-a634fc217662",
+        "source_file": "uploads/t2001-novatech-pilot-01/travel_policy.md",
+        "collection_name": "t2001-novatech-pilot-01",
+        "ingestion_status": "SUCCESS",
+        "chunk_index": 3,
+        "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1",
+        "file_size": 5210,
+        "file_name": "travel_policy.md"
+      }
+    },
+    {
+      "chunk_id": "e9289ccd-a3ca-4c8e-9f29-910dbd49018c",
+      "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1",
+      "file_name": "travel_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 4,
+      "content": "NovaTech（诺瓦科技）差旅管理制度 > 普通商务出差住宿\n\n境内普通商务出差，一线城市按每间每晚人民币 500 元为住宿报销上限，其他境内城市按每间每晚人民币 350 元为上限。本制度中的一线城市指北京、上海、广州和深圳。费用按实际发生额报销，上限不是固定发放的住宿补贴；自行免费住宿不领取住宿费。\n住宿限额包含房费及必须支付的服务费用，不包含私人消费。员工应选择安全、交通合理的住宿地点。连续住宿跨越不同业务目的时，订单及费用说明应能够区分每晚用途；外部培训住宿按培训费用条款核验，不能仅凭培训地点在一线城市申请普通商务出差的 500 元上限。",
+      "metadata": {
+        "upload_time": "2026-09-09T13:06:26.017705+00:00",
+        "source_file": "uploads/t2001-novatech-pilot-01/travel_policy.md",
+        "chunk_id": "e9289ccd-a3ca-4c8e-9f29-910dbd49018c",
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_name": "travel_policy.md",
+        "ingestion_status": "SUCCESS",
+        "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1",
+        "chunk_index": 4,
+        "file_size": 5210
+      }
+    },
+    {
+      "chunk_id": "d62a0153-11c5-434e-b15d-7b12ddb5d208",
+      "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1",
+      "file_name": "travel_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 5,
+      "content": "NovaTech（诺瓦科技）差旅管理制度 > 住宿超限与特别批准\n\n展会期间房源紧张、客户指定现场住宿或安全条件限制导致无法在标准内预订时，应保留可选酒店报价，说明超限原因、晚数和预计总额，在预订前取得预算负责人及财务负责人的特别批准。普通差旅申请获批不等于超限申请获批。\n途中发生突发取消、恶劣天气或安全事件，确需立即安排住宿的，应先保障人身安全，尽快报告负责人，并在两个工作日内补交情况和费用证明。未获特别批准的超限部分原则上由个人承担；财务审核时应能找到对应批准记录。",
+      "metadata": {
+        "file_size": 5210,
+        "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1",
+        "chunk_index": 5,
+        "upload_time": "2026-09-09T13:06:26.017705+00:00",
+        "file_name": "travel_policy.md",
+        "chunk_id": "d62a0153-11c5-434e-b15d-7b12ddb5d208",
+        "source_file": "uploads/t2001-novatech-pilot-01/travel_policy.md",
+        "collection_name": "t2001-novatech-pilot-01",
+        "ingestion_status": "SUCCESS"
+      }
+    },
+    {
+      "chunk_id": "de7f21a2-36a6-4ecf-ad67-5e201cae01b4",
+      "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1",
+      "file_name": "travel_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 6,
+      "content": "NovaTech（诺瓦科技）差旅管理制度 > 餐费补助与市内交通\n\n境内普通商务出差餐费补助为每人每天人民币 80 元，按批准的实际出差自然日计算。客户或会议主办方提供工作餐时，每餐扣减 30 元，当日补助最低为零；不得同时申报已由他方承担的同一餐费用。业务招待另按费用报销制度办理，不计作个人餐费。\n市内交通优先采用公共交通。携带设备、赶赴早晚班次或目的地公共交通不便时，可以选择合规出租车或网约车，保留行程与支付凭证并说明业务用途。私人游览、绕行接送亲友的路段不予报销。",
+      "metadata": {
+        "file_name": "travel_policy.md",
+        "source_file": "uploads/t2001-novatech-pilot-01/travel_policy.md",
+        "upload_time": "2026-09-09T13:06:26.017705+00:00",
+        "ingestion_status": "SUCCESS",
+        "chunk_id": "de7f21a2-36a6-4ecf-ad67-5e201cae01b4",
+        "collection_name": "t2001-novatech-pilot-01",
+        "chunk_index": 6,
+        "file_size": 5210,
+        "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1"
+      }
+    },
+    {
+      "chunk_id": "5a501652-d3dd-46bf-bba0-9a3ded2c093b",
+      "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1",
+      "file_name": "travel_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 7,
+      "content": "NovaTech（诺瓦科技）差旅管理制度 > 取消、改签与行程延长\n\n业务安排变化后，应及时取消不再需要的交通和住宿，减少退改损失。因客户变更或不可抗力发生的合理退改费用，提供变更原因及订单记录后可申请报销；个人原因导致的费用由个人承担。退款必须在结算时冲减，不得按原价报销已退回的款项。\n延长出差天数或新增城市，应重新确认业务目的和预算。周末留宿如为衔接公务且比往返更合理，可事先申请；私人休闲产生的住宿和交通仍由个人承担。",
+      "metadata": {
+        "chunk_id": "5a501652-d3dd-46bf-bba0-9a3ded2c093b",
+        "upload_time": "2026-09-09T13:06:26.017705+00:00",
+        "file_size": 5210,
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_name": "travel_policy.md",
+        "source_file": "uploads/t2001-novatech-pilot-01/travel_policy.md",
+        "chunk_index": 7,
+        "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1",
+        "ingestion_status": "SUCCESS"
+      }
+    },
+    {
+      "chunk_id": "1be0cf45-bf45-40f7-8975-0a3deb987696",
+      "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1",
+      "file_name": "travel_policy.md",
+      "collection_name": "t2001-novatech-pilot-01",
+      "chunk_index": 8,
+      "content": "NovaTech（诺瓦科技）差旅管理制度 > 境外出差与返回交接\n\n境外出差应提前十个工作日提交申请，由部门负责人、财务负责人和总经理批准。预算须单独列明目的地、币种、交通、住宿、保险和必要证件费用；住宿及餐费按获批的境外专项预算执行，不套用境内城市标准。\n出发前应了解目的地出行条件并与 IT 确认设备及数据访问安排。返回后及时向团队交接业务进展，按照费用报销制度的提交期限完成结算。报销材料中的客户资料应按信息分类要求存放，避免附入无关的保密文档。",
+      "metadata": {
+        "chunk_id": "1be0cf45-bf45-40f7-8975-0a3deb987696",
+        "chunk_index": 8,
+        "file_name": "travel_policy.md",
+        "source_file": "uploads/t2001-novatech-pilot-01/travel_policy.md",
+        "collection_name": "t2001-novatech-pilot-01",
+        "file_size": 5210,
+        "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1",
+        "upload_time": "2026-09-09T13:06:26.017705+00:00",
+        "ingestion_status": "SUCCESS"
+      }
+    }
+  ],
+  "files": [
+    {
+      "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+      "file_name": "employee_handbook.md",
+      "size": 5279,
+      "upload_time": "2026-09-09T13:06:23.474500+00:00",
+      "chunk_count": 10,
+      "status": "SUCCESS"
+    },
+    {
+      "file_id": "09917d50-a3fd-44ae-9607-541d18d32658",
+      "file_name": "expense_policy.md",
+      "size": 6215,
+      "upload_time": "2026-09-09T13:06:27.076028+00:00",
+      "chunk_count": 9,
+      "status": "SUCCESS"
+    },
+    {
+      "file_id": "bc7e515f-c5e0-4655-94f1-0c28a915b0bf",
+      "file_name": "it_security_policy.md",
+      "size": 5799,
+      "upload_time": "2026-09-09T13:06:28.878648+00:00",
+      "chunk_count": 10,
+      "status": "SUCCESS"
+    },
+    {
+      "file_id": "1d06e49c-9ac1-4dcc-a0a3-a38b989464f1",
+      "file_name": "travel_policy.md",
+      "size": 5210,
+      "upload_time": "2026-09-09T13:06:26.017705+00:00",
+      "chunk_count": 9,
+      "status": "SUCCESS"
+    }
+  ],
+  "total_chunks": 38,
+  "completed_at_utc": "2026-09-09T13:06:29.871389+00:00",
+  "verification": {
+    "readback_at_utc": "2026-09-09T13:07:10.459790+00:00",
+    "method": "Fresh Python process; persistent Chroma list_chunks/get_files/get_chunk_count/get_chunks_by_file; exact equality with captured content and metadata; uploaded byte hashes match sources",
+    "files": 4,
+    "chunks": 38,
+    "missing_chunk_ids": 0,
+    "duplicate_chunk_ids": 0,
+    "duplicate_file_ids": 0,
+    "file_index_mapping_errors": 0,
+    "indices_contiguous_from_zero": true,
+    "upload_warnings": []
+  }
+}

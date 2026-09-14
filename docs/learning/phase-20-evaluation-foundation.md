@@ -1,6 +1,6 @@
 # Phase 20 — 检索评估基础：Task 学习素材
 
-本文件积累 Task Learning Pass，供后续 Phase Learning Review 整合。当前仅包含检索评估数据集契约的学习记录，尚未形成最终 Phase 教材、Engineering Review 或 Phase Gate 结论。流程依据：[Workflow V2](templates/phase-learning-pass-workflow.md) 与 [学习模板 Part A](templates/phase-learning-template.md)。
+本文件积累 Task Learning Pass，供后续 Phase Learning Review 整合。当前包含检索评估数据集契约与独立评估 Runner 的学习记录，尚未形成最终 Phase 教材、Engineering Review 或 Phase Gate 结论。流程依据：[Workflow V2](templates/phase-learning-pass-workflow.md) 与 [学习模板 Part A](templates/phase-learning-template.md)。
 
 ## 检索评估数据集契约：先定义怎样判断，再测检索效果
 
@@ -179,3 +179,197 @@ Pilot 入库记录未发现入库异常；本文不虚构调试事故。页面�
   - nDCG 原先省略求和步骤：第 5 节现已明确前 K 个位置的折扣 gain 求和为 DCG@K，IDCG@K 在完整有效真值的理想排序上做相同计算。
   - 两项修订已对照冻结契约第 10、7.1 节复核。独立报告的原结论为 PASS with two non-blocking clarity findings；本次记录其结论并落实修订，不声称独立读者再次审阅过修改版。原报告记录 16 个学习文档链接可解析、`git diff --check` 通过；证据范围为 STATIC，未运行 ingestion、retrieval、metrics、providers 或 tests。
 - T2002/T2003 未启动；未 commit、push，也未修改 Task/Gate 状态。
+
+## 独立评估工具：把冻结的定义变成可检查的测量
+
+Task reference：T2002；实现验证与首次 Learning Pass 补全日期均为 2026-09-11，但属于两次不同活动。2026-09-14 再次按 Part A 核对当前代码、冻结契约、测试断言及后续证据，补充报告阅读与 Python 机制；未重新执行实现验收。下面原有测试、调试和文档检查记录保留各自日期，后续状态见本节末尾。上面的 T2001 Learning Pass 和独立 reader 结论是历史材料，未改写；本节尚未接受独立 reader test。T2002 DONE，T2003 TODO，Phase 20 Gate 未启动。
+
+### 为什么评估工具需要单独放置
+
+原来只有测量契约，没有执行它的程序。[evaluation 包](../../backend/evaluation/__init__.py) 现在提供校验、计算、执行和报告。依赖方向是评估工具调用 V1，产品不导入评估工具，因此指标计算不会进入请求处理链。保留旧算法才能把以后观测到的差异归因于明确的实验变量。
+
+这次研究问题是“计算是否忠实于人工批准协议，以及工具能否显示排名变化”，不是“检索质量是否足够好”。没有 Candidate，没有真实 Benchmark，也没有接受检索优化的决定。工具验收依靠手算和受控依赖，真实 Baseline 是后续工作。
+
+### 新概念：先分清测量对象、计算和证据
+
+| 概念 | 如何理解 | 本工具中的边界 |
+|---|---|---|
+| Runner（评估执行器） | 把输入校验、检索调用、计分与报告串起来的离线程序 | 独立于产品请求处理，不生成回答 |
+| Fixture（受控测试样例） | 人为安排输入和预期结果，以便手算和断言 | 验证工具逻辑，不代表真实问题分布 |
+| Recall / RR / MRR | Recall 问“应找回的相关块找到了多少”；RR 是首个相关结果名次的倒数；MRR 是多题 RR 的平均 | 都把 grade ≥ 2 视为相关，RR 在各 K 内截断 |
+| DCG / IDCG / nDCG | DCG 对各名次的等级收益折扣求和；IDCG 是完整真值的理想排序得分；nDCG 是二者比值 | 保留 Grade 1 的弱相关收益，但不放宽 Answerable 校验 |
+| Macro average（宏平均） | 先算每题分数，再对合格题目等权平均 | 一个问题拥有更多相关块，不会因此在聚合中获得更大权重 |
+| Provenance（来源记录） | 记录输入、源码、配置与执行环境的身份，便于解释和重跑 | hash 能核对内容一致性，不能证明人工标签正确 |
+| Hash seed / repeatability | Python 进程启动时的 hash seed 会影响字符串 set 的遍历顺序；重复性检查比较多轮观测 | 固定记录的 replay 稳定，不等于真实检索稳定 |
+
+### 代码地图：谁负责哪一段
+
+| File → Class / Function | 责任与重要行为 |
+|---|---|
+| [dataset.py](../../backend/evaluation/dataset.py) → `load_dataset` / `validate_dataset` | 解析 JSON 时拒绝重复键；全量校验版本、快照、审阅、真值与 split，返回按 chunk_id 索引的 inventory |
+| [metrics.py](../../backend/evaluation/metrics.py) → `score_query` | 消费已验证真值与已去重排名，计算各 K 的 Recall、RR、nDCG；不负责检索或数据集校验 |
+| [runner.py](../../backend/evaluation/runner.py) → `measure` / `aggregate` / `repeatability` | 每题请求一次深度 10，保留原始结果、去重诊断、分组均值及各轮差异 |
+| [v1.py](../../backend/evaluation/v1.py) → `build_search` | 经公开 store 接口核对冻结快照，返回 V1 search callable 和实际配置；在调用时才导入产品依赖 |
+| [__main__.py](../../backend/evaluation/__main__.py) → `main` / `worker` / `git_context` | 父进程调度独立 worker，收集输入与源码身份，最后以独占创建模式保存报告；fixture 分支不初始化真实检索依赖 |
+| [test_evaluation.py](../../backend/tests/test_evaluation.py) → `EvaluationTests` | 使用 [hand-calculated.json](../../backend/tests/fixtures/evaluation/hand-calculated.json) 和替代依赖，检查手算、失败出口、进程与 adapter 边界 |
+
+### 从输入到输出：有效性先于效果
+
+```text
+父进程：JSON → 全量校验 → 按 seed 启动独立 worker
+worker：重新加载/校验 → V1 adapter 或 synthetic observations
+                              ↓
+                    每题一次 search(depth=10)
+                              ↓
+             原始 ID/score → 校验返回 → 首次出现去重 → 指标
+                              ↓
+                    每轮逐题/分组结果回到父进程
+父进程：检查 dataset hash 一致 → 跨轮比较 → 新建 JSON 报告
+失败出口：无效输入/返回或 worker 失败 → CLI exit 1，不生成成功聚合
+```
+
+[validate_dataset](../../backend/evaluation/dataset.py) 先检查全部 queries，随后才允许 search。坏 query 不能悄悄从均值分母消失。相反，真值有效但结果为空是合法低分，需要保留。函数抛出的 `ValueError` 类似前端在解析 API 数据时抛出的校验错误；它终止本次评估，不代表检索相关性为零。
+
+两类 `APPROVED` 字段也不是相同权威：合成样例的 `SYNTHETIC_TEST` 只让单测表达 schema，正式数据要求 `Human project owner` 及真实决定来源。程序能验证字段与引用存在，不能认证人是否真的审过，更不能自己批准标签。
+
+Python 里 `bool` 是 `int` 的子类，`isinstance(True, int)` 为真；因此 grade 和 chunk_index 用 `type(value) is int`，防止把 JSON `true` 当成等级 1。这与 TS 中 boolean 和 number 的类型分离不同。`families.setdefault(family, split)` 则记住该家族第一次出现的 split，再要求之后一致；它只能识别已填写的 family ID，不能发现人把同一事实误标成两个不同 family 的语义泄漏。
+
+### 最小代码精读：集合用于匹配，列表保存排名
+
+[score_query](../../backend/evaluation/metrics.py) 用 set 构造所有 `grade>=2` 的相关 IDs；集合求交适合统计命中，但没有排名语义。实际返回顺序始终保存在 list 中，RR 通过 `enumerate(prefix, 1)` 从 1 开始找第一个命中。这类似 JS 的数组遍历，显式起点避免把第一个名次误写成 0。IDCG 才对真值等级做理想排序；不能把这个排序拿来覆盖真实结果。
+
+[measure](../../backend/evaluation/runner.py) 的 `seen` dict 保存每个 ID 第一次出现的原始位置。后续重复只追加诊断，结果列表不补足。因此原始 c,b,b,a,d 变成 c,b,a,d，第三个唯一结果是 a。合成真值 a=3,b=2,c=1 时，相关集合为 {a,b}，Recall@3=2/2，RR@3=1/2。Grade 1 的 c 不给 Recall 命中，却给 nDCG 一个 gain=1；这解释了两类指标为何可能得出不同的局部印象。
+
+完整真值的理想 gain 序列为 7,3,1；实际前三项 gain 为 1,3,7，因此 nDCG@3 是 `(1+3/log2(3)+7/2)/(7+3/log2(3)+1/2)`。只返回 b 时，Recall 分母仍为 2，IDCG 仍包含未命中的 a 和 c，避免“只按找回来的内容给自己打分”。
+
+主聚合对每题等权，不把命中数跨题相加后除以所有真值数。Dev/Test 分开，防止训练用途和留出用途混成一个数字；无合格样本的组使用 Python `None` → JSON `null`，表达没有均值而非均值为零。
+
+把上面的机制对应到 `score_query` 的真实片段：
+
+```python
+prefix = ranked_ids[:k]
+rank = next((i for i, cid in enumerate(prefix, 1) if cid in relevant), None)
+```
+
+`[:k]` 类似 JS 的 `slice(0, k)`，不足 K 项时直接取现有列表。括号内是生成器表达式：按需产出符合条件的名次；`next(..., None)` 取第一个，没找到就返回 `None`。因此无需创建所有命中名次的中间列表。它与 JS `findIndex` 的目的相近，但这里直接返回从 1 开始的名次，且未找到用 `None`，不是 `-1`。后面的 `1 / rank if rank else 0.0` 安全依赖于“合法名次从 1 开始”这个约定。
+
+例如已有聚合测试在 Dev 中再添加一个有效但返回空列表的 Answerable：两题 Recall@3 为 1、0，均值为 0.5；RR@3 为 0.5、0，MRR@3 为 0.25。另有一个 Unanswerable 被排除，报告为 included=2、excluded=1、denominator=2。空检索降低均值；有效 Unanswerable 不进入该均值；无效输入则根本不能得到这份成功报告。
+
+### 请求深度：为什么评估 @5 不等于生产 Top-K=5
+
+根据 [冻结契约 §7.2](../v2/evaluation/retrieval-evaluation-dataset-contract.md)，`KS=(1,3,5,10)` 是同一次结果的计分截断点，`REQUEST_DEPTH=10` 才是调用参数。[V1 HybridRetriever](../../backend/app/services/qa.py) 将请求深度乘 2 交给 keyword/vector 分支，VectorRetriever 再乘 2 请求 store：评估路径为 10 → 20 → 40，生产默认路径为 5 → 10 → 20。
+
+候选池大小参与最终融合，因此“请求 10 后取前 5”未必等于“独立请求 5”。报告把这一 execution difference 记为 confounder（影响解释的混杂因素）。`@10` 是更深检索诊断，不能称作 production Recall@10；`@1/@3/@5` 也必须说明来自深度 10。工具沿用 V1 的权重 0.3/0.7、阈值 0.30 和原始同分顺序，没有通过改算法消除这个差异。
+
+### 为什么重复运行需要新进程
+
+同一个进程中的 set 顺序通常保持一致，仅在循环里调用相同函数可能漏掉跨进程风险。[CLI](../../backend/evaluation/__main__.py) 用 `subprocess.run` 和独立 `PYTHONHASHSEED` 启动 worker，父进程保留每次原始结果及指标。seed 1/2/3 是可复现的探测条件，不是对所有运行稳定的证明。
+
+实际 V1 Keyword/Hybrid 配合替代 store/vector 的同分测试中，三个进程分别返回 d,g,e,a,b,h,c,f；h,b,g,e,c,d,f,a；g,e,b,c,f,h,d,a。最终分数不变，rank 和指标变化。工程上拒绝在评估层按 chunk_id 排序来消除这个现象，因为那会评估一个改造过的算法。变化属于观测证据，工具仍可通过验收；是否及如何修复 V1 要等后续授权实验。
+
+这里的三组顺序来自实现阶段的日志，本次只读核对。`repeatability` 按题比较排名位置、ID→score 映射和指标，指标容差为 0，保留各轮值而不跨轮求均值。`order_stable=false` 是成功记录的不稳定观察，不是 worker 执行失败。源码中的同分排序会保留上游顺序，keyword 的 set 遍历顺序才可能随进程变化；本测试没有把真实向量搜索带入因果链。
+
+### 如何读一份报告，避免把成功保存当成全部稳定
+
+先从 `scope`、`dataset`、`protocol` 和 `environment` 确认测量对象与条件，再到 `runs[*].per_query` 看原始结果、去重结果和该题指标，最后阅读 `aggregates` 与 `repeatability`。聚合里的 `query_category=null` 表示当前 split 的全部类别；它和 `metrics=null`（该组无合格题目）含义不同。只摘取某个均值会丢失分母、排除题目和运行条件。
+
+`repeatability` 中三种变化独立报告。以下是从代码推导的阅读示例，不是新增运行观察：
+
+| 变化 | 应怎样解释 |
+|---|---|
+| ID 顺序相同，但某个 ID 的 final_score 改变 | `order_stable` 仍可为 true，同时该题 `scores_changed=true`；指标只依赖排名和人工等级，因此可以不变 |
+| 两个相同人工等级的结果交换位置 | `order_changed=true`，但 Recall/RR/nDCG 可以都不变；指标稳定不能反推完整排名稳定 |
+| worker 正常完成并成功保存，发现名次变化 | CLI 仍可 exit 0；查看 `order_stable=false` 和 `affected_positions` 才能发现这次观测 |
+
+因此顶层 `order_stable` 不是“分数、环境、数据与一切行为均稳定”的总开关。当前函数按各轮 `per_query` 的相同数组位置对齐查询，依赖 Runner 对同一输入保持 query 顺序；它不是能自动按 query_id 合并任意外部报告的通用比较器。这一边界来自 CODE，未在本次进行故障注入。
+
+### 可追溯性和代价
+
+[V1 adapter](../../backend/evaluation/v1.py) 通过公开 store 检查整个冻结 snapshot 的 IDs、文件映射与文本 hash 后调用 `hybrid_search`。这比只检查命中结果更早发现真值绑定错误，但每轮需要扫描全部 chunks。当前小规模评估接受这个成本，未测量 latency；如果语料扩大，不能在没有新证据时声称开销仍可忽略。
+
+报告保存完整输入、实际源码 hash、Git dirty 状态、依赖版本和所有轮次。代码未提交时只写 HEAD 会错误标识 Runner；内容 hash 补充了这一缺口。公开 store 不返回 embedding，所以文本 hash 不等于向量/模型身份校验；冻结模型和索引的外部 provenance 仍不可省略。
+
+### 设计理由：哪些有记录，哪些是推断
+
+| 选择 | 理由来源与成本 |
+|---|---|
+| 全量校验后再 search；真值无效时不计零 | **Documented**：冻结契约 §7–8 明确要求。避免坏数据污染分母，代价是一题无效会阻止整次评估 |
+| 首次去重、不补足、不另加 tie-breaker | **Documented**：冻结契约 §7.3/8.2。测量已存在的输出；代价是结果可能不足 K、同分波动继续可见 |
+| 独立标准库包与独立进程 | **Documented**：[执行计划与协议](../v2/evaluation/t2002-runner.md) 记录隔离、无新增依赖与 seed 探测；代价是重复启动和每轮快照扫描 |
+| `score_query` 与 search 分离 | **Inferred**：从函数边界与手算测试可推断，这样便于不依赖模型验证公式；不声称存在额外架构选型记录 |
+| seed 默认 1/2/3 | **Documented**：协议将其限定为工具默认值；为何选择这三个具体数值的更深动机 **Unknown**，不能声称统计充分性 |
+
+### 失败与易错边界：谁负责停止，谁负责保留
+
+| 情况 | 当前行为与 owner | 证据性质 |
+|---|---|---|
+| Answerable 只有 Grade 1，或审阅/版本/映射不合法 | `validate_dataset` 抛 `ValueError`；`measure` 尚未调用 search | 现有 UNIT 断言；不是低质量检索观察 |
+| 返回 snapshot 外 ID、NaN/boolean score 或超过深度 | `measure` 拒绝结果；CLI 报失败，不把它变成零分 | 现有 UNIT 断言 |
+| 真值有效且 search 返回 `[]` | `score_query` 各 K 计零，`aggregate` 保留该题分母 | 现有 UNIT 断言 |
+| `answerable=false` 且只有弱相关真值 | 保留逐题返回，`metrics=null`、原因 `unanswerable_weak_only`，主指标排除 | 现有 UNIT 断言；不自动生成新的人类可回答性判断 |
+| V1 当前文本与冻结 hash 不同 | `build_search` 在检索前拒绝；完整 ID 集与 metadata 也由 adapter 检查 | 文本不匹配有 MOCKED 测试；其他核对机制为 CODE |
+| worker 失败或各轮 dataset hash 不一致 | 父进程停止，不写成功报告；`main` 将所捕获错误映射为 exit 1 | CODE；本次不伪称做过故障注入 |
+| 输出路径已存在 | `main` 拒绝覆盖；最终 `open("x")` 仍以独占方式创建 | 已有 CLI 测试覆盖重复执行；不是通用事务保证 |
+
+写报告不是原子发布：父目录创建与 JSON 写入属于实际文件副作用；若磁盘在写入中失败，源码没有临时文件替换或清理半文件的逻辑。这是 **CODE 推导的限制，未观察到事故**。因此“不写成功聚合”不能被误读成“任何失败都绝无文件残留”。
+
+### 验证证据与实际调试记录
+
+[test_evaluation.py](../../backend/tests/test_evaluation.py) 的重要断言包括：去重后仍是 c,b,a,d；完整真值中未命中的相关块仍进入分母；每个非法 dataset 案例的 search `assert_not_called()`；三个 worker 的 PID 不同且 seeds 明确；adapter 接收到的请求深度均为 10。替代 store 的 V1 同分测试还断言 Runner 保留检索顺序、各 ID 分数不变，并让稳定性结论匹配实际观察，而不是硬编码必须出现波动。
+
+下表为 **2026-09-11 实现阶段历史执行**，本次 Learning Pass 读取测试源码和现存日志核对，**未独立重跑**。环境据 [执行协议与 AC ledger](../v2/evaluation/t2002-runner.md) 为 Windows PowerShell、Python 3.14.6；命令工作目录为 `backend`。计数是 unittest test methods，不是 subTest 数或覆盖率。
+
+| exact command | 历史结果与来源 | 范围与未证明内容 |
+|---|---|---|
+| `python -m unittest discover -s tests -p test_evaluation.py -v` | 8/8，日志 `tmp/t2002/evaluation-tests.txt` 末尾 `OK` | UNIT synthetic / MOCKED adapter；CLI 子进程到 JSON 的合成集成；实际 V1 Keyword/Hybrid + SUBSTITUTED store/vector。没有真实模型/Chroma 检索 |
+| `python -m unittest discover -s tests -p test_qa.py -v` | 50/50，日志 `tmp/t2002/qa-regression.txt` 末尾 `OK` | 既有 UNIT/MOCKED 回归，不是业务质量 Benchmark |
+| `python -m unittest discover -s tests -p test_query.py -v` | 10/10，日志 `tmp/t2002/query-regression.txt` 末尾 `OK` | 既有 Query API 受控依赖回归，不是 browser/TCP/provider E2E |
+| `git diff v1.0.0 --stat -- backend/app frontend` | 执行协议记载无输出 | STATIC 产品差异检查，不证明真实检索效果 |
+
+这些历史日志位于忽略目录，不保证其他 checkout 存在；持久化说明入口是执行协议。日志尾部显示通过计数，未单列 shell exit status，本次不补造历史退出码。已有 `tmp/t2002/fixture-report.json` 属于 synthetic artifact，不作为正式 Baseline。AC-2002-1～4 的既有结论仍归执行协议，本学习记录不重新发验收结论。
+
+实际调试遇到 Windows 的 `Path` 默认反斜线：报告源码 hash key 与跨平台断言不符。改成 `.as_posix()` 后通过。另一个诊断易错点是“列表顺序变了”不等于“各 chunk 分数变了”；现分别比较 ranked IDs 和 ID→score 映射。
+
+未执行真实 Chroma/模型检索、正式 Benchmark、生产质量或生成拒答评估；latency/cost 均未测量。未来数据构建与 Baseline 由后续单独授权工作承担。V1 同分样例的变化幅度不能推广到实际业务集。
+
+### 尚未完成与后续条件
+
+- **当前限制**：snapshot 的 ID/文本/映射检查不认证存储向量；全量扫描和新进程存在成本，写报告不保证原子性。
+- **人工职责**：真实标注、coverage、evidence-family 语义和最终 dataset promotion 仍由 Human project owner 审阅；validator 不能代签。合成 fixture 不得通过改 reviewer 字段晋升为正式数据。
+- **后续工作 owner**：正式数据构建需单独授权；T2003 在真实版本化且已审阅数据、模型/索引/环境就绪和独立授权后采集 Baseline。本次不创建数据或执行该任务。
+- **Not yet measured**：业务语料的指标水平、同分波动频率、真实环境 repeatability、latency/cost；不得从八个测试推导质量改善或优化 Candidate 的接受决定。
+
+### Phase consolidation 输入与读者检查
+
+后续 Phase Review 应合并的概念：有效性与效果的分离、集合匹配与有序排名、宏平均分母、内容身份与版本标签、跨进程非确定性。候选自测：为什么有 Grade 1 gain 仍可能拒绝 Answerable？为何去重不补足？为何稳定的 replay 不能证明 V1 稳定？何时应拒绝“运行成功意味着排名稳定”的结论？
+
+应保留的关键 flow 是“全量校验 → 保留实际顺序 → 逐题计分 → 分 split 聚合 → 逐轮诊断”；工程决定是尊重原始测量对象并披露请求深度差异；失败教训是把数据无效、合法低分、排名波动和文件写入失败分开。Windows 路径修正与最初观察到的同分顺序保留为历史，不改写成真实业务 Benchmark。
+
+两道主动练习（不需运行检索或修改代码）：
+
+1. 对真值 a=3,b=2,c=1 和原始结果 c,b,b,a,d，先写去重列表，再手算 Recall@1、RR@3、nDCG@3；解释为什么只返回 b 时 IDCG 不随之缩小。
+2. 预测三种情况是否进入均值分母：有效 Answerable 返回空；Human-reviewed Unanswerable 返回弱相关块；Answerable 真值仅 Grade 1。再解释为什么对深度 10 的报告只取前 5 不能声称复现生产请求。
+
+本次 loss audit 保留 T2001 正文与 reader 历史、T2002 手算与同分观察、Windows 修正、证据边界和 PENDING 状态；在既有 T2002 素材内补全概念、符号职责、失败出口、理由来源和自测，没有另建相互竞争的教程。学习 README 已指向本文并明确 reader PENDING，无需重复改索引。
+
+本次文档验证（2026-09-11，仓库根目录 / Windows PowerShell）：`git diff --check` 与 `git diff --cached --check` 均 exit 0；只读 Python 内容检查 exit 0，确认本文 35 个本地文件链接可解析、代码围栏成对、T2001 正文逐字保留。相对于本轮起点捕获的 180 个现存文件 SHA-256，只有本文改变；没有新增非忽略文件。检查过程先修正了临时检查脚本的 PowerShell 中文管道匹配和 Git 路径列表过滤问题，再获得上述结果；这些不是产品缺陷。Git 的 global ignore 读取权限及 LF/CRLF 提示不影响内容检查结果。未重跑测试、provider、Pilot、Benchmark，未改 Task/SPEC/Gate、实现、测试或其他学习索引，未 commit/push。
+
+本节已对照代码/测试自审；独立 fresh-reader test 为 **PENDING**，不继承上面 T2001 的 PASS。依据 [Workflow V2 §A.5](templates/phase-learning-pass-workflow.md)：“未执行则明确 pending，不能宣称完整 reader-test DoD 满足”。这项学习文档检查不替代运行验证，也不改变已验证的 T2002 AC。
+
+### 2026-09-14 复核：后续证据与本 Task 的边界
+
+上面“正式数据构建仍待进行、真实模型检索未执行”的记录描述 2026-09-11 的阶段边界。以下只读引用后来完成的工作，不追记为 T2002 原始验收能力，也不表示本次重新执行：
+
+| 后续材料 | 已记录的事实 | 仍不能推出什么 |
+|---|---|---|
+| [正式数据集 1.0.0](../v2/evaluation/novatech-retrieval-benchmark-1.0.0/README.md) | 40 题（32A+8U）、1,520 项人工等级、38 块；20 个 family，Dev/Test 各 16A+4U；FROZEN / promotion APPROVED | 数据校验通过不等于测量已执行或有质量结论；Test 非盲测等局限继续保留 |
+| [环境与索引预检](../v2/evaluation/t2003-preflight-0.1/README.md) | 已记录模型文件身份、离线加载和公开 38 块逻辑 inventory 匹配 | 不能认证所有存储向量或跨进程检索稳定性 |
+| [最小向量冒烟](../v2/evaluation/t2003-smoke-0.1/README.md) | 一条非 Benchmark 中性文本，一次真实 encode 和一次 top_k=1 向量搜索成功 | 不覆盖 Hybrid、40 题指标、完整向量一致性或 latency/cost；持久化文件 hash 发生变化，原因未确认 |
+
+当前需要继续区分三件事：数据经人工批准、环境在声明范围内可用、完整 Benchmark 获准执行。`validate_dataset` 校验 review 等结构，CLI 校验 mode/purpose，但代码没有强制检查 `benchmark_authorized` 字段；执行授权由项目工作流控制。这是现有工具边界，不能通过改冻结数据中的字段取得权限。T2003 仍 TODO，完整 Benchmark 未获授权。
+
+补充主动练习：如果两轮返回完全相同的 ID 顺序、所有人工等级未变，只有 final_score 从 0.5 变成 0.6，预测 `order_stable`、`scores_changed` 和 `metrics_changed`，并说明各字段分别回答什么问题。
+
+本轮 loss audit：原 T2001 正文、T2002 手算、历史测试数量、同分顺序、Windows 修正与原 reader PENDING 记录均保留；在原素材中补充代码精读和报告判读，仅在本小节说明后续状态。未改实现、测试、SPEC/TASKS、冻结数据、Gate、ER 或 Interview；未重跑测试、模型、检索或 Benchmark。证据类型为 CODE / STATIC 与已明确日期的历史记录，独立 fresh-reader test 仍 PENDING。
+
+本轮文档检查（2026-09-14，Windows PowerShell，仓库根目录）：`git diff --check`、`git diff --cached --check` 均 exit 0；38 个本地文件链接全部可解析，6 个代码围栏成对。对照写入前 218 个 tracked/untracked 非忽略文件的 SHA-256，仅本文改变，无新增或删除文件。Git 的 LF/CRLF 提示不影响检查结果；未 commit/push。

@@ -13,9 +13,11 @@ V2 目标：衡量、理解并系统性改善检索与回答质量。
 | 当前 V2 契约 | [docs/v2/SPEC.md](SPEC.md) > [docs/v2/TASKS.md](TASKS.md) |
 | 当前 Agent 操作规范 | [CLAUDE.md](../../CLAUDE.md) |
 
-V2 SPEC 的 **Phase 20 Evaluation Foundation 当前范围已获人工批准**，T2001 已单独获 Human Final Gate 完成批准；其余未来 V2 范围仍为 DRAFT，未自动冻结或批准。批准记录见 [docs/v2/SPEC.md 第 1.1 节](SPEC.md)。T2001 为 DONE（2026-09-10 Final Human Gate PASS），T2002/T2003 仍为 TODO，未获本次执行授权。[Dataset Contract 0.3](evaluation/retrieval-evaluation-dataset-contract.md) 已由 Human project owner 批准 FROZEN，但尚未交付评估数据集、评估执行器（Runner）、Benchmark 结果或检索候选方案（Candidate）。
+V2 SPEC 的 **Phase 20 Evaluation Foundation 当前范围已获人工批准**；其余未来 V2 范围仍为 DRAFT。T2001 DONE、[Dataset Contract 0.3](evaluation/retrieval-evaluation-dataset-contract.md) FROZEN（2026-09-10 Human Final Gate PASS）。T2002 已获 [SPEC §1.3](SPEC.md) 单独授权并于 2026-09-11 DONE，交付 [Runner 0.1.0 与测试证据](evaluation/t2002-runner.md)。T2003 仍 TODO、未获完整 Benchmark 执行授权。[正式数据集 novatech-retrieval-benchmark-1.0.0](evaluation/novatech-retrieval-benchmark-1.0.0/README.md) 已冻结并完成 promotion；[环境预检](evaluation/t2003-preflight-0.1/README.md)及 [最小向量检索冒烟](evaluation/t2003-smoke-0.1/README.md)已完成。完整 Hybrid Baseline 尚未采集；冒烟成功不等于检索质量或向量逐位完整性已验证。
 
 2026-09-09 的 Bootstrap 检查以本地 Git 为依据：分支为 `v2/evaluation`，HEAD 为 `f9817817a602caf24ad95e500fe08e44224ffc2d`，检查开始时工作树干净。V1 tag 之后的两个提交只修改了 README、治理、复盘和学习文档。V1 产品实现及历史规格 / 任务文件与 tag 中的版本一致。这是 Bootstrap 时的状态快照，不代表未来所有 HEAD 的状态。
+
+**历史候选阶段（2026-09-11，以下为当时状态）：** 按 [SPEC §1.4](SPEC.md) 的后续用户授权，已准备 [Benchmark 候选审阅包 0.1](evaluation/archives/README.md#benchmark-candidate-0.1)：40 道候选题、1,520 行 LLM 建议和 4 批人工审阅材料。全部新 Human decisions 为 PENDING；保守 family 划分存在明显 Test 规模/类别缺口，正式数据尚未冻结，T2003 未启动。
 
 ## 开发顺序
 
@@ -36,3 +38,5 @@ V2 SPEC 的 **Phase 20 Evaluation Foundation 当前范围已获人工批准**，
 保持 [V1 Gate 闭环记录](../verification/PHASE-12-GATE-CLOSURE.md)、[V1 复盘](../DX-RAG-V1-DEVELOPMENT-RETROSPECTIVE.md)、既有验证及学习记录不变。V1 验收证据不等于检索质量 Benchmark。
 
 保留 [Learning & Engineering Workflow V2](../learning/templates/phase-learning-pass-workflow.md)：Task DONE → Task Learning Pass → Phase Gate → Phase Learning Review → Engineering Review → 独立 Interview synthesis。其中的 “V2” 指工作流版本，不代表产品 V2 已实现。历史文档无需迁移到新模板。
+
+**当前入口（2026-09-14）：** [正式数据集 1.0.0](evaluation/novatech-retrieval-benchmark-1.0.0/README.md)已冻结并完成 promotion；[历史审阅材料](evaluation/archives/README.md)已归档。T2003 完整 Benchmark 尚未执行。

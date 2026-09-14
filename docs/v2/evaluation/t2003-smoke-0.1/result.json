@@ -1,0 +1,111 @@
+{
+  "started_at_utc": "2026-09-14T09:07:24.608439+00:00",
+  "scope": "ONE_NON_BENCHMARK_EMBEDDING_AND_VECTOR_SEARCH",
+  "authorization": "Human: 授权最小 embedding 与向量检索冒烟检查，使用非 Benchmark 查询；不修改语料、不重建索引、不运行完整 Benchmark。",
+  "query_text": "这是一条用于验证系统连通性的测试文本。",
+  "requested_top_k": 1,
+  "encode_calls": 1,
+  "vector_search_calls": 1,
+  "benchmark_executed": false,
+  "benchmark_metrics_computed": false,
+  "hybrid_retrieval_executed": false,
+  "index_rebuild_requested": false,
+  "python": "3.14.6 (tags/v3.14.6:c63aec6, Jun 10 2026, 10:26:10) [MSC v.1944 64 bit (AMD64)]",
+  "executable": "D:\\Python\\Python314\\python.exe",
+  "process_overrides": {
+    "HF_HUB_OFFLINE": "1",
+    "TRANSFORMERS_OFFLINE": "1",
+    "ANONYMIZED_TELEMETRY": "False"
+  },
+  "release_before": {
+    "status": "PASS",
+    "dataset_version": "novatech-retrieval-benchmark-1.0.0",
+    "dataset_sha256": "fc20e41444e76137c2ed39eb054ba8fce3eea8f6b8334567452f834539426cde",
+    "manifest_sha256": "76baf53489414b9427e90569bc3b196a7d0a49ba9974ab4d867d9c733ebd9622",
+    "validator": "Full validate_dataset/load_dataset PASS; pure data validation only",
+    "approved_rc_content_comparison": "PASS: release/approval metadata only",
+    "query_count": 40,
+    "judgment_count": 1520,
+    "chunk_count": 38,
+    "counts": {
+      "Dev": {
+        "answerable": 16,
+        "unanswerable": 4
+      },
+      "Test": {
+        "answerable": 16,
+        "unanswerable": 4
+      }
+    },
+    "formal_freeze": "FROZEN",
+    "dataset_promotion": "APPROVED",
+    "benchmark_authorized": false,
+    "benchmark_executed": false,
+    "live_model_index_store": "NOT_CHECKED"
+  },
+  "query_is_not_benchmark_or_pilot_question": true,
+  "effective_paths": {
+    "model": "F:\\MyLearning\\Vibe_Coding\\DX-RAG\\code\\backend\\models\\bge-small-zh-v1.5",
+    "store": "F:\\MyLearning\\Vibe_Coding\\DX-RAG\\code\\backend\\chroma_db"
+  },
+  "logical_inventory_before_sha256": "bd276401a72daa3bfc63a70ddf4f7adc3e5dcaf30ad1bef08e8a09cad2258ade",
+  "embedding": {
+    "count": 1,
+    "dimension": 512,
+    "all_finite": true,
+    "l2_norm": 0.9999999907406577,
+    "norm_tolerance": 0.0001,
+    "vector_sha256": "0b657e344d9b9ed3701cd2a88a9b9c9df8776826b39f274ffd9f71288cf04e62"
+  },
+  "vector_response": [
+    {
+      "chunk_id": "299c5bed-e316-4cd2-89cd-49670607f802",
+      "file_id": "9a218b3b-1d76-48c5-a20c-1779eacd37d7",
+      "file_name": "employee_handbook.md",
+      "similarity_score": 0.44854241609573364,
+      "matches_frozen_text": true
+    }
+  ],
+  "logical_inventory_after_sha256": "bd276401a72daa3bfc63a70ddf4f7adc3e5dcaf30ad1bef08e8a09cad2258ade",
+  "persistent_file_hash_changes": [
+    "chroma.sqlite3",
+    "d46a0426-7431-415a-a5e2-1e4b7ea15f42/data_level0.bin",
+    "d46a0426-7431-415a-a5e2-1e4b7ea15f42/length.bin"
+  ],
+  "model_file_hash_changes": [],
+  "release_after": {
+    "status": "PASS",
+    "dataset_version": "novatech-retrieval-benchmark-1.0.0",
+    "dataset_sha256": "fc20e41444e76137c2ed39eb054ba8fce3eea8f6b8334567452f834539426cde",
+    "manifest_sha256": "76baf53489414b9427e90569bc3b196a7d0a49ba9974ab4d867d9c733ebd9622",
+    "validator": "Full validate_dataset/load_dataset PASS; pure data validation only",
+    "approved_rc_content_comparison": "PASS: release/approval metadata only",
+    "query_count": 40,
+    "judgment_count": 1520,
+    "chunk_count": 38,
+    "counts": {
+      "Dev": {
+        "answerable": 16,
+        "unanswerable": 4
+      },
+      "Test": {
+        "answerable": 16,
+        "unanswerable": 4
+      }
+    },
+    "formal_freeze": "FROZEN",
+    "dataset_promotion": "APPROVED",
+    "benchmark_authorized": false,
+    "benchmark_executed": false,
+    "live_model_index_store": "NOT_CHECKED"
+  },
+  "status": "PASS",
+  "limitations": [
+    "Single neutral query validates basic encode/vector-search execution, not relevance quality or a Benchmark.",
+    "No full stored-vector audit, hybrid path, repeatability, latency or cost validation.",
+    "Client read/search may change persistence files internally; file-level changes do not alone identify a cause. No mutation API invoked.",
+    "Authorization is smoke-only; complete T2003 Benchmark still requires separate authorization."
+  ],
+  "completed_at_utc": "2026-09-14T09:07:39.783755+00:00",
+  "script_sha256": "861368f68cd60073585f8f92c019355c24628fa3bcf90495ab1871284af19924"
+}
