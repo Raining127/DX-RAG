@@ -1,0 +1,81 @@
+{
+  "status": "PASS",
+  "verification_scope": "OFFLINE saved evidence; no retrieval/encode",
+  "rounds": 3,
+  "queries_per_round": 40,
+  "per_query_metric_values_recalculated": 1152,
+  "formula_verification_tolerance": 1e-12,
+  "repeatability_tolerance": 0,
+  "changes": [
+    {
+      "query_id": "BC01-Q001",
+      "order_changed": true,
+      "scores_changed": true,
+      "metrics_changed": false,
+      "positions": [
+        3,
+        4,
+        5,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "query_id": "BC01-Q002",
+      "order_changed": true,
+      "scores_changed": true,
+      "metrics_changed": false,
+      "positions": [
+        9,
+        10
+      ]
+    },
+    {
+      "query_id": "BC01-Q008",
+      "order_changed": true,
+      "scores_changed": true,
+      "metrics_changed": false,
+      "positions": [
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "query_id": "BC01-Q014",
+      "order_changed": true,
+      "scores_changed": true,
+      "metrics_changed": true,
+      "positions": [
+        3,
+        4,
+        9,
+        10
+      ]
+    },
+    {
+      "query_id": "BC01-Q033",
+      "order_changed": true,
+      "scores_changed": true,
+      "metrics_changed": false,
+      "positions": [
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "query_id": "BC01-Q034",
+      "order_changed": false,
+      "scores_changed": true,
+      "metrics_changed": false,
+      "positions": []
+    }
+  ],
+  "persistence_changed_files": [
+    "chroma.sqlite3",
+    "d46a0426-7431-415a-a5e2-1e4b7ea15f42/data_level0.bin",
+    "d46a0426-7431-415a-a5e2-1e4b7ea15f42/length.bin"
+  ]
+}

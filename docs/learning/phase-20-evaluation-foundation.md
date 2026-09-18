@@ -1,375 +1,378 @@
-# Phase 20 — 检索评估基础：Task 学习素材
+# Phase 20 — 检索评估基础：从“能返回”到“能测量”
 
-本文件积累 Task Learning Pass，供后续 Phase Learning Review 整合。当前包含检索评估数据集契约与独立评估 Runner 的学习记录，尚未形成最终 Phase 教材、Engineering Review 或 Phase Gate 结论。流程依据：[Workflow V2](templates/phase-learning-pass-workflow.md) 与 [学习模板 Part A](templates/phase-learning-template.md)。
+## 1. 这一阶段到底解决了什么问题？
 
-## 检索评估数据集契约：先定义怎样判断，再测检索效果
+一个问答系统能返回十段文字，并不能说明它找齐了回答所需的证据。只看最终答案，又难以分辨问题出在检索还是生成。要比较以后采用的方案，首先需要一个身份清楚、口径固定、可以检查错误的测量起点。
 
-Task reference：T2001；学习记录日期：2026-09-10。范围为已冻结的 Contract 0.3、Pilot Snapshot 01、Reviewed 0.2 和对应人工覆盖确认，并核对当前 V1 代码。本文解释已有决定，不修改定义或产生新的人工标签。
+这一章解释怎样把“哪些材料算正确证据”的人工判断，与现有混合检索的真实输出连接起来，再变成可复核的数字。读完后，你应能解释分数的分母、沿一条问题找到对应代码、识别错误输入与合法低分，并判断一份报告究竟证明了什么。前提是一般编程知识；Python 特有机制会在使用处解释。
 
-### 1. 新增了什么，为什么需要？
+## 2. Before → Problem → After
 
-系统已经能检索文档，但“能返回结果”不等于“能证明返回了正确证据”。在讨论优化之前，需要先约定哪些问题可以回答、哪些块算相关、如何识别同一块、怎样计算分数，以及什么输入根本不具备评估资格。
-
-此次新增的是可审阅、已冻结的**测量与数据契约**，并有小规模真实入库及人工审阅材料支撑可执行性。它没有新增应用函数，也没有交付 Runner 或检索质量结果。
-
-研究问题（Research Question）是：能否为现有 V1 Hybrid Retrieval 建立可追溯、可人工审阅、定义明确的评估输入与测量规则？参考行为（Baseline）是已发布的 V1 检索流程；当前变化是建立评估协议与 Pilot 证据。Benchmark 发现仍未测量，不能声称质量提高或某种 Candidate 更优。
-
-上游提供冻结语料、真实 chunk 映射与人工判断；下游获授权后才能实现指标与 Runner，再用正式数据集采集 Baseline。完整依赖和 AC 见 [V2 TASKS](../v2/TASKS.md)，评估目标见 [V2 SPEC 第 3–4 节](../v2/SPEC.md)。
-
-### 2. 先理解六个概念
-
-| 概念 | 在本项目中的意思 | 容易误解的地方 |
-|---|---|---|
-| Ground Truth（相关性真值） | 人工确认某个 query 与冻结快照中某个 chunk 的相关性等级 | Retriever 返回的结果或 LLM 建议不能自动成为真值 |
-| Snapshot（快照） | 固定的一组 chunk 身份、文本和 metadata，绑定 corpus version | 相同文件重新入库后 UUID 不保证相同 |
-| Graded / binary relevance | 原始等级为 0–3；Recall/MRR 将 grade ≥ 2 视为相关 | Grade 2 与 3 对 binary 指标贡献相同，但证据重要性不同 |
-| Coverage review（覆盖审阅） | 对该 query 检查完整冻结快照，人工确认没有遗漏 Grade 1–3 | 阅读了 Retriever 的候选列表不等于检查了全语料 |
-| Implicit Grade 0（隐式零级） | 满足全部覆盖条件后，未显式列出的 query–chunk 对可解释为 0 | 未列出本身不是 0，也不是新增一条显式人工标注 |
-| Evidence family（证据家族） | 实质依赖同一核心事实或证据的一组 queries | 改写措辞后随机分到 Dev/Test，仍可能泄漏同一事实 |
-
-Dev（开发集）用于研究、调参、错误分析及后续获授权的 Candidate comparison；Test（测试集）留出到 Candidate/config 决策后做最终评估，不得反复用于调参。如果同一核心事实的改写跨越两者，Dev 上的调参就可能间接利用 Test 的证据。因此，同一 evidence family 必须放在同一 split，不能仅按 query 随机分组。
-
-对熟悉 TypeScript 的读者，可把 snapshot 想成一个版本固定的实体表，judgment 通过 `chunk_id` 引用表中对象。但这里引用的有效性还依赖 snapshot identity；只检查字符串 ID 的类型正确远远不够。
-
-人工等级与系统检索分数也要分开：`grade >= 2` 是指标的相关性映射；`MIN_RELEVANCE_SCORE = 0.30` 是检索结果的过滤阈值。二者的尺度、来源和职责不同，不能互相代替。
-
-### 3. 哪些文档和代码承载它？
-
-本 Task 的新增能力由文档契约承载；以下代码是被核对的既有实现，不是本 Task 新增或修改的代码。
-
-| 文件 → 章节 / 符号 | 职责与重要行为 |
+| 阶段 | 能力与缺口 |
 |---|---|
-| [Dataset Contract](../v2/evaluation/retrieval-evaluation-dataset-contract.md) → 第 2–12 节 | 定义评估边界、身份、审阅、等级、指标、无效输入、split 与 provenance；第 14–16 节区分后续数据交付与本 Task 人工关闭 |
-| [snapshot.json](../v2/evaluation/pilot-snapshot-01/snapshot.json) / [Chunk Inventory](../v2/evaluation/pilot-snapshot-01/chunk-inventory.md) | 保存真实入库时的 ID、正文、metadata 和执行上下文；用于把人工判断定位到块，不是向量索引备份 |
-| [Reviewed 0.2](../v2/evaluation/pilot-snapshot-01-annotation-packet-draft.md) → 六题 Human grade 表及历史区 | 保存原建议、人工最终等级及修改理由；路径含 draft，但当前版本是 Reviewed 0.2 |
-| [Coverage Gate](../v2/evaluation/pilot-snapshot-01/coverage-review-packet.md) → 逐题决定 / Overall Pilot Coverage Gate | 保存完整快照人工确认，赋予限定范围内未列项隐式 0 语义 |
-| [ingest.py](../../backend/app/services/ingest.py) → `chunk_text()` | 标题切分、超长块递归切分、枚举顺序并为每块生成 UUID4；`chunk_index` 是顺序，不是页码 |
-| [vector_store.py](../../backend/app/core/vector_store.py) → `ChromaVectorStore.list_chunks()` / `search()` | 读回冻结块及完整 metadata；向量查询输出 `similarity_score` |
-| [qa.py](../../backend/app/services/qa.py) → `VectorRetriever.vector_search()` / `HybridRetriever.hybrid_search()` | 映射分数、合并两路候选、固定加权、排序、阈值过滤、Top-K；最终列表是本契约测量对象 |
+| Before | 已有摄入、关键词/向量混合检索和回答生成；机械行为有测试，但没有固定题集上的检索质量参照 |
+| Problem | 没有明确真值、稳定身份和统一指标，换一个方案后无法区分算法效果、数据变化与运行波动 |
+| After | 具备人工审阅的版本化数据、独立评估程序、逐题与聚合报告，以及保持旧检索行为的三轮真实基线 |
 
-**身份机制精读。** `chunk_text()` 对每个 `piece` 执行 `str(uuid.uuid4())`，通过 `enumerate(pieces)` 产生从 0 开始的 `chunk_index`。Python 的 `enumerate` 类似在 JS `map((piece, index) => ...)` 中取得位置，但位置相同不意味着对象身份相同。再次 ingest 会重新生成 UUID；旧 judgments 不能仅凭同名文件或同序号直接复用。PDF 的拼接、清洗与切分也没有建立可靠页码映射。
+新增能力位于离线评估侧，产品检索算法没有改进或替换。研究问题是“现有系统在这套题目上找到多少相关证据、排在哪里、重复执行会怎样”，不是预先证明某种优化更好。当前没有 Candidate 对比结果。下一步实验只有在变量、控制条件、比较规则及授权明确后才有意义。
 
-**请求深度机制精读。** Hybrid 内部先计算 `expanded_top_k = top_k * 2`，将其传给 keyword 和 vector 两路。Vector 内部又向 store 请求其接收参数的两倍，再切回接收参数的长度。因此 production 请求 5 时，两路接收 10、向量 store 请求 20；evaluation 请求 10 时，两路接收 20、向量 store 请求 40。这是代码参数推导的请求上限，不保证实际返回这么多条。
+## 3. 先理解必要的基础知识
 
-因此深度 10 列表的前 5 项不保证等于独立请求 5 的结果。契约保持 production default Top-K=5，冻结 evaluation_request_depth=10，并要求披露这一执行差异。`@10` 是较深检索诊断，不能称为 production Recall@10。
+### 3.1 真值、检索分数和身份
 
-**输出机制精读。** Hybrid 按 `chunk_id` 合并；缺少一路分数时以 0 参与 `0.3 * keyword_score + 0.7 * vector_score`；降序后保留 `final_score >= 0.30`，最后切 Top-K。正常 keyword/vector 字典不透传完整 metadata，虽然 Hybrid 尝试接收 metadata，正常路径通常仍为 `{}`。人工追溯须查 snapshot，不能假设结果有 `chunk_index` 或 page。
+**Ground Truth（相关性真值）**是人工对“某题—某块”关系的判断。等级为 0/1/2/3，依次表示无关、弱相关、相关、高度相关。**检索分数**则由程序计算，用来排序；人工等级 2 与检索阈值 0.30 没有数值换算关系。
 
-### 4. 数据和控制怎样流动？
+**Snapshot（快照）**固定语料块的身份、正文和 metadata。`chunk_id` 是块身份，`file_id` 是文件身份，`file_name` 是展示名，`chunk_index` 是块顺序而非页码。可把快照理解为固定版本的实体表，judgment 用 `chunk_id` 引用实体；但引用是否有效，还取决于它属于哪一版快照。
 
-```text
-原创政策语料 → 真实 V1 入库 → 冻结 snapshot（ID / 文本 / metadata）
-                                     ↓
-候选 query → Human 审阅措辞、类别、可回答性
-                                     ↓
-全快照辅助 screening → Human 覆盖审阅与 relevance judgment
-                                     ↓
-                           绑定版本的人工 Pilot labels
-                                     ↓ 后续需单独授权与 promotion
-                正式版本化数据（split / evidence family / provenance）
-                                     ↓ 后续 Runner，尚未实现
-                校验输入 → 最终 Hybrid 列表 → 去重 → 各 K 指标
-                    └ 无效数据：阻止 official benchmark，不能伪装成零分
+[摄入代码](../../backend/app/services/ingest.py) 的 `chunk_text()` 用 `uuid.uuid4()` 生成新块 ID，用 `enumerate(pieces)` 产生顺序。`enumerate` 类似 JS 中 `map((piece, index) => ...)` 的索引，但位置相同不等于身份相同。重新摄入同名文件会生成新 UUID；旧标签不能只凭文件名和顺序直接套用。正文快照也不是包含全部向量的可移植索引备份。
+
+### 3.2 没写标签，为什么不能直接算零？
+
+**Coverage review（覆盖审阅）**要求针对一题检查完整冻结快照，并由人工确认没有遗漏 Grade 1–3 证据。只有 screening、人工覆盖确认、`coverage_reviewed=true`、快照绑定和审阅来源均满足时，未显式列出的块才具有 **implicit Grade 0** 语义。LLM 没提出某块，不构成它无关的证据。
+
+小规模 Pilot 有六题、38 块、30 项显式判断，另有 `6×38−30=198` 对在完整覆盖批准后具有隐式零语义。这不能改称“228 条逐项显式标注”。正式数据采用完整矩阵：40 题×38 块，共 1,520 项显式等级；两种表示都必须经过审阅。
+
+Pilot 用于检查契约和标注流程能否工作，不会自动成为正式数据。LLM 可以提出问题、建议等级与理由；最终措辞、类别、可回答性、等级、coverage 和发布批准归 Human project owner。程序只验证必填字段、状态、格式和一致性：`decision_ref` 必须非空，但不解析引用、不认证批准记录存在，更不证明人工确实完成审阅。
+
+### 3.3 可回答性与数据划分
+
+**Answerable** 需要至少一个人工 grade≥2 的块；有效 **Unanswerable** 经人工确认没有这样的块，可以保留弱相关 Grade 1。不可回答题保留实际返回，但不进入主 Recall/MRR/nDCG 平均值。
+
+**Dev** 用于研究、调参和错误分析；**Test** 留待 Candidate/config 决策后的最终评估，不得反复用于调参。依赖同一核心事实的改写应归于同一 **evidence family（证据家族）**，全家放在同一 split。换一句问法再随机划分不能消除泄漏。
+
+当前正式题集为 32 道可回答、8 道不可回答题，20 个 families，Dev/Test 各 16A+4U。低于最初 40A+8U 的质量目标已获人工批准，不靠凑题补齐。双方共享 7 个正证据块和 2 条补充规则，核心事实划分检查无跨侧边；因此这是有披露局限的划分，不是盲测或来源完全独立的测试集。单人审阅、小样本、合成企业政策也限制了泛化。
+
+### 3.4 三个指标各回答什么？
+
+令某题的完整相关集合为 R，去重后的实际返回前 K 项为 P。K 固定为 1、3、5、10。
+
+| 指标 | 计算与问题 | 不能替代的判断 |
+|---|---|---|
+| Recall@K | `|P∩R| / |R|`；其中 R 包含全部 grade≥2 的块。问“应找回的相关块找回了多少” | 不区分 Grade 2 和 3，也不自动证明核心答案已覆盖 |
+| RR@K / MRR@K | 前 K 中第一个相关块名次为 r，则单题 RR=1/r；没有则为 0。合格题目 RR 算术平均得到 MRR | 首个相关块靠前，不代表其余必要块齐全 |
+| nDCG@K | 等级先变为 gain=`2^grade−1`，即 0/1/3/7；按位置乘 `1/log2(rank+1)` 后求和为 DCG。完整真值按等级理想降序排列，以同样方法算 IDCG；两者相除 | graded 排名仍依赖人工真值，不能证明最终回答正确 |
+
+IDCG 用完整真值，而不是只对找回的块理想排序；否则漏检可能反而得到虚高分数。Grade 1 在 nDCG 有 gain，但不能让“Answerable 且无 grade≥2”的坏数据变合法。
+
+**Macro average（宏平均）**先算每题分数，再对合格题目等权平均。它不按 chunk 或 family 等权。各 K、split、dataset version 分开统计，另给类别分组。没有合格题目的组是 null，不是零均值。
+
+## 4. 在整个系统中的位置
+
+```mermaid
+flowchart TD
+    Corpus[原创政策原文] --> Ingest[既有摄入 / embedding / Chroma]
+    Ingest --> Snapshot[冻结 chunk 身份与正文]
+    Snapshot --> Human[人工问题与等级 / coverage / split 审阅]
+    Human --> Dataset[冻结数据集]
+    Dataset --> Validate[全量校验]
+    Validate --> Adapter[核对真实存储与冻结快照]
+    Adapter --> Hybrid[既有 Keyword + Vector → Hybrid]
+    Hybrid --> Observe[保存原始顺序与 final_score]
+    Observe --> Score[去重 / 单题指标 / 分组均值]
+    Score --> Report[报告与跨进程复现诊断]
+    Report --> Analysis[逐题分析与未来获批实验]
 ```
 
-当前已存在 Pilot 和人工标签；正式数据集与 Runner 属于图中的未来节点。生成层的 `assemble_context()` 和模型回答位于主检索测量边界之后，context 字符截断或回答正确性不是此次测量对象。
+评估工具调用现有检索，产品不导入评估包。这条路径直接测量最终 Hybrid 输出，没有经过 `/api/query`、context 字符数截断、DeepSeek 或浏览器。因此检索质量与回答质量分别属于不同测量职责。API 测试通过也不能替代这里的真实模型/索引观测。
 
-用已存在的协作时段问题走一遍身份链：`PILOT-CQ-001` 询问每天共同协作时间；在绑定的 `t2001-novatech-pilot-01` / `novatech-pilot-0.1` 中，`employee_handbook.md` 的 index 2 对应 `392ae2da-31b8-4baa-b7dc-03020e492488`。该块直接给出 10–12 点、14–17 点及适用例外，人工为 Grade 3；index 5 只提及遵守协作时段，人工从建议的 2 改为 1。前者进入 binary relevant set，后者不进入。这是现有标注与映射的解释，没有运行这个 query 或构造检索排名。
+## 5. DX-RAG 最终怎么实现？
 
-### 5. 指标实际回答什么？
+### 5.1 从输入校验到保存输出
 
-Evaluation K 为 `[1, 3, 5, 10]`，未来消费同一次深度 10 请求的列表前缀。先保留重复 chunk_id 的第一次出现，记录后续重复位置和数量，不重新检索补足；同分保留 V1 实际顺序，不能按 ID 二次排序。
+[CLI](../../backend/evaluation/__main__.py) 先加载 JSON，验证模式和用途匹配、输出路径尚不存在、seeds 合法；每次重复启动独立 Python 进程。子进程重新读数据，父进程检查数据指纹相同，避免将不同输入混成多轮。
 
-| 指标 | 冻结定义的直观解释 | 解释边界 |
+[validator](../../backend/evaluation/dataset.py) 在任何 search 前验证全部题目：版本、映射、等级、人工状态、覆盖条件、类别、split、同 family 不跨侧、冲突 judgment 和 Answerable 真值。坏题使整个输入失败，不会静默从分母删掉。
+
+[V1 adapter](../../backend/evaluation/v1.py) 用公开 `list_chunks()` 核对实时 chunk ID 集、正文 SHA-256 和文件映射，确认默认 Top-K=5、阈值=0.30，再构造真实 Keyword/Vector/Hybrid。它不重新摄入、不重建索引；公开接口不能给出全部向量的逐位审计。
+
+[measure](../../backend/evaluation/runner.py) 每题只调用一次深度 10 的 search。它校验返回类型、长度、ID 和有限分数，保存原始结果，再按第一次出现去重并记录重复位置。有效 Answerable 计分；Unanswerable 保留返回及排除原因。最后按 Dev/Test 和类别聚合。
+
+报告保存 dataset、配置、Runner/Contract 版本、源码哈希、Git 身份和 dirty 状态、Python/依赖环境、命令、各 worker PID/hash seed、stderr、每题顺序/分数/指标以及分组分母。latency/cost 明确写 `NOT_MEASURED`。报告的 `invalid=0` 表示成功通过全部数据校验，不是把坏题算成零分。
+
+### 5.2 为什么深度 10 的前五条不等于生产请求 5？
+
+[Hybrid](../../backend/app/services/qa.py) 先把 top_k 乘二传给两路；Vector 再向 store 请求它接收值的两倍，然后截回接收长度。
+
+| 入口 top_k | Keyword 候选请求 | Vector 候选请求 | VectorStore 请求 |
+|---:|---:|---:|---:|
+| 生产默认 5 | 10 | 10 | 20 |
+| 评估 10 | 20 | 20 | 40 |
+
+这些是请求上限，不保证实际返回数。候选不同会改变合并后的得分与排序。旧算法仍为 `0.3*keyword_score + 0.7*vector_score`，按 ID 合并、缺失一路分数取 0、降序、过滤 `<0.30`、最后 Top-K。评估 @5 是深度 10 返回的前缀；@10 是更深检索诊断，不能称为 production Recall@10。
+
+### 5.3 采集与验证分别负责什么？
+
+[collect.py](../v2/benchmarks/t2003-v1-baseline-1.0/collect.py) 负责执行前置身份检查、回归、真实 Runner 调用以及前后 inventory/model/release/source 核对，保存 stdout/stderr、命令和退出码。它会写证据目录，真实 Chroma 客户端也可能写持久化文件，不能因接口只读就认为执行无磁盘副作用。
+
+[verify.py](../v2/benchmarks/t2003-v1-baseline-1.0/verify.py) 只读已有证据，不 encode、不检索。它独立写出评分公式，检查报告与冻结数据、源码及 manifest 的关系。保存报告可复算、现有环境可重跑、异机可复现，是三种不同能力。
+
+## 6. 用一条真实数据走完整流程
+
+[原始报告](../v2/benchmarks/t2003-v1-baseline-1.0/run-01/report.json) 中的问题 `BC01-Q014` 是：“这笔钱已经刷公司卡付了，我还要报费用吗，能再打到我个人账户吗？”以下是 2026-09-14 保存的真实本地检索结果，不是教学 fixture，也不是本次 Learning Review 新查询。
+
+1. 数据集将问题绑定到同一冻结快照、Test split 和 family，完整人工真值包含一个 Grade 3、一个 Grade 2。
+2. 输入校验通过后，真实 Hybrid 请求深度 10；Runner 保留实际顺序，不按 ID 再排序。
+3. 每个返回 ID 与该题完整真值匹配，前五条等级和单题指标如下。
+4. 该题纳入 Test 的 16 道 Answerable 分母，再参与宏平均。
+
+| 项目 | seed 1 / 3 | seed 2 |
 |---|---|---|
-| Recall@K | 前 K 项命中了完整人工相关集合的多少：命中去重数 / 全部 grade ≥ 2 块数 | 分母不能只用 Retriever 命中的相关块；不区分 2 与 3 |
-| RR@K / MRR@K | 截断内第一个相关块在 rank r，则该题为 1/r，否则为 0；合格题目算术平均 | 只关注首个 substantive evidence，不能证明必要证据全部到齐；必须标明 K |
-| nDCG@K | 将等级变为 gain 0/1/3/7，每项乘以 `1/log2(rank+1)`，将前 K 个位置的折扣 gain 求和得到 DCG@K；再将完整有效真值按等级降序理想排列，对前 K 个位置做相同的折扣求和得到 IDCG@K；两者相除得到 nDCG@K | 保留等级信息，但仍需逐题分析；理想排序不授权重排实际检索结果 |
+| 前五条等级 | 3, 0, 2, 0, 0 | 3, 0, 0, 2, 0 |
+| Recall@3 | 1 | 0.5 |
+| RR@3 | 1 | 1 |
+| Recall@5 | 1 | 1 |
+| nDCG@5 | 0.9558305893 | 0.9324441895 |
 
-主聚合是合格 Answerable queries 的逐题算术平均，按 K、split、dataset version 分开，并报告分母、排除与无效数量、query-type breakdown。没有合格题目的分组没有可用均值。合法 Unanswerable 单列数量、返回情况及误召回分析，不混入主 relevance 均值，也不证明生成层能正确拒答。
+`IDCG@5 = 7 + 3/log2(3)`。第一种排序的 `DCG@5 = 7 + 3/log2(4)`，第二种为 `7 + 3/log2(5)`。第二块相关证据更靠后，所以折扣更大；首条仍相关，所以 RR 不变；两块仍在前五，所以 Recall@5 不变。
 
-### 6. 为什么这样设计？
+只有这题指标变化，Test Recall@3 变化量为 `(0.5−1)/16=−0.03125`，从约 0.885417 到 0.854167。Test nDCG@5 变化约 0.00146165。小幅均值变化可以隐藏一题的明显名次变化；这里是在比较同一基线的运行波动，没有 Candidate，也没有统计显著性结论。
 
-| 决定及依据性质 | 理由与接受的成本 |
-|---|---|
-| 冻结快照内用 chunk_id 匹配（Documented：契约第 3、11 节；UUID 机制经源码核对） | 使判断和结果有精确实体对应；代价是重新入库必须新建版本并重映射、重审 |
-| 稀疏保存 judgments，隐式 0 以人工覆盖为前提（Documented：CD-1） | 无需物化完整 query × chunk 矩阵；节省记录量却不能省略全快照审阅，规模扩大后人工成本仍存在 |
-| 保留 grade ≥ 2 映射和 CQ-005 五块相关集合（Documented：CD-2） | 接受 substantive evidence coverage 的含义，同时用 graded nDCG 和逐题证据分析解释重要性损失；未证明该映射最优 |
-| Human project owner 为最终权威，v1 不要求第二标注员（Documented：CD-3） | LLM 可辅助、不可自批 Ground Truth；接受单人审阅偏差，未做 inter-annotator agreement |
-| 质量优先、按 evidence family 隔离 Dev/Test（Documented：CD-4） | 避免凑数量和同一事实的改写泄漏；目标可能达不到，须记录覆盖缺口并获最终人工批准 |
-| 保持 V1 顺序及行为，披露 depth 差异（Documented：第 7 节） | 保留待测对象的真实性；代价是暴露同分复现风险及评估与生产请求轨迹差异 |
+另外三类真实案例帮助避免只看总分：
 
-上述是有文档来源的接受理由，不是本次新 ADR。Candidate 检索策略的效果、最优等级阈值、实际同分波动幅度均为 Unknown / 未测量。将“测量条件也属于可复现对象”作为通用工程启发，是本次学习推论（Inferred），不代表已有实验结论。
+- `BC01-Q013` 问迟拿发票能否一直等待再报销，唯一 Grade 3 三轮均排第 9：@5 三项为 0；@10 Recall=1、RR=1/9、nDCG≈0.30103。深处找到不等于前五条有证据。
+- `BC01-Q025` 的 Recall@5=0.6、@10=0.8，而 RR=1；`Q032` 对应 0.5、0.75。第一个相关片段靠前不能证明多条件问题证据齐全。`Q020` 首条 Grade 2、第三条 Grade 3，RR@5=1 而 nDCG@5≈0.730929。
+- 八道不可回答题三轮全有 Grade 0/1 返回，其中 Q034 每轮 3 条，其余每轮 10 条。主指标为 null，各 split 排除 4 题。没有调用生成模型，不能据此认定正确拒答或幻觉。
 
-### 7. 哪些地方确实困难，哪些只是风险？
+## 7. 核心代码怎么读？
 
-真实发生的困难主要在标注语义：[Reviewed 0.2](../v2/evaluation/pilot-snapshot-01-annotation-packet-draft.md) 保存 30 项判断，14 项修改、16 项接受原建议。一般联系渠道、共享关键词或通用审批流程不自动贡献证据。全文包含干扰数字也不能机械判 0：CQ-005 的差旅住宿块虽有 500 元，却明确排除其对外部培训的适用，因此人工保持 Grade 2。
+### 7.1 代码地图
 
-CQ-005 的核心培训金额块为 Grade 3，另外四块为 Grade 2。binary 指标把五块都视为相关，这暴露的是测量信息损失；CD-2 已明确不是 annotation error，不可为让结果好看而缩小真值集合。CQ-006 则说明：一个块完整回答必要子问，可以为 Grade 3，即使整个问题需要另一块补齐。
+| 概念 | 文件 | 符号 | 职责 |
+|---|---|---|---|
+| 有效输入 | [dataset.py](../../backend/evaluation/dataset.py) | load_dataset / validate_dataset / review | 重复 JSON key、映射、审阅与全量 fail-fast |
+| 单题分数 | [metrics.py](../../backend/evaluation/metrics.py) | score_query | 完整真值作分母与 IDCG |
+| 测量与复现 | [runner.py](../../backend/evaluation/runner.py) | measure / aggregate / repeatability | 保留观察、宏平均、暴露变化 |
+| 真实依赖接入 | [v1.py](../../backend/evaluation/v1.py) | build_search | 公开快照核对、构造旧 Hybrid |
+| 进程与报告 | [__main__.py](../../backend/evaluation/__main__.py) | worker / main | 独立进程、元数据、独占创建输出 |
+| 已有检索 | [qa.py](../../backend/app/services/qa.py) | KeywordRetriever / VectorRetriever / HybridRetriever | 两路候选、固定融合及最终顺序 |
 
-当前 keyword index 使用 `set` 遍历候选，Python `sort` 虽稳定地保留同分输入顺序，却不能保证此前的集合遍历跨进程一致。因此存在排名复现风险。这是 STATIC 推导，不是本次观察到的不稳定；后续检查归 T2002，不能靠评估层排序掩盖。
+### 7.2 校验是一道前置门，不是身份认证服务
 
-输入失败与检索失败要区别处理，具体 15 项 fail-fast 规则以契约第 8 节为准：
+`require(condition, message)` 在不满足条件时抛 `ValueError`。`measure` 一开始便调用 `validate_dataset(data)`，所以只要最后一题无效，也不会先检索前面有效题目。测试用 Mock 断言 `search.assert_not_called()`，验证的正是这一时序。
 
-| 情形 | 契约要求与处理责任 |
-|---|---|
-| 未知 chunk_id、映射/版本冲突、缺失覆盖或审批、无效 split / evidence-family 泄漏 | 后续 Runner 的校验须阻止 official benchmark；数据问题返回构建/人工审阅处理，不静默跳过坏题 |
-| answerable=true，却没有人工 grade ≥ 2 | 无效数据，即使有 Grade 1 和正 IDCG 也不成立；返回审阅，不能自动改成 Unanswerable |
-| 有效 Answerable 有相关真值，但实际返回空列表 | 合法零分观察，保留在主聚合；后续检索分析解释原因，不能删除困难题 |
-| 返回少于 K | 使用实际列表，缺失位置不贡献命中或 gain，不补造结果 |
+Python 的 `bool` 是 `int` 子类；`isinstance(True, int)` 为真。校验 grade 和 chunk_index 时采用 `type(value) is int`，避免 JSON true 被当成等级 1。这不同于 TS 对 boolean/number 的类型分离。
 
-Pilot 入库记录未发现入库异常；本文不虚构调试事故。页面追溯不足、单人偏差和潜在同分波动分别是现有机制限制、审阅限制与尚待测量风险。
+`families.setdefault(family, query['split'])` 保存该 family 第一次出现的 split，再要求后续一致。它能发现同一 ID 跨侧，不能自动识别“同一事实被人工错误地分配了不同 family ID”。结构校验与语义审阅必须共同工作。
 
-### 8. 已有什么证据，分别证明到哪里？
+### 7.3 去重、截断与完整真值如何协作？
 
-| 行为 / 结论 | 来源与证据范围 | 时点、结果与本次边界 |
-|---|---|---|
-| 原创政策可经过现有摄入链并保持存储回读映射 | [Pilot README](../v2/evaluation/pilot-snapshot-01/README.md) 与 snapshot.json；进程内 API integration + REAL parser / embedding / Chroma，无 mock | 历史执行 2026-09-09：创建 201，四次上传均 200 / SUCCESS；另一进程回读 38 块 ID/正文/metadata 相等。本次只读证据，未重新入库；不是浏览器/TCP E2E、外部 provider LIVE 或 Retrieval Benchmark |
-| 人工标签及其修改来源明确 | Reviewed 0.2；Human review provenance | 2026-09-09：六题，30 显式 judgments，Grade 3/2/1/0 = 7/7/3/13；类别 2 Direct Fact / 2 Paraphrase / 1 Distractor / 1 Multi-chunk。本次未改变标签 |
-| 未列块可解释为 implicit Grade 0 | Coverage Gate；Human full-snapshot confirmation | 2026-09-10：6/6 APPROVED；仅绑定六题、Reviewed 0.2 与确切 corpus/snapshot。6 × 38 − 30 = 198 对是覆盖记账，不是检索指标，也未物化为显式标签 |
-| 本 Task 契约与责任选择已人工关闭 | Contract 第 13–16 节、V2 SPEC 第 1.2 节、T2001 AC-2001-1/2/3 | 2026-09-10 Human Final Gate PASS，三项 AC SATISFIED，25 项 readiness READY，T2001 DONE / Contract 0.3 FROZEN；引用既有决定，不重新签发 Gate，也不等于 Phase 20 PASS |
-| 当前身份、候选深度、score/filter/Top-K、metadata 机制 | ingest.py / qa.py / vector_store.py；本次 CODE / STATIC 阅读 | 核对代码机制，不宣称执行了查询或证明检索质量 |
-| 既有检索机械行为覆盖 | [test_qa.py](../../backend/tests/test_qa.py) 中 `test_expanded_recall_is_truncated_to_top_k`、`test_relevance_filter_runs_before_top_k` 等；UNIT，替代输入/依赖 | Existing coverage / not independently rerun。本次阅读断言，不将已有测试当作新执行，更不当作真实语义 Benchmark |
-| 指标实现、repeatability、正式 V1 Benchmark、latency/cost | T2002 / T2003 及另行获授权的数据构建 | DEFERRED 至对应后续工作；当前未实现/未测量。本次未运行 metrics、fixtures、Retriever、provider 或完整测试 suite |
-
-注意历史状态：[Pilot README](../v2/evaluation/pilot-snapshot-01/README.md) 的“T2001 IN_PROGRESS / Ground Truth 尚未创建”与 snapshot.json 的 `ground_truth_created=false` 描述入库取证时点。之后的标签、Coverage Gate 和 Final Gate 独立记录后续事实。学习文档连接这些时点，不回写冻结证据。
-
-### 9. 当前还缺什么，结论何时有效？
-
-当前可得结论是：契约已冻结，真实小规模 Pilot 支持其身份与人工标注流程，人工完成本 Task 的最终批准。该结论只对已声明的版本与证据范围成立，不证明政策语料对真实企业查询的代表性，也不证明检索或生成质量。
-
-正式 Benchmark Dataset 尚未交付。40 Answerable + 8 Unanswerable、Dev/Test 各 20+4 是质量目标，不是已存在的 48 条数据或必须凑足的配额。已有六题 Pilot 未自动通过正式 promotion；后续构建由 Human project owner 单独授权并批准来源、覆盖、实际 split/evidence families、必要审阅和最终版本。
-
-指标与 Runner、排名重复性检查归 T2002；正式 Baseline 归 T2003，且必须先有真实版本化、Human-reviewed dataset、T2002 DONE、可用模型/索引/环境和明确执行授权。Core-Evidence Recall 只是未批准的候选诊断，不能在学习阶段添加实现。
-
-下一步研究方向是：在后续授权满足时验证测量实现并采集保留 V1 行为的参考结果，再讨论 Candidate。当前没有启动该工作，也没有批准任何检索 Experiment。未来如果发现真实契约缺陷，应提交明确人工审阅的版本修订；不得为适配实现或结果而静默修改冻结定义。
-
-### 10. 留给 Phase Learning Review 的整合素材
-
-| 素材类型 | 后续应融入概念主线的内容 |
-|---|---|
-| Core concept | 评估真值与检索分数的区别；snapshot-bound identity；稀疏标签依赖覆盖审阅 |
-| 关键 flow | 语料 → 冻结块 → 人工 judgment / coverage → 正式 promotion → 校验 → 最终检索列表 → 指标与逐题分析 |
-| Engineering decision | 保留 V1 待测行为、显式披露 depth confounder；保留 binary mapping 同时说明证据信息损失 |
-| Failure lesson | 通用流程不等于相关证据；未标注不等于零；坏数据不能伪装成合法检索零分 |
-| 证据边界 | 真实入库、人工批准、源码核对、指标测试、Benchmark 分别回答不同问题 |
-
-主动回忆问题（候选题，不附面试话术）：
-
-1. 为什么随机 UUID 本身不能支持跨 re-ingestion 的真值复用？还要绑定哪些信息？
-2. 人工确认 coverage 前后，“未列 chunk”的含义发生了什么变化？
-3. 30 条显式判断加 198 对隐式 0，为什么不能描述为 228 条逐项人工标注？
-4. `grade >= 2` 和 `MIN_RELEVANCE_SCORE = 0.30` 各在哪一步生效？
-5. 不执行代码，只沿参数传递推导：Hybrid 请求 5 与 10 时，VectorStore 分别收到什么请求上限？为什么前缀不保证相同？
-6. CQ-005 的 binary relevant set 为什么包含不直接给出 350 元的块？这使 Recall/MRR 少表达了什么？
-7. 为什么“有效真值但空返回”可以计零，“Answerable 只有 Grade 1”却必须阻止运行？
-8. 为什么稳定排序仍可能存在跨进程同分排名差异？评估层按 ID 排序会掩盖什么？
-9. 同一政策事实的 Direct Fact 与 Paraphrase 分到不同 split，会产生什么泄漏？
-10. 真实 Pilot、T2001 DONE 和 Contract FROZEN，分别还不能证明哪些后续条件？
-
-### 本次学习文档交付边界
-
-新增 Task 素材并最小同步学习索引；原契约、Pilot、源码、测试、SPEC/TASKS 和 Gate 历史保留，不删除历史或更新 ER/Interview。以下仅检查学习文档，不取代人工标签权威或运行验证。
-
-- 自审：已按 Part A 核对十类内容，区分历史状态、当前机制、人工决定与未来工作；无原稿删减，无新标签或测量结果。
-- 仓库检查（2026-09-10，Windows PowerShell，仓库根目录）：`git diff --check` 通过，exit 0；`git diff --cached --stat` 无输出，exit 0。Git 有既有 global ignore 读取权限及 LF/CRLF 提示，不是内容检查失败。
-- 本地只读 Python 文档检查：两个学习文件共 79 个相对文件链接，缺失 0，exit 0。以写入前 SHA-256 为基准核对 185 个已有文档/应用/测试文件，只发现学习 README 改变；新增文件仅本文。12 个 `docs/v2/evaluation/` 文件（契约与 Pilot 材料）哈希全部保持一致。这是工作区静态完整性核对，不是重新验证 Pilot 运行结果。
-- 独立 fresh-reader test：**PASS，附两项非阻断 clarity findings；两项已修订并定点自审复核**。来源为用户本轮提供的独立审阅报告：审阅未携带写作上下文，依据 Workflow V2 §A.5 与 Task Learning Pass 模板，确认主要解释、代码定位和证据边界可理解且与所查来源一致。此前 PENDING 是该报告到达前的状态。
-  - Dev/Test 用途原先未解释：第 2 节现已补充 Dev 用于调参、Test 留出用于决策后的最终评估，并说明 evidence-family 隔离的原因。
-  - nDCG 原先省略求和步骤：第 5 节现已明确前 K 个位置的折扣 gain 求和为 DCG@K，IDCG@K 在完整有效真值的理想排序上做相同计算。
-  - 两项修订已对照冻结契约第 10、7.1 节复核。独立报告的原结论为 PASS with two non-blocking clarity findings；本次记录其结论并落实修订，不声称独立读者再次审阅过修改版。原报告记录 16 个学习文档链接可解析、`git diff --check` 通过；证据范围为 STATIC，未运行 ingestion、retrieval、metrics、providers 或 tests。
-- T2002/T2003 未启动；未 commit、push，也未修改 Task/Gate 状态。
-
-## 独立评估工具：把冻结的定义变成可检查的测量
-
-Task reference：T2002；实现验证与首次 Learning Pass 补全日期均为 2026-09-11，但属于两次不同活动。2026-09-14 再次按 Part A 核对当前代码、冻结契约、测试断言及后续证据，补充报告阅读与 Python 机制；未重新执行实现验收。下面原有测试、调试和文档检查记录保留各自日期，后续状态见本节末尾。上面的 T2001 Learning Pass 和独立 reader 结论是历史材料，未改写；本节尚未接受独立 reader test。T2002 DONE，T2003 TODO，Phase 20 Gate 未启动。
-
-### 为什么评估工具需要单独放置
-
-原来只有测量契约，没有执行它的程序。[evaluation 包](../../backend/evaluation/__init__.py) 现在提供校验、计算、执行和报告。依赖方向是评估工具调用 V1，产品不导入评估工具，因此指标计算不会进入请求处理链。保留旧算法才能把以后观测到的差异归因于明确的实验变量。
-
-这次研究问题是“计算是否忠实于人工批准协议，以及工具能否显示排名变化”，不是“检索质量是否足够好”。没有 Candidate，没有真实 Benchmark，也没有接受检索优化的决定。工具验收依靠手算和受控依赖，真实 Baseline 是后续工作。
-
-### 新概念：先分清测量对象、计算和证据
-
-| 概念 | 如何理解 | 本工具中的边界 |
-|---|---|---|
-| Runner（评估执行器） | 把输入校验、检索调用、计分与报告串起来的离线程序 | 独立于产品请求处理，不生成回答 |
-| Fixture（受控测试样例） | 人为安排输入和预期结果，以便手算和断言 | 验证工具逻辑，不代表真实问题分布 |
-| Recall / RR / MRR | Recall 问“应找回的相关块找到了多少”；RR 是首个相关结果名次的倒数；MRR 是多题 RR 的平均 | 都把 grade ≥ 2 视为相关，RR 在各 K 内截断 |
-| DCG / IDCG / nDCG | DCG 对各名次的等级收益折扣求和；IDCG 是完整真值的理想排序得分；nDCG 是二者比值 | 保留 Grade 1 的弱相关收益，但不放宽 Answerable 校验 |
-| Macro average（宏平均） | 先算每题分数，再对合格题目等权平均 | 一个问题拥有更多相关块，不会因此在聚合中获得更大权重 |
-| Provenance（来源记录） | 记录输入、源码、配置与执行环境的身份，便于解释和重跑 | hash 能核对内容一致性，不能证明人工标签正确 |
-| Hash seed / repeatability | Python 进程启动时的 hash seed 会影响字符串 set 的遍历顺序；重复性检查比较多轮观测 | 固定记录的 replay 稳定，不等于真实检索稳定 |
-
-### 代码地图：谁负责哪一段
-
-| File → Class / Function | 责任与重要行为 |
-|---|---|
-| [dataset.py](../../backend/evaluation/dataset.py) → `load_dataset` / `validate_dataset` | 解析 JSON 时拒绝重复键；全量校验版本、快照、审阅、真值与 split，返回按 chunk_id 索引的 inventory |
-| [metrics.py](../../backend/evaluation/metrics.py) → `score_query` | 消费已验证真值与已去重排名，计算各 K 的 Recall、RR、nDCG；不负责检索或数据集校验 |
-| [runner.py](../../backend/evaluation/runner.py) → `measure` / `aggregate` / `repeatability` | 每题请求一次深度 10，保留原始结果、去重诊断、分组均值及各轮差异 |
-| [v1.py](../../backend/evaluation/v1.py) → `build_search` | 经公开 store 接口核对冻结快照，返回 V1 search callable 和实际配置；在调用时才导入产品依赖 |
-| [__main__.py](../../backend/evaluation/__main__.py) → `main` / `worker` / `git_context` | 父进程调度独立 worker，收集输入与源码身份，最后以独占创建模式保存报告；fixture 分支不初始化真实检索依赖 |
-| [test_evaluation.py](../../backend/tests/test_evaluation.py) → `EvaluationTests` | 使用 [hand-calculated.json](../../backend/tests/fixtures/evaluation/hand-calculated.json) 和替代依赖，检查手算、失败出口、进程与 adapter 边界 |
-
-### 从输入到输出：有效性先于效果
-
-```text
-父进程：JSON → 全量校验 → 按 seed 启动独立 worker
-worker：重新加载/校验 → V1 adapter 或 synthetic observations
-                              ↓
-                    每题一次 search(depth=10)
-                              ↓
-             原始 ID/score → 校验返回 → 首次出现去重 → 指标
-                              ↓
-                    每轮逐题/分组结果回到父进程
-父进程：检查 dataset hash 一致 → 跨轮比较 → 新建 JSON 报告
-失败出口：无效输入/返回或 worker 失败 → CLI exit 1，不生成成功聚合
-```
-
-[validate_dataset](../../backend/evaluation/dataset.py) 先检查全部 queries，随后才允许 search。坏 query 不能悄悄从均值分母消失。相反，真值有效但结果为空是合法低分，需要保留。函数抛出的 `ValueError` 类似前端在解析 API 数据时抛出的校验错误；它终止本次评估，不代表检索相关性为零。
-
-两类 `APPROVED` 字段也不是相同权威：合成样例的 `SYNTHETIC_TEST` 只让单测表达 schema，正式数据要求 `Human project owner` 及真实决定来源。程序能验证字段与引用存在，不能认证人是否真的审过，更不能自己批准标签。
-
-Python 里 `bool` 是 `int` 的子类，`isinstance(True, int)` 为真；因此 grade 和 chunk_index 用 `type(value) is int`，防止把 JSON `true` 当成等级 1。这与 TS 中 boolean 和 number 的类型分离不同。`families.setdefault(family, split)` 则记住该家族第一次出现的 split，再要求之后一致；它只能识别已填写的 family ID，不能发现人把同一事实误标成两个不同 family 的语义泄漏。
-
-### 最小代码精读：集合用于匹配，列表保存排名
-
-[score_query](../../backend/evaluation/metrics.py) 用 set 构造所有 `grade>=2` 的相关 IDs；集合求交适合统计命中，但没有排名语义。实际返回顺序始终保存在 list 中，RR 通过 `enumerate(prefix, 1)` 从 1 开始找第一个命中。这类似 JS 的数组遍历，显式起点避免把第一个名次误写成 0。IDCG 才对真值等级做理想排序；不能把这个排序拿来覆盖真实结果。
-
-[measure](../../backend/evaluation/runner.py) 的 `seen` dict 保存每个 ID 第一次出现的原始位置。后续重复只追加诊断，结果列表不补足。因此原始 c,b,b,a,d 变成 c,b,a,d，第三个唯一结果是 a。合成真值 a=3,b=2,c=1 时，相关集合为 {a,b}，Recall@3=2/2，RR@3=1/2。Grade 1 的 c 不给 Recall 命中，却给 nDCG 一个 gain=1；这解释了两类指标为何可能得出不同的局部印象。
-
-完整真值的理想 gain 序列为 7,3,1；实际前三项 gain 为 1,3,7，因此 nDCG@3 是 `(1+3/log2(3)+7/2)/(7+3/log2(3)+1/2)`。只返回 b 时，Recall 分母仍为 2，IDCG 仍包含未命中的 a 和 c，避免“只按找回来的内容给自己打分”。
-
-主聚合对每题等权，不把命中数跨题相加后除以所有真值数。Dev/Test 分开，防止训练用途和留出用途混成一个数字；无合格样本的组使用 Python `None` → JSON `null`，表达没有均值而非均值为零。
-
-把上面的机制对应到 `score_query` 的真实片段：
+以下是 `score_query` 的真实片段，前提是输入已经验证，ranked_ids 已按首次出现去重：
 
 ```python
-prefix = ranked_ids[:k]
+relevant = {cid for cid, grade in grades.items() if grade >= 2}
+if not relevant:
+    raise ValueError("scoring requires answerable ground truth")
+ideal = sorted(grades.values(), reverse=True)
+```
+
+集合推导式建立二值相关集合，排序建立理想 gain 序列，两者职责不同。随后每个 K 取 `ranked_ids[:k]`；切片少于 K 时不会补项。核心表达式是：
+
+```python
 rank = next((i for i, cid in enumerate(prefix, 1) if cid in relevant), None)
 ```
 
-`[:k]` 类似 JS 的 `slice(0, k)`，不足 K 项时直接取现有列表。括号内是生成器表达式：按需产出符合条件的名次；`next(..., None)` 取第一个，没找到就返回 `None`。因此无需创建所有命中名次的中间列表。它与 JS `findIndex` 的目的相近，但这里直接返回从 1 开始的名次，且未找到用 `None`，不是 `-1`。后面的 `1 / rank if rank else 0.0` 安全依赖于“合法名次从 1 开始”这个约定。
+`enumerate(..., 1)` 让名次从 1 开始；括号内生成器按顺序找相关块，`next(..., None)` 只取第一个，无命中返回 None。它类似按条件寻找首项的位置，但已经转成一基名次。`1 / rank if rank else 0.0` 因名次不可能为 0，可安全区分命中与无命中。
 
-例如已有聚合测试在 Dev 中再添加一个有效但返回空列表的 Answerable：两题 Recall@3 为 1、0，均值为 0.5；RR@3 为 0.5、0，MRR@3 为 0.25。另有一个 Unanswerable 被排除，报告为 included=2、excluded=1、denominator=2。空检索降低均值；有效 Unanswerable 不进入该均值；无效输入则根本不能得到这份成功报告。
+DCG 的真实实现：
 
-### 请求深度：为什么评估 @5 不等于生产 Top-K=5
+```python
+def dcg(values):
+    return sum((2 ** grade - 1) / math.log2(rank + 1)
+               for rank, grade in enumerate(values, 1))
+```
 
-根据 [冻结契约 §7.2](../v2/evaluation/retrieval-evaluation-dataset-contract.md)，`KS=(1,3,5,10)` 是同一次结果的计分截断点，`REQUEST_DEPTH=10` 才是调用参数。[V1 HybridRetriever](../../backend/app/services/qa.py) 将请求深度乘 2 交给 keyword/vector 分支，VectorRetriever 再乘 2 请求 store：评估路径为 10 → 20 → 40，生产默认路径为 5 → 10 → 20。
+实际 DCG 输入 `[grades.get(cid, 0) for cid in prefix]`，理想 DCG 输入 `ideal[:k]`。这里 `.get(cid, 0)` 合法，是因为上游已验证 ID 属于快照、coverage 完整；单独复制这个默认值到未审阅数据上会掩盖遗漏标注。
 
-候选池大小参与最终融合，因此“请求 10 后取前 5”未必等于“独立请求 5”。报告把这一 execution difference 记为 confounder（影响解释的混杂因素）。`@10` 是更深检索诊断，不能称作 production Recall@10；`@1/@3/@5` 也必须说明来自深度 10。工具沿用 V1 的权重 0.3/0.7、阈值 0.30 和原始同分顺序，没有通过改算法消除这个差异。
+[手算 fixture](../../backend/tests/fixtures/evaluation/hand-calculated.json) 将 a/b/c 设为 3/2/1，d 是覆盖确认后的隐式 0。原始 `c,b,b,a,d` 去重成为 `c,b,a,d`：@1 Recall/RR=0，nDCG=1/7；@3 Recall=1、RR=1/2，nDCG 为 `(1+3/log2(3)+7/2)/(7+3/log2(3)+1/2)`。这是合成测试，不是正式数据表现。
 
-### 为什么重复运行需要新进程
+### 7.4 宏平均与跨进程变化怎样保留？
 
-同一个进程中的 set 顺序通常保持一致，仅在循环里调用相同函数可能漏掉跨进程风险。[CLI](../../backend/evaluation/__main__.py) 用 `subprocess.run` 和独立 `PYTHONHASHSEED` 启动 worker，父进程保留每次原始结果及指标。seed 1/2/3 是可复现的探测条件，不是对所有运行稳定的证明。
+`aggregate` 先按 split/category 取 members，再取 `metrics is not None` 的 eligible。每题的 recall/rr/ndcg 求和除以 count，aggregate 中 rr 改名为 mrr。count=0 时整组 metrics 为 None。重复同值 judgment 会在按 ID 构造字典时合并；冲突等级此前已被拒绝，不扩大分母。
 
-实际 V1 Keyword/Hybrid 配合替代 store/vector 的同分测试中，三个进程分别返回 d,g,e,a,b,h,c,f；h,b,g,e,c,d,f,a；g,e,b,c,f,h,d,a。最终分数不变，rank 和指标变化。工程上拒绝在评估层按 chunk_id 排序来消除这个现象，因为那会评估一个改造过的算法。变化属于观测证据，工具仍可通过验收；是否及如何修复 V1 要等后续授权实验。
+`repeatability` 比较同一题每轮的有序 ID、ID→分数映射和指标，报告 affected_positions 及 metrics_by_run；精确比较容差为 0。ID→分数映射变化也可能来自返回集合变化，不一定是同一个向量得分漂移。
 
-这里的三组顺序来自实现阶段的日志，本次只读核对。`repeatability` 按题比较排名位置、ID→score 映射和指标，指标容差为 0，保留各轮值而不跨轮求均值。`order_stable=false` 是成功记录的不稳定观察，不是 worker 执行失败。源码中的同分排序会保留上游顺序，keyword 的 set 遍历顺序才可能随进程变化；本测试没有把真实向量搜索带入因果链。
+CLI 用 `subprocess.run` 逐轮启动进程，在启动环境设置 `PYTHONHASHSEED`；这影响字符串 hash 和 set 遍历。Python sort 稳定，只保证保留当前输入的同分顺序，不能使来自 set 的输入跨进程一致。fixture 的记录列表稳定，不等于真实 Keyword 候选稳定。
 
-### 如何读一份报告，避免把成功保存当成全部稳定
+## 8. 为什么这么设计？
 
-先从 `scope`、`dataset`、`protocol` 和 `environment` 确认测量对象与条件，再到 `runs[*].per_query` 看原始结果、去重结果和该题指标，最后阅读 `aggregates` 与 `repeatability`。聚合里的 `query_category=null` 表示当前 split 的全部类别；它和 `metrics=null`（该组无合格题目）含义不同。只摘取某个均值会丢失分母、排除题目和运行条件。
-
-`repeatability` 中三种变化独立报告。以下是从代码推导的阅读示例，不是新增运行观察：
-
-| 变化 | 应怎样解释 |
+| 问题与选择 | 理由、成本与依据性质 |
 |---|---|
-| ID 顺序相同，但某个 ID 的 final_score 改变 | `order_stable` 仍可为 true，同时该题 `scores_changed=true`；指标只依赖排名和人工等级，因此可以不变 |
-| 两个相同人工等级的结果交换位置 | `order_changed=true`，但 Recall/RR/nDCG 可以都不变；指标稳定不能反推完整排名稳定 |
-| worker 正常完成并成功保存，发现名次变化 | CLI 仍可 exit 0；查看 `order_stable=false` 和 `affected_positions` 才能发现这次观测 |
+| 精确匹配快照内 chunk_id，而非按文件名猜对应 | Documented：身份明确；重新摄入要新建版本并重映射审阅 |
+| 稀疏标签允许隐式 0，但必须完整覆盖确认 | Documented：节省存储记录，不免除全快照审阅劳动；正式版本恰好采用完整矩阵 |
+| 保持 grade≥2，并配合 graded nDCG | Documented：Recall/MRR 测 substantive evidence；接受二值映射对重要性的损失，未证明该阈值最优 |
+| 保留旧算法及实际顺序，不为稳定性加次级排序 | Documented：测量对象不能为测量而改变；成本是如实呈现波动 |
+| 独立评估包与新进程重复 | Documented：调用方式和报告可追溯；成本是加载/执行开销，当前未测 latency |
+| 未强制补足题数或第二标注员 | Documented：采用获批质量优先范围；接受覆盖不足与单人偏差 |
 
-因此顶层 `order_stable` 不是“分数、环境、数据与一切行为均稳定”的总开关。当前函数按各轮 `per_query` 的相同数组位置对齐查询，依赖 Runner 对同一输入保持 query 顺序；它不是能自动按 query_id 合并任意外部报告的通用比较器。这一边界来自 CODE，未在本次进行故障注入。
+按 ID 排序、独立请求每个 K、扩大数据或增加标注员可作为教育上的对照思路，不是本阶段已经实验比较并淘汰的方案。完整设计评价由独立 Engineering Review 负责，本文不新建 ADR 或批准架构。
 
-### 可追溯性和代价
+**Inferred：** Q014 的无关块加分变化与 Keyword set 遍历、并列候选在截断边界进出相容；某块可能从“无 keyword 加分”变为“有加分”，最终非同分结果也会换位。**Unknown：** 没有保存两路完整候选，不能唯一排除其他因素或宣称完整根因定位。
 
-[V1 adapter](../../backend/evaluation/v1.py) 通过公开 store 检查整个冻结 snapshot 的 IDs、文件映射与文本 hash 后调用 `hybrid_search`。这比只检查命中结果更早发现真值绑定错误，但每轮需要扫描全部 chunks。当前小规模评估接受这个成本，未测量 latency；如果语料扩大，不能在没有新证据时声称开销仍可忽略。
+## 9. 容易搞错的地方
 
-报告保存完整输入、实际源码 hash、Git dirty 状态、依赖版本和所有轮次。代码未提交时只写 HEAD 会错误标识 Runner；内容 hash 补充了这一缺口。公开 store 不返回 embedding，所以文本 hash 不等于向量/模型身份校验；冻结模型和索引的外部 provenance 仍不可省略。
+- **MRR=1 不等于证据齐全。** 每题第一条相关就可得到 1，后续缺块仍影响 Recall。
+- **Answerable 空返回与坏真值不同。** 前者是合法零分，要留在分母；后者阻止评估。
+- **nDCG 保留 Grade 1，不代表 Answerable 只需 Grade 1。** 输入资格和评分收益是两件事。
+- **真实检索不等于真实企业分布。** 模型/索引是真的，政策语料仍是项目原创合成材料。
+- **三轮 40 题不是 120 个独立业务问题。** 同 family 也未必独立；三轮范围不是置信区间。
+- **哈希一致不等于内容正确。** 它绑定内容身份，不认证人工等级、存储向量语义或泛化。
+- **检查完成不等于排名稳定。** 真实三轮有 5 题排名变化、6 题 score map 变化、1 题指标变化；保留负向观察正是测量能力的一部分。
+- **只读接口不保证磁盘不写。** 前后公开逻辑一致与持久化字节不变需要分开核对。
 
-### 设计理由：哪些有记录，哪些是推断
+## 10. Failure scenarios
 
-| 选择 | 理由来源与成本 |
+| Symptom | Cause / 证据性质 | Owner | Current behavior |
+|---|---|---|---|
+| 还没搜索就报错 | 测试覆盖：重复 query ID、未知 chunk、非法等级、缺 coverage、冲突判断、跨 split family 等 | dataset validator / 人工数据审阅 | ValueError；阻止整个输入，不跳过坏题 |
+| 有效题各指标为 0 | 测试覆盖：Retriever 返回空列表 | 检索分析负责人 | 合法观察，保留分母 |
+| 返回未知 ID、NaN 或超过 10 条 | 测试覆盖的无效观察 | measure / 检索接入 | 明确失败，不写成合法零分 |
+| 多轮顺序或指标不同 | 历史真实观察及替代依赖测试；上游 set/截断是相容机制推断 | 复现诊断 / 后续实验协议 | 保存原序和差异，不重排、不选择性丢轮 |
+| 输出路径已存在 | CLI 测试覆盖，当前代码检查 | CLI | 拒绝覆盖；文件用 x 模式创建，新运行需新目录 |
+| worker 失败或采集被中断 | 代码推导风险，不虚构已发生事故 | CLI / collect | 非零 worker 阻止完整报告；采集正常异常可保存 FAIL/execution 和已有日志，硬中断未必保存尾部记录 |
+| 已有 report，但没有 after inventory | 部分失败推理 | 采集/验收负责人 | 数学可复算仍不能补出缺失的后置身份检查 |
+| Chroma 文件 hash 改变 | 历史实际观察：sqlite3、data_level0.bin、length.bin 改变 | 运行证据负责人 | 保留差异，公开逻辑前后相同；原因未知，不擅自归因内部维护 |
+
+没有系统级排他锁，前后核对不能证明期间绝无瞬时外部写入。采集脚本不负责自动恢复或覆盖冻结库。原始索引应保留，不能为“修好报告”重建它。
+
+## 11. 测试到底证明了什么？
+
+手算测试检查公式和分母；fail-fast 测试检查失败发生在 search 前；替代 store/vector 的测试暴露真实 Keyword/Hybrid 顺序风险；API Mock 测试保护请求和响应契约；真实模型/索引采集才给出这套数据上的观察。它们回答不同问题。
+
+| 行为 | 证据范围与时点 | 证明及边界 |
+|---|---|---|
+| 语料能真实入库并回读 | 历史 2026-09-09 Pilot：进程内 API integration + REAL parser/embedding/Chroma | 4 文件/38 块；不是浏览器/TCP E2E，不是 Benchmark |
+| 评分与产品机械行为 | 历史 2026-09-14：评估 8/8、QA 50/50、Query 10/10 | UNIT + MOCKED/SUBSTITUTED；不证明真实语义质量 |
+| 正式题集上的真实检索 | 历史 2026-09-14：真实本地 BGE/Chroma，3×40 次 Hybrid | 无 mock、无 LLM；保留全部逐题/分组值；不是回答 E2E |
+| 当前工具及回归仍符合断言 | 2026-09-18 独立 Gate：7+50+10=67 项测试通过 | 未重跑写文件 CLI 测试；没有重新初始化真实索引 |
+| 保存证据可重新计算 | 同日 Gate：独立复算 1,152 个指标，重放 120 条/30 组及完整诊断 | REAL 离线公式 + SUBSTITUTED 保存返回；不是实时搜索 |
+| 当前对象文件身份 | 同日 Gate：29 模型文件、45 索引文件与采集后哈希一致 | STATIC 文件核对；不认证向量语义、不证明运行期间始终不变 |
+| 本章文档维护 | 本次：来源/数值/链接/保留审计与独立读者检查，记录见附录 | 不再次执行模型、检索、回归或 provider，不新增质量测量 |
+
+跨轮精确比较的容差是 0；独立公式离线复算的浮点容差是 `1e-12`，两者不能混用。成功报告三轮每侧均纳入 16A、排除 4U，无查询执行失败、无重复返回；Q004 每轮 8 条，其余 Answerable 每轮 10 条。当前 Dev Recall@5=0.9125、Test=0.90625；Test nDCG@5 为 0.894758～0.896220，不跨轮平均隐藏差异。
+
+## 12. 当前局限
+
+**Current limitation：** 合成单组织政策、32A+8U、单人审阅、类别不均衡、共享证据和非盲测；UUID 绑定旧快照；没有可靠页级映射；正常检索分支不透传完整 metadata，人工追溯需查快照。向量逐位语义、跨进程完全确定性和异机可移植索引均未证明。
+
+**Future improvement：** 在明确需求和授权下可考虑更丰富语料、独立标注、可移植索引身份或更细分支诊断；这些只是需评估的能力，不是已经批准的实现。RRF、BM25、Reranker、Query Rewrite 均未采用。
+
+**Not yet measured：** latency、cost、生成忠实度、回答/引用正确性、拒答能力、所有平台/seed 的波动范围及统计置信区间。生成评估归后续单独批准的协议；未测项目没有被暗中计为通过。
+
+## 13. 如果规模扩大怎么办？
+
+| 当前假设 | 首先可能出现的问题 | 可观察信号与重新考虑条件 |
+|---|---|---|
+| 38 块可完整人工覆盖 | 稀疏存储也不能省掉全量审阅，语料扩大会增加人力 | 实际审阅耗时、争议和漏标复查负担使当前方法不可持续时，再设计并批准新覆盖协议 |
+| 全部逐题及内嵌 dataset 存于 JSON | 数据/轮次增加会扩大报告、内存和查错成本 | 实际报告大小、内存和定位时间成为问题时，再讨论分片及可追溯索引；不随意删除原始观察 |
+| 一个保留的本地索引可重跑 | 协作者换机器后可能没有同一 UUID 与向量库 | 首次跨机比较需求出现时，先明确模型/索引迁移和身份验证方案 |
+| 只比较少量固定重复轮次 | Candidate 的小差异可能落在基线波动内 | 当决策依赖的改善与观测波动相当时，应先批准更充分的重复/比较方法，不能挑选最好一轮 |
+
+这些是机制推导的升级条件，不是测得的性能瓶颈，不给虚构 SLA、容量阈值或最优架构。
+
+## 14. Self-Test
+
+先关闭本文主动回答，再回到相应代码核对；以下不附逐题面试答案。
+
+1. 为什么同名文件重新入库后，旧 judgment 不能直接复用？
+2. 人工 grade≥2 与检索阈值 0.30 分别控制什么？
+3. 未列块在什么条件下才可解释为零？198 对隐式零为什么不是新增显式标签？
+4. Answerable 只有 Grade 1 与有效 Answerable 空返回分别怎样处理？
+5. 为什么 Recall 分母和 IDCG 必须使用完整真值？
+6. 手算 c,b,b,a,d 去重后 @1/@3 的 Recall、RR、nDCG，标明这个例子是什么证据？
+7. 沿代码推导生产请求 5 和评估请求 10 的候选深度，为什么前五条不保证相同？
+8. 找到在任何 search 前校验整份输入的代码和对应测试断言。
+9. `next(..., None)`、`enumerate(..., 1)` 和 `type(x) is int` 各避免什么问题？
+10. 为什么稳定 sort 仍可能跨进程不稳定，甚至最终非同分结果也换位？
+11. Q014 若第二块相关证据从第 4 移到第 6，预测 @3/@5 的 Recall、RR、nDCG，以及 Test Recall@5 的变化量。
+12. 为什么八道不可回答题均有返回，不能推出八次幻觉或八次正确拒答？
+13. 若 report 存在但 after inventory 缺失，离线复算还能证明什么、不能证明什么？
+14. 现有三轮为何不是 120 个独立样本？设计下一次比较前要固定哪些条件？
+15. 如果隐藏所有 Task/Gate 编号，你能画出从人工真值到最终分组指标的链路，并给每一段指出源码吗？
+
+只读练习：打开原始报告，定位 Q013/Q014 的 `raw_results`、`matched_judgments`、`metrics` 与 Test aggregate，按公式手算变化。不要运行采集脚本来“查看结果”，也不要改 Test 标签或算法来验证猜测。
+
+## 15. 一页复习
+
+| 记忆点 | 重建 mental model |
 |---|---|
-| 全量校验后再 search；真值无效时不计零 | **Documented**：冻结契约 §7–8 明确要求。避免坏数据污染分母，代价是一题无效会阻止整次评估 |
-| 首次去重、不补足、不另加 tie-breaker | **Documented**：冻结契约 §7.3/8.2。测量已存在的输出；代价是结果可能不足 K、同分波动继续可见 |
-| 独立标准库包与独立进程 | **Documented**：[执行计划与协议](../v2/evaluation/t2002-runner.md) 记录隔离、无新增依赖与 seed 探测；代价是重复启动和每轮快照扫描 |
-| `score_query` 与 search 分离 | **Inferred**：从函数边界与手算测试可推断，这样便于不依赖模型验证公式；不声称存在额外架构选型记录 |
-| seed 默认 1/2/3 | **Documented**：协议将其限定为工具默认值；为何选择这三个具体数值的更深动机 **Unknown**，不能声称统计充分性 |
+| 目的 | 先建立可解释的旧系统测量起点，再讨论优化 |
+| 输入 | 固定快照 + 人工真值 + split/coverage/版本与批准来源 |
+| 身份 | chunk_id 仅在绑定快照内匹配；重新摄入要新版本 |
+| 流程 | 全量校验 → 实时快照核对 → 旧 Hybrid 深度 10 → 保留原序 → 首次去重 → 单题指标 → 分组宏平均 → 重复性报告 |
+| 三种分数 | Recall 看覆盖，MRR 看首个相关，nDCG 看分级证据的位置 |
+| 两种失败 | 坏数据停止；合法检索空结果计零并保留分母 |
+| 两类真值表示 | 稀疏标签需人工覆盖确认；完整矩阵仍需审阅 |
+| 三种稳定性 | 内容身份、排名、指标分别判断；一种稳定不推出另一种 |
+| 证据底线 | Mock/替代重放不是实时检索，检索结果不是回答质量 |
+| 使用条件 | 保留基线与全部轮次，披露深度和波动，Test 不反复调参 |
 
-### 失败与易错边界：谁负责停止，谁负责保留
+## Appendix A — Engineering References 与当前工作流状态
 
-| 情况 | 当前行为与 owner | 证据性质 |
+本章是 canonical Phase Technical Learning，按 [Workflow V2](templates/phase-learning-pass-workflow.md) 和 [模板 Part B](templates/phase-learning-template.md) 于 2026-09-18 整合；不是在 Task 日志末尾追加总结。
+
+- **Tasks：** T2001/T2002/T2003 均 DONE，未改变既有 Task 状态或 AC。
+- **Gate：** [独立 Phase 20 Gate](../verification/PHASE-20-GATE-REVIEW.md) 已建立 **PHASE_20_PASS — READY_FOR_PHASE_21**。11 AC PASS；无 BLOCKER/MAJOR/MINOR，4 INFO。本文引用结论，不重新签发 Gate。
+- **Learning Review：** 概念教材已重组；本版本 fresh-reader 检查与最终验证记录见附录 C。
+- **Engineering Review：** 后续独立活动已于 2026-09-18 形成[工程复盘](engineering-review/phase-20-engineering-review.md)，其读者/文档验证见附录 D；本章正文与原学习交付记录不重写。**Interview synthesis：** 未执行。
+- **Phase 21：** 未启动，仍需获批协议、Task 和明确执行授权。Gate PASS 不批准任何 Candidate。
+
+| 工程概念 | Task / SPEC / AC | 核对来源与边界 |
 |---|---|---|
-| Answerable 只有 Grade 1，或审阅/版本/映射不合法 | `validate_dataset` 抛 `ValueError`；`measure` 尚未调用 search | 现有 UNIT 断言；不是低质量检索观察 |
-| 返回 snapshot 外 ID、NaN/boolean score 或超过深度 | `measure` 拒绝结果；CLI 报失败，不把它变成零分 | 现有 UNIT 断言 |
-| 真值有效且 search 返回 `[]` | `score_query` 各 K 计零，`aggregate` 保留该题分母 | 现有 UNIT 断言 |
-| `answerable=false` 且只有弱相关真值 | 保留逐题返回，`metrics=null`、原因 `unanswerable_weak_only`，主指标排除 | 现有 UNIT 断言；不自动生成新的人类可回答性判断 |
-| V1 当前文本与冻结 hash 不同 | `build_search` 在检索前拒绝；完整 ID 集与 metadata 也由 adapter 检查 | 文本不匹配有 MOCKED 测试；其他核对机制为 CODE |
-| worker 失败或各轮 dataset hash 不一致 | 父进程停止，不写成功报告；`main` 将所捕获错误映射为 exit 1 | CODE；本次不伪称做过故障注入 |
-| 输出路径已存在 | `main` 拒绝覆盖；最终 `open("x")` 仍以独占方式创建 | 已有 CLI 测试覆盖重复执行；不是通用事务保证 |
+| 数据契约、人工权威与 Pilot | T2001；EVAL-01/02；AC-2001-1～3 | [Contract 0.3](../v2/evaluation/retrieval-evaluation-dataset-contract.md)、[Reviewed 0.2](../v2/evaluation/pilot-snapshot-01-annotation-packet-draft.md)、[Coverage](../v2/evaluation/pilot-snapshot-01/coverage-review-packet.md)；文档与历史真实入库分开 |
+| Runner、公式和输入验证 | T2002；EVAL-02/SAFE-01；AC-2002-1～4 | [执行说明](../v2/evaluation/t2002-runner.md)、[测试](../../backend/tests/test_evaluation.py)；synthetic/MOCKED/SUBSTITUTED 不升级为 Benchmark |
+| 正式数据与真实基线 | T2003；EVAL-03/EXP-01/SAFE-01；AC-2003-1～4 | [正式数据](../v2/evaluation/novatech-retrieval-benchmark-1.0.0/README.md)、[基线](../v2/benchmarks/t2003-v1-baseline-1.0/README.md)、[execution](../v2/benchmarks/t2003-v1-baseline-1.0/run-01/execution.json)；三轮真实本地检索 |
+| 独立验收与证据边界 | Phase 20 Gate | [完整报告](../verification/PHASE-20-GATE-REVIEW.md)；2026-09-18 的 67 tests/离线复算与历史 68 tests/live 采集分开记账 |
 
-写报告不是原子发布：父目录创建与 JSON 写入属于实际文件副作用；若磁盘在写入中失败，源码没有临时文件替换或清理半文件的逻辑。这是 **CODE 推导的限制，未观察到事故**。因此“不写成功聚合”不能被误读成“任何失败都绝无文件残留”。
+基线身份：V1 `da8be59a60d7f35a2e3c1ab835624946c53d2a55`；测量 checkout `1692aa5877af120680d0fd386b3aa9f82b0069ea`；Runner 0.1.0，Contract 0.3，dataset novatech-retrieval-benchmark-1.0.0；corpus novatech-pilot-0.1，snapshot t2001-novatech-pilot-01。Windows/Python 3.14.6，ChromaDB 1.5.9、Sentence Transformers 6.0.1、Transformers 5.16.1、Torch 2.14.0；本地 BGE revision `7999e1d3359715c523056ef9478215996d62a620`。这些是身份记录，不是重新运行声明。
 
-### 验证证据与实际调试记录
+## Appendix B — Loss audit 与历史保留
 
-[test_evaluation.py](../../backend/tests/test_evaluation.py) 的重要断言包括：去重后仍是 c,b,a,d；完整真值中未命中的相关块仍进入分母；每个非法 dataset 案例的 search `assert_not_called()`；三个 worker 的 PID 不同且 seeds 明确；adapter 接收到的请求深度均为 10。替代 store 的 V1 同分测试还断言 Runner 保留检索顺序、各 ID 分数不变，并让稳定性结论匹配实际观察，而不是硬编码必须出现波动。
+[整合前 Task Learning 原稿](phase-20-task-learning-history-2026-09-18.md)已按原字节复制，SHA-256 为 `a9ea76930fc45a5816e583db35622abe74342a1f7d06230cdf6c561b429720be`；相对链接位置不变。该文件是历史资料，不是第二份当前教材。其 TODO/PENDING/未授权/Gate 未执行文字保留各次时点，当前状态以附录 A 和权威入口为准。
 
-下表为 **2026-09-11 实现阶段历史执行**，本次 Learning Pass 读取测试源码和现存日志核对，**未独立重跑**。环境据 [执行协议与 AC ledger](../v2/evaluation/t2002-runner.md) 为 Windows PowerShell、Python 3.14.6；命令工作目录为 `backend`。计数是 unittest test methods，不是 subTest 数或覆盖率。
-
-| exact command | 历史结果与来源 | 范围与未证明内容 |
+| 原素材 / 事实 | 本章承接位置 | 保留方式 |
 |---|---|---|
-| `python -m unittest discover -s tests -p test_evaluation.py -v` | 8/8，日志 `tmp/t2002/evaluation-tests.txt` 末尾 `OK` | UNIT synthetic / MOCKED adapter；CLI 子进程到 JSON 的合成集成；实际 V1 Keyword/Hybrid + SUBSTITUTED store/vector。没有真实模型/Chroma 检索 |
-| `python -m unittest discover -s tests -p test_qa.py -v` | 50/50，日志 `tmp/t2002/qa-regression.txt` 末尾 `OK` | 既有 UNIT/MOCKED 回归，不是业务质量 Benchmark |
-| `python -m unittest discover -s tests -p test_query.py -v` | 10/10，日志 `tmp/t2002/query-regression.txt` 末尾 `OK` | 既有 Query API 受控依赖回归，不是 browser/TCP/provider E2E |
-| `git diff v1.0.0 --stat -- backend/app frontend` | 执行协议记载无输出 | STATIC 产品差异检查，不证明真实检索效果 |
+| 身份、coverage、人工权威、Dev/Test、binary/graded | §3、§7、§8 | 去重后概念组织；原批准与标签不改 |
+| Pilot 六题、30 显式、198 隐式；标签修改 14/接受 16 | §3 及本附录 | Pilot 不是正式 40 题；原稿含全部来源与 reader 修订 |
+| CQ-005 五块 binary relevant、CQ-006 多子问语义 | 本附录及历史原稿 | CQ-005 一块 Grade 3、四块 Grade 2；含干扰数字但明确适用范围排除仍可 Grade 2，不是待修标签；完整回答必要子问可 Grade 3 |
+| 手算、validator/metrics/runner/CLI、Python/TS 桥梁 | §5–7 | 合并重复代码解释，保留完整代码链接 |
+| Windows 路径键修正与首次测试失败 | 本附录及历史原稿 | 历史 CLI 源码 hash key 因路径分隔符断言失败，改用 as_posix 后通过；本次未再修代码 |
+| 替代同分测试与真实波动 | §7、§9–11 | 历史替代 seeds 1/2/3 顺序分别 d g e a b h c f / h b g e c d f a / g e b c f h d a；真实三轮另行记账 |
+| Q013/Q014/Q020/Q025/Q032、8U、未测量项 | §6、§11–12 | 保留负向结果与逐题到聚合推导 |
+| 公开逻辑/磁盘字节/向量区别、并发与失败 | §5、§10–12 | 不补造根因或移植保证 |
+| 历史 reader findings、后续修订、日期及检查次数 | 历史原稿 | 原结论不覆盖新教材 fresh-reader；全部原文保留 |
 
-这些历史日志位于忽略目录，不保证其他 checkout 存在；持久化说明入口是执行协议。日志尾部显示通过计数，未单列 shell exit status，本次不补造历史退出码。已有 `tmp/t2002/fixture-report.json` 属于 synthetic artifact，不作为正式 Baseline。AC-2002-1～4 的既有结论仍归执行协议，本学习记录不重新发验收结论。
+独立公式脚本与报告、冻结数据包及其 manifest 不作状态同步目标。正式数据中 `benchmark_authorized=false`、原基线 README 中“Gate 尚未执行”等字段是当时状态；后续授权和本次 Gate 由 SPEC/当前索引/独立报告承接，不回写冻结证据。旧 T2001 人工 Gate 不是本次 Phase Gate。原稿没有因可读性删掉失败记录、证据边界或历史审阅意见。
 
-实际调试遇到 Windows 的 `Path` 默认反斜线：报告源码 hash key 与跨平台断言不符。改成 `.as_posix()` 后通过。另一个诊断易错点是“列表顺序变了”不等于“各 chunk 分数变了”；现分别比较 ranked IDs 和 ID→score 映射。
+## Appendix C — 本次文档验证与读者检查
 
-未执行真实 Chroma/模型检索、正式 Benchmark、生产质量或生成拒答评估；latency/cost 均未测量。未来数据构建与 Baseline 由后续单独授权工作承担。V1 同分样例的变化幅度不能推广到实际业务集。
+本次活动为报告保存、状态同步和 Learning Review；不重复宣称同日先前 Gate 的测试为新执行。未修改产品、测试、Runner、冻结数据、原始 Benchmark 或 SPEC 行为，未启动下一阶段、未提交 Git。
 
-### 尚未完成与后续条件
+### 独立 fresh-reader test — 2026-09-18
 
-- **当前限制**：snapshot 的 ID/文本/映射检查不认证存储向量；全量扫描和新进程存在成本，写报告不保证原子性。
-- **人工职责**：真实标注、coverage、evidence-family 语义和最终 dataset promotion 仍由 Human project owner 审阅；validator 不能代签。合成 fixture 不得通过改 reviewer 字段晋升为正式数据。
-- **后续工作 owner**：正式数据构建需单独授权；T2003 在真实版本化且已审阅数据、模型/索引/环境就绪和独立授权后采集 Baseline。本次不创建数据或执行该任务。
-- **Not yet measured**：业务语料的指标水平、同分波动频率、真实环境 repeatability、latency/cost；不得从八个测试推导质量改善或优化 Candidate 的接受决定。
+**PASS；无需要修订的明确 finding。** 执行者为本次通过 doc-coauthoring 技能 Stage 3 启动的独立 reader 子代理 `phase20_fresh_reader`，未继承会话或写作上下文。先仅阅读本章回答十个理解问题，再只读核对相关源码、Q014 原始报告和独立 Gate 文档；未修改文件，未运行测试、模型、检索或采集脚本。这是本版本的新读者检查，不继承旧 Task 素材的 reader PASS。
 
-### Phase consolidation 输入与读者检查
+| 读者问题 | 独立读者正确恢复的要点 |
+|---|---|
+| 目标与边界 | 连接冻结数据、人工真值、Hybrid 返回和指标；止于 Hybrid，不证明生成质量 |
+| 身份与重摄入 | judgment 绑定快照内 UUID；重摄入需新版本、重映射审阅 |
+| 隐式零与校验 | 完整人工 coverage 后才可作零；validator 不认证人工行为或 decision_ref 真实性 |
+| 指标与分母 | Recall/IDCG 用完整真值；MRR 对合格题平均；Unanswerable 排除，空有效组 null |
+| 请求深度 | 生产两路 10/store 20，评估两路 20/store 40；前缀不保证相同 |
+| 真实案例到聚合 | Q014 的 rank 3→4 使 Test Recall@3 下降 0.03125、nDCG@5 下降约 0.00146165 |
+| 空结果与坏输入 | 前者保留分母计零，后者首次 search 前停止；无效返回也不能计零 |
+| 证据边界 | 历史 REAL 检索、fixture/MOCKED/SUBSTITUTED、Gate 离线核查和本文维护分别记账 |
+| 代码定位 | 能定位 dataset/metrics/runner/v1/CLI/qa/ingest 的具体职责 |
+| 缺口与授权 | 小样本与非盲测限制明确；Phase 21 仍需独立协议、Task、执行授权 |
 
-后续 Phase Review 应合并的概念：有效性与效果的分离、集合匹配与有序排名、宏平均分母、内容身份与版本标签、跨进程非确定性。候选自测：为什么有 Grade 1 gain 仍可能拒绝 Answerable？为何去重不补足？为何稳定的 replay 不能证明 V1 稳定？何时应拒绝“运行成功意味着排名稳定”的结论？
+读者按 Workflow V2 A.5 和模板 Part B 确认：隐藏内部编号后正文仍可理解；概念先于符号；Python/TS 桥梁足够；真实案例数值一致；15 道自测支持计算、预测和代码定位；无重大歧义、矛盾或发现的代码/数值错误。它没有用 Gate PASS 代替教学验收，也没有要求本章承担完整 Engineering Review。读者结论不替代下面的事实、链接及范围检查。
 
-应保留的关键 flow 是“全量校验 → 保留实际顺序 → 逐题计分 → 分 split 聚合 → 逐轮诊断”；工程决定是尊重原始测量对象并披露请求深度差异；失败教训是把数据无效、合法低分、排名波动和文件写入失败分开。Windows 路径修正与最初观察到的同分顺序保留为历史，不改写成真实业务 Benchmark。
+### 文档与范围验证 — 2026-09-18
 
-两道主动练习（不需运行检索或修改代码）：
+- 在本次写入前，对 243 个 tracked/untracked 非忽略现存文件建立 SHA-256 清单；写入后逐项比较，仅 8 个授权文档改变，新增 2 个文档，无删除。现存文件总数为 245。这里计数去重，不沿用前次 Gate 会话某个枚举列表可能重复计入路径的总数。
+- 改变的文件：CLAUDE.md、根 README、学习 README、本章、V2 README、V2 TASKS、benchmarks README、evaluation README。新增为独立 Gate 报告和逐字节历史原稿。SPEC 虽在 Git status 中已有修改，本轮哈希未变；产品、测试、Runner、正式数据、模型/索引操作及原始 Benchmark 均未变更。
+- PowerShell 下执行 `python -B -` 内存文档探针，检查上述 10 个文件的 242 个本地文件链接（不含外部 URL 与纯锚点），缺失 0；代码围栏成对；历史副本哈希与写入前原稿一致；退出 0。没有新增脚本文件。
+- 同一内存探针读取保存的三轮 report.json，逐轮核对 Q013 的 RR、Q014 的 nDCG、Q020 的 nDCG、Q025/Q032 的 Recall、Q034/Q004 的返回条数，均通过；退出 0。这是保存数据的文档事实检查，不调用 Runner、encode 或检索。
+- `git -c core.safecrlf=false diff --check` 与 `git diff --cached --check` 均退出 0。`git diff --cached --stat` 无输出。检索指向本章旧标题的入站锚点链接未发现匹配（rg 退出 1 表示无匹配，不是验证失败）。
+- 自审完成 loss audit、learner audit 与全部相关差异检查；主线合并重复说明，原素材、历史失败/批准/reader findings 与修订原文全部保留。Gate 报告单独保存；未改冻结定义、Task AC、未来 Task、ER 或 Interview。
 
-1. 对真值 a=3,b=2,c=1 和原始结果 c,b,b,a,d，先写去重列表，再手算 Recall@1、RR@3、nDCG@3；解释为什么只返回 b 时 IDCG 不随之缩小。
-2. 预测三种情况是否进入均值分母：有效 Answerable 返回空；Human-reviewed Unanswerable 返回弱相关块；Answerable 真值仅 Grade 1。再解释为什么对深度 10 的报告只取前 5 不能声称复现生产请求。
-
-本次 loss audit 保留 T2001 正文与 reader 历史、T2002 手算与同分观察、Windows 修正、证据边界和 PENDING 状态；在既有 T2002 素材内补全概念、符号职责、失败出口、理由来源和自测，没有另建相互竞争的教程。学习 README 已指向本文并明确 reader PENDING，无需重复改索引。
-
-本次文档验证（2026-09-11，仓库根目录 / Windows PowerShell）：`git diff --check` 与 `git diff --cached --check` 均 exit 0；只读 Python 内容检查 exit 0，确认本文 35 个本地文件链接可解析、代码围栏成对、T2001 正文逐字保留。相对于本轮起点捕获的 180 个现存文件 SHA-256，只有本文改变；没有新增非忽略文件。检查过程先修正了临时检查脚本的 PowerShell 中文管道匹配和 Git 路径列表过滤问题，再获得上述结果；这些不是产品缺陷。Git 的 global ignore 读取权限及 LF/CRLF 提示不影响内容检查结果。未重跑测试、provider、Pilot、Benchmark，未改 Task/SPEC/Gate、实现、测试或其他学习索引，未 commit/push。
-
-本节已对照代码/测试自审；独立 fresh-reader test 为 **PENDING**，不继承上面 T2001 的 PASS。依据 [Workflow V2 §A.5](templates/phase-learning-pass-workflow.md)：“未执行则明确 pending，不能宣称完整 reader-test DoD 满足”。这项学习文档检查不替代运行验证，也不改变已验证的 T2002 AC。
-
-### 2026-09-14 复核：后续证据与本 Task 的边界
-
-上面“正式数据构建仍待进行、真实模型检索未执行”的记录描述 2026-09-11 的阶段边界。以下只读引用后来完成的工作，不追记为 T2002 原始验收能力，也不表示本次重新执行：
-
-| 后续材料 | 已记录的事实 | 仍不能推出什么 |
-|---|---|---|
-| [正式数据集 1.0.0](../v2/evaluation/novatech-retrieval-benchmark-1.0.0/README.md) | 40 题（32A+8U）、1,520 项人工等级、38 块；20 个 family，Dev/Test 各 16A+4U；FROZEN / promotion APPROVED | 数据校验通过不等于测量已执行或有质量结论；Test 非盲测等局限继续保留 |
-| [环境与索引预检](../v2/evaluation/t2003-preflight-0.1/README.md) | 已记录模型文件身份、离线加载和公开 38 块逻辑 inventory 匹配 | 不能认证所有存储向量或跨进程检索稳定性 |
-| [最小向量冒烟](../v2/evaluation/t2003-smoke-0.1/README.md) | 一条非 Benchmark 中性文本，一次真实 encode 和一次 top_k=1 向量搜索成功 | 不覆盖 Hybrid、40 题指标、完整向量一致性或 latency/cost；持久化文件 hash 发生变化，原因未确认 |
-
-当前需要继续区分三件事：数据经人工批准、环境在声明范围内可用、完整 Benchmark 获准执行。`validate_dataset` 校验 review 等结构，CLI 校验 mode/purpose，但代码没有强制检查 `benchmark_authorized` 字段；执行授权由项目工作流控制。这是现有工具边界，不能通过改冻结数据中的字段取得权限。T2003 仍 TODO，完整 Benchmark 未获授权。
-
-补充主动练习：如果两轮返回完全相同的 ID 顺序、所有人工等级未变，只有 final_score 从 0.5 变成 0.6，预测 `order_stable`、`scores_changed` 和 `metrics_changed`，并说明各字段分别回答什么问题。
-
-本轮 loss audit：原 T2001 正文、T2002 手算、历史测试数量、同分顺序、Windows 修正与原 reader PENDING 记录均保留；在原素材中补充代码精读和报告判读，仅在本小节说明后续状态。未改实现、测试、SPEC/TASKS、冻结数据、Gate、ER 或 Interview；未重跑测试、模型、检索或 Benchmark。证据类型为 CODE / STATIC 与已明确日期的历史记录，独立 fresh-reader test 仍 PENDING。
-
-本轮文档检查（2026-09-14，Windows PowerShell，仓库根目录）：`git diff --check`、`git diff --cached --check` 均 exit 0；38 个本地文件链接全部可解析，6 个代码围栏成对。对照写入前 218 个 tracked/untracked 非忽略文件的 SHA-256，仅本文改变，无新增或删除文件。Git 的 LF/CRLF 提示不影响检查结果；未 commit/push。
+**交付状态：Phase Learning Review consolidation 与本版本独立 reader-test 均完成。** 后续 Engineering Review 和 Interview synthesis 未执行，Phase 21 未启动，未 commit/push。此次文档检查不重跑或升级任何历史运行证据。

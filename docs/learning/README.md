@@ -68,7 +68,7 @@ Gate FAIL 后，按已有授权完成 remediation/tests，再独立 re-review；
 
 ## 产品 V2 学习素材
 
-- [Phase 20 — 检索评估基础](./phase-20-evaluation-foundation.md)：T2001 契约/Pilot 与 T2002 Runner/metrics/repeatability 的 Task Learning Pass；T2002 已 DONE，新增素材的独立 reader test PENDING。当前尚非最终 Phase Learning Review；T2003 未启动，Phase 20 Gate 未通过。
+- [Phase 20 — 检索评估基础](./phase-20-evaluation-foundation.md)：2026-09-18 按概念整合的 canonical Technical Learning，覆盖真值/身份、指标与 Runner、真实基线和证据边界，含代码精读、真实案例、15 道自测及一页复习。三个 Task DONE；[独立 Gate](../verification/PHASE-20-GATE-REVIEW.md)为 PHASE_20_PASS — READY_FOR_PHASE_21。新版本读者/文档验证见附录 C；[原 Task 学习素材](./phase-20-task-learning-history-2026-09-18.md)逐字节保留（含历史 reader findings 和修订记录）。[Engineering Review](./engineering-review/phase-20-engineering-review.md)已形成，分析六项决策、失败/一致性、Known Gaps 与升级触发条件；读者及文档检查见其附录 D。Interview synthesis 未执行，Phase 21 未启动。
 
 ## Phase 学习地图
 
@@ -388,6 +388,8 @@ Current learning themes: prove failure state, preserve immutable identity across
 - [phase-09-engineering-review.md](./engineering-review/phase-09-engineering-review.md) — File Management API（T0901–T0903：metadata projection、persisted preview、irreversible cascade delete、path safety / partial failure / scale analysis；2026-09-04）
 - [phase-10-engineering-review.md](./engineering-review/phase-10-engineering-review.md) — Frontend Foundation（T1001–T1002：typed API client、controlled App Shell、runtime/interaction evidence、failure taxonomy 与 scale analysis；2026-09-04）
 - [phase-11-engineering-review.md](./engineering-review/phase-11-engineering-review.md) — Frontend Features（T1101–T1105：shared collection owner、feature-local state、identity reconciliation、cross-feature freshness / concurrency gaps 与 scale analysis；2026-09-07）
+
+- [phase-20-engineering-review.md](./engineering-review/phase-20-engineering-review.md) — Evaluation Foundation（六项测量/数据/工具决策；成本、状态责任、失败、已知缺口、升级条件；保留历史与本轮证据边界，不重发 Gate 或批准 Candidate）
 
 ### 面试指南
 

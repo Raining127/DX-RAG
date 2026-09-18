@@ -1,8 +1,8 @@
 # V2 评估协议
 
-**当前正式数据集（2026-09-14）：** [novatech-retrieval-benchmark-1.0.0](novatech-retrieval-benchmark-1.0.0/README.md) 已 FROZEN / promotion APPROVED，40 题、38 块、1,520 项等级；完整数据校验通过。仅批准数据发布，未运行 Benchmark，T2003 仍 TODO。
+**当前正式数据集（2026-09-14）：** [novatech-retrieval-benchmark-1.0.0](novatech-retrieval-benchmark-1.0.0/README.md) 已 FROZEN / promotion APPROVED，40 题、38 块、1,520 项等级。后续按 SPEC §1.10 获授权完成 [T2003 完整基线](../benchmarks/t2003-v1-baseline-1.0/README.md)，T2003 DONE；冻结 release 保留发布时历史状态，不改其授权字段。
 
-本目录存放经过审阅的数据集契约与评估协议。[T2001 Retrieval Evaluation Dataset Contract](retrieval-evaluation-dataset-contract.md) 已 DONE / 0.3 FROZEN。[T2002 Runner 0.1.0](t2002-runner.md) 已于 2026-09-11 完成实现与验证，独立授权见 [SPEC §1.3](../SPEC.md)。[T2003](../TASKS.md) 仍 TODO、未获执行授权；正式数据集 novatech-retrieval-benchmark-1.0.0 已冻结且 promotion APPROVED；尚无真实 Baseline。下文历史记录保留各次授权当时的状态。
+本目录存放经过审阅的数据集契约与评估协议。[T2001 Retrieval Evaluation Dataset Contract](retrieval-evaluation-dataset-contract.md) 已 DONE / 0.3 FROZEN。[T2002 Runner 0.1.0](t2002-runner.md) 已于 2026-09-11 完成实现与验证。T2003 三轮真实 Hybrid 检索证据已保存在 benchmarks；2026-09-18 [独立 Phase 20 Gate](../../verification/PHASE-20-GATE-REVIEW.md)已 PASS，Phase 21 未启动；后续协议、Task 与执行仍需独立授权。冻结 release、原始 Benchmark 和历史批准文件不回写。下文历史记录保留各次授权当时的状态。
 
 **历史候选准备（2026-09-11）：** 按 [SPEC §1.4](../SPEC.md) 的新授权交付 [Benchmark 候选审阅包 0.1](archives/README.md#benchmark-candidate-0.1)，含 32 Answerable +8 Unanswerable、全快照建议矩阵、family/split 草案和待填人工决定。全部 Human 状态仍 PENDING；正式语料复用、标签、coverage、划分及 promotion 未批准。历史文字中的数据构建未授权指各次当时状态；本次候选准备未启动 T2003。历史第一批材料见 [第一批](archives/README.md#benchmark-candidate-0.1) 开始人工审题。
 

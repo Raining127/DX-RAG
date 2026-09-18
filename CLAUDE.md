@@ -14,7 +14,7 @@ docs/v2/SPEC.md > docs/v2/TASKS.md > CLAUDE.md
 | Document | Role | Status |
 |----------|------|--------|
 | `docs/v2/SPEC.md` | Active V2 product & technical specification | Current Phase 20 scope approved; future V2 scope remains DRAFT; see Section 1.1 |
-| `docs/v2/TASKS.md` | Active V2 evaluation, experiment and implementation sequencing | T2001 DONE; Dataset Contract 0.3 FROZEN; T2002 DONE (2026-09-11); T2003 TODO and not authorized |
+| `docs/v2/TASKS.md` | Active V2 evaluation, experiment and implementation sequencing | T2001/T2002/T2003 DONE; Dataset Contract 0.3 FROZEN; Phase 20 independent Gate PASS (2026-09-18); Phase 21 not started |
 | `CLAUDE.md` | Current agent operational contract | Active |
 
 **Conflict resolution:** `docs/v2/SPEC.md` takes precedence for V2 product behavior; `docs/v2/TASKS.md` controls sequencing. If they conflict, block the affected Task and report; do not silently choose.
@@ -29,6 +29,8 @@ These define the released V1 baseline and are read-only historical references du
 
 ## Current State
 
+- Latest (2026-09-18): independent Phase 20 Gate is **PHASE_20_PASS — READY_FOR_PHASE_21**; report: [Phase 20 Gate](docs/verification/PHASE-20-GATE-REVIEW.md). Eleven ACs PASS; 0 BLOCKER/MAJOR/MINOR, 4 INFO. Gate independently reran 67 tests and offline evidence checks; no new live Benchmark, model/index initialization or file-writing CLI test. Historical real retrieval and all limits remain explicit. Phase Learning Review is consolidated in [Technical Learning](docs/learning/phase-20-evaluation-foundation.md), with reader/validation status in Appendix C; original Task notes are preserved separately. A subsequent independent [Phase 20 Engineering Review](docs/learning/engineering-review/phase-20-engineering-review.md) now records six decision assessments, costs, failure/consistency risks and upgrade triggers; reader/verification details are in its Appendix D. Interview synthesis is not performed. Phase 21 still requires approved protocol/Tasks and explicit authorization; not started. This status sync does not change SPEC behavior or Task DONE states.
+- Historical completion (2026-09-14): user authorized T2003 in SPEC §1.10; complete V1 Hybrid baseline captured and AC-2003-1–4 PASS. Evidence: `docs/v2/benchmarks/t2003-v1-baseline-1.0/README.md`. Three real 40-query rounds; 5 queries change rank, 6 change score maps, 1 changes metrics. Public logical inventory/model/release/product hashes unchanged; Chroma file bytes changed, cause unknown. T2003 DONE does not confer Phase 20 Gate PASS or authorize experiments. Earlier T2003 TODO/unauthorized statements below describe their historical scope and are superseded only by this later authorization/completion.
 - V1 released; historical Phase 12 PASS is recorded in `docs/verification/PHASE-12-GATE-CLOSURE.md`, not newly verified by this bootstrap.
 - V2: Evaluation-Driven RAG Optimization. Current Phase 20 scope approved. Human project owner approved T2001 DONE and Dataset Contract 0.3 FROZEN with T2001 Final Gate PASS on 2026-09-10. This does not authorize T2002/T2003, runner/metric implementation, dataset construction, benchmark execution, retrieval experiments or product changes.
 - Post-release README and Learning & Engineering Workflow improvements are retained.

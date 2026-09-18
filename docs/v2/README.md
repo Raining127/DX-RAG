@@ -13,7 +13,7 @@ V2 目标：衡量、理解并系统性改善检索与回答质量。
 | 当前 V2 契约 | [docs/v2/SPEC.md](SPEC.md) > [docs/v2/TASKS.md](TASKS.md) |
 | 当前 Agent 操作规范 | [CLAUDE.md](../../CLAUDE.md) |
 
-V2 SPEC 的 **Phase 20 Evaluation Foundation 当前范围已获人工批准**；其余未来 V2 范围仍为 DRAFT。T2001 DONE、[Dataset Contract 0.3](evaluation/retrieval-evaluation-dataset-contract.md) FROZEN（2026-09-10 Human Final Gate PASS）。T2002 已获 [SPEC §1.3](SPEC.md) 单独授权并于 2026-09-11 DONE，交付 [Runner 0.1.0 与测试证据](evaluation/t2002-runner.md)。T2003 仍 TODO、未获完整 Benchmark 执行授权。[正式数据集 novatech-retrieval-benchmark-1.0.0](evaluation/novatech-retrieval-benchmark-1.0.0/README.md) 已冻结并完成 promotion；[环境预检](evaluation/t2003-preflight-0.1/README.md)及 [最小向量检索冒烟](evaluation/t2003-smoke-0.1/README.md)已完成。完整 Hybrid Baseline 尚未采集；冒烟成功不等于检索质量或向量逐位完整性已验证。
+V2 SPEC 的 **Phase 20 Evaluation Foundation 当前范围已获人工批准**；其余未来 V2 范围仍为 DRAFT。T2001 DONE、[Dataset Contract 0.3](evaluation/retrieval-evaluation-dataset-contract.md) FROZEN；T2002 DONE，交付 [Runner 0.1.0](evaluation/t2002-runner.md)。T2003 按 [SPEC §1.10](SPEC.md) 获授权，2026-09-14 DONE，交付 [完整 V1 Hybrid Baseline](benchmarks/t2003-v1-baseline-1.0/README.md)：三轮各 40 题、AC-2003-1～4 PASS。5 题排名变化、1 题指标变化已保留；公开逻辑数据一致，未证明向量逐位完整性。**2026-09-18 独立 [Phase 20 Gate](../verification/PHASE-20-GATE-REVIEW.md)：PHASE_20_PASS — READY_FOR_PHASE_21；未启动 Phase 21。** Gate 仅建立 readiness，不批准 Candidate；协议、Task 和执行授权仍须单独明确。
 
 2026-09-09 的 Bootstrap 检查以本地 Git 为依据：分支为 `v2/evaluation`，HEAD 为 `f9817817a602caf24ad95e500fe08e44224ffc2d`，检查开始时工作树干净。V1 tag 之后的两个提交只修改了 README、治理、复盘和学习文档。V1 产品实现及历史规格 / 任务文件与 tag 中的版本一致。这是 Bootstrap 时的状态快照，不代表未来所有 HEAD 的状态。
 
@@ -39,4 +39,4 @@ V2 SPEC 的 **Phase 20 Evaluation Foundation 当前范围已获人工批准**；
 
 保留 [Learning & Engineering Workflow V2](../learning/templates/phase-learning-pass-workflow.md)：Task DONE → Task Learning Pass → Phase Gate → Phase Learning Review → Engineering Review → 独立 Interview synthesis。其中的 “V2” 指工作流版本，不代表产品 V2 已实现。历史文档无需迁移到新模板。
 
-**当前入口（2026-09-14）：** [正式数据集 1.0.0](evaluation/novatech-retrieval-benchmark-1.0.0/README.md)已冻结并完成 promotion；[历史审阅材料](evaluation/archives/README.md)已归档。T2003 完整 Benchmark 尚未执行。
+**当前入口（2026-09-18）：** [正式数据集 1.0.0](evaluation/novatech-retrieval-benchmark-1.0.0/README.md)保持冻结；[历史审阅材料](evaluation/archives/README.md)已归档；[T2003 基线与验收证据](benchmarks/t2003-v1-baseline-1.0/README.md)已完成。[Gate 报告](../verification/PHASE-20-GATE-REVIEW.md)已保存；[Phase Learning Review](../learning/phase-20-evaluation-foundation.md)已整合，读者/验证状态见附录 C。后续独立 [Engineering Review](../learning/engineering-review/phase-20-engineering-review.md)已形成，读者/文档检查见其附录 D；Interview synthesis 尚未执行。保留全部验证边界，不自动启动后续工作。

@@ -1,6 +1,6 @@
 # DX-RAG V2 任务计划
 
-> 状态：T2001 DONE；T2002 DONE（2026-09-11，AC-2002-1～4 PASS）；T2003 TODO，未获执行授权。
+> 状态：T2001 DONE；T2002 DONE；T2003 DONE（2026-09-14，AC-2003-1～4 PASS，执行授权见 SPEC §1.10）。Phase 20 独立 Gate 已于 2026-09-18 PASS（[正式报告](../verification/PHASE-20-GATE-REVIEW.md)）；Phase 21 未启动。
 > 产品权威入口：`docs/v2/SPEC.md`（Phase 20 当前范围已获批；未来范围仍为 DRAFT）。执行授权边界见其第 1.1 节。
 > V1 历史：`docs/TASKS.md` 保持不变。
 
@@ -61,12 +61,14 @@
 
 ### T2003 — 采集 V1 Retrieval Baseline
 
-**状态：** TODO  
+**状态：** DONE
 **类型：** Evaluation Task  
 **依赖：** T2002 DONE；版本化数据集已可用，并按 T2001 契约完成审阅；所需模型 / 索引 / 环境可用。  
 **SPEC 引用：** `docs/v2/SPEC.md` 第 4 节（EVAL-03）、第 5 节（EXP-01）、第 6 节（SAFE-01）。
 
 **目标：** 在检索 Experiment 前，建立真实的 V1 Benchmark 证据。
+
+**执行计划（2026-09-14）：** 按 SPEC §1.10 授权，在 `docs/v2/benchmarks/t2003-v1-baseline-1.0/` 保存采集脚本、运行前后身份/完整逻辑快照核对、Runner 原始报告、验证与分析。使用现有深度 10 协议、独立进程 seeds 1/2/3；重跑评估工具及相关 QA/query 回归，核对 AC-2003-1～4，随后记录 Task Learning Pass。产品、Runner、冻结数据及指标定义保持不变。
 
 **范围 / 预期位置：** 针对已发布的 V1 行为运行经过验证的评估，将证据 / 分析存放于 `docs/v2/benchmarks/`。检查实际测量的 checkout 与 tag 的差异，不改变 Git 历史。
 
@@ -79,7 +81,11 @@
 
 **范围外：** 任何 Candidate 检索策略、效果提升声明，以及生成质量评估。
 
-### T2003 前数据构建检查点 — 候选材料
+**完成证据（2026-09-14）：** [完整 V1 Hybrid Baseline](benchmarks/t2003-v1-baseline-1.0/README.md)。一次 Runner、seeds 1/2/3 独立进程、每轮全部 40 题，真实本地 BGE/Chroma、无 mock/LLM。Dev/Test 各纳入 16A、排除 4U；Recall@5 分别 0.9125 / 0.90625。5 题排名变化、6 题分数映射变化、Q014 一题指标变化；Test nDCG@5 为 0.894758～0.896220，不跨轮平均。Q013 正证据位于 rank 9，8U 全有主题邻近返回；无生成质量结论。前后完整公开逻辑 inventory、模型/release/产品/Runner hash 一致；持久化字节有变化、原因未定，不声明向量逐位审计。8+50+10 项回归、pip check 和离线 1,152 个逐题指标值复算通过；AC-2003-1～4 PASS。产品与 V1 tag 无差异；latency/cost 未测量。Task Learning Pass 归入 Phase 20 素材；下一步为独立 Phase 20 Gate，未自动启动。
+
+### T2003 前数据构建检查点 — 历史记录
+
+以下按各次事件保留当时 TODO/PENDING/未授权状态；最新执行与完成结论见上面的 T2003 条目及 SPEC §1.10。
 
 **授权：** 2026-09-11 用户要求准备正式 Benchmark 数据集构建工作，先生成候选数据与人工审阅材料；见 SPEC §1.4。本检查点沿用 Contract §14，不新增 Task，不将 T2003 改为 IN_PROGRESS。
 
@@ -126,6 +132,8 @@
 **历史材料归档（2026-09-14）：** 按 Human「按照你的推荐做法执行」，五个历史审阅目录 74 个文件已 ZIP 归档并逐项核对 SHA-256/CRC。永久删除被自动审批策略拒绝，改为可恢复移动至 Git 忽略的 tmp/benchmark-review-backup-2026-09-14/；散落目录已移出 evaluation，未宣称永久删除或释放本地备份空间。见 [归档入口](evaluation/archives/README.md)。正式数据集、工具/测试及预检/冒烟证据未改，未运行 Benchmark。
 
 ### Phase 20 出口门禁
+
+**当前 Gate（2026-09-18）：PHASE_20_PASS — READY_FOR_PHASE_21。** [独立报告](../verification/PHASE-20-GATE-REVIEW.md)核对 11 项 AC 均 PASS，无 BLOCKER/MAJOR/MINOR，4 项 INFO；本轮 67 项测试与离线证据验证，不包含新 live Benchmark 或写文件 CLI 测试。历史真实三轮、波动、持久化边界及未测量项完整保留。[Phase Learning Review](../learning/phase-20-evaluation-foundation.md)已按概念整合，读者/文档检查见其附录 C；原 Task 素材已保留。Engineering Review 和 Interview synthesis 尚未执行。Task 状态保持 DONE，路线图不变；Phase 21 仍需单独协议、Task 批准与执行授权，未启动。
 
 三个 Task 均为 DONE 且具备 AC 证据后，使用 `docs/learning/templates/phase-gate-review-template.md` 开展独立 Phase Gate。检索 Experiment 必须以 Gate PASS 为前提，但 PASS 不授权自动启动未来 Phase。随后按保留的工作流完成 Phase Learning Review、Engineering Review 和独立 Interview synthesis。本次 Bootstrap 不作出任何 Gate 裁决。
 

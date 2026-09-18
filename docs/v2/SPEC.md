@@ -2,7 +2,7 @@
 
 > 版本：V2 Bootstrap 规格，2026-09-09；Phase 20 范围批准记录见第 1.1 节。
 > 状态：**Phase 20 Evaluation Foundation 当前范围已获批；其余未来 V2 范围仍为 DRAFT，未自动冻结或批准。**
-> 执行授权：T2001 已 DONE；2026-09-10 用户明确授权实现 T2002（见第 1.3 节）；T2003、检索 Experiment 和生产行为变更未获授权。
+> 执行授权：T2001/T2002 已 DONE；2026-09-14 用户明确授权执行 T2003（见第 1.10 节）；检索 Experiment 和生产行为变更未获授权。
 
 ## 1. 权威层级与生命周期
 
@@ -58,6 +58,10 @@ Human project owner 要求「T2003 前的环境与索引就绪检查」。授权
 ### 1.9 最小 embedding / 向量检索冒烟授权（2026-09-14）
 
 Human project owner 原文：「授权最小 embedding 与向量检索冒烟检查，使用非 Benchmark 查询；不修改语料、不重建索引、不运行完整 Benchmark。」仅使用一条中性、非 BC01/Pilot 查询，经现有 embedding 接口产生一次向量，再通过 VectorStore 公开 search 接口进行一次 top_k=1 搜索，核对向量有效性、返回身份和检查前后逻辑数据一致性；记录持久化文件变化。证据位于 `docs/v2/evaluation/t2003-smoke-0.1/`。该授权不包含 Hybrid baseline、指标计算、重建索引或完整 T2003 Benchmark；正式数据集内容不变。
+
+### 1.10 T2003 完整 V1 混合检索基线执行授权（2026-09-14）
+
+Human project owner 原文：「推进 T2003：采集完整 V1 混合检索基线」。决定引用 `H-T2003-BASELINE-2026-09-14`。授权使用冻结 novatech-retrieval-benchmark-1.0.0、现有 Runner 0.1.0 和保持不变的 V1 Hybrid 检索，核对真实模型/索引/配置，采集完整逐查询与聚合指标、检查复现情况、记录失败与局限，完成 T2003 验收和 Task Learning Pass。依赖 T2001/T2002 DONE；正式数据集及已有预检/冒烟已就绪，运行前再次核对。证据位于 `docs/v2/benchmarks/t2003-v1-baseline-1.0/`。沿用 Contract 0.3 的深度 10、K=1/3/5/10 和指标口径；使用独立进程 hash seed 1/2/3，精确比较并保留波动。latency/cost 不在本次测量范围。此前未授权 T2003 的文字及冻结包中的授权字段是历史状态，保留不改；本节记录后续执行授权，不修改冻结数据。此授权不包括检索优化、索引重建、生成质量评估、生产变更或自动启动下一 Phase。
 
 ## 2. 目标与范围
 
