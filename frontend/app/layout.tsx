@@ -17,26 +17,27 @@ export default function RootLayout({
           locale={zhCN}
           theme={{
             token: {
-              colorPrimary: '#a8d46f',
-              colorText: '#17221b',
-              colorBgLayout: '#ecebe3',
-              colorBorder: '#d7d8cc',
-              borderRadius: 12,
+              colorPrimary: '#42654c',
+              colorText: '#24342b',
+              colorBgLayout: '#f5f6f3',
+              colorBorder: '#dce2d9',
+              borderRadius: 8,
+              controlHeight: 38,
               fontFamily:
                 '"Aptos", "Microsoft YaHei", "PingFang SC", sans-serif',
             },
             components: {
               Layout: {
-                bodyBg: '#ecebe3',
-                siderBg: '#132019',
+                bodyBg: '#f5f6f3',
+                siderBg: '#1c2c24',
               },
               Menu: {
-                darkItemBg: '#132019',
-                darkItemColor: '#aebbb2',
-                darkItemHoverBg: '#1c2c22',
-                darkItemSelectedBg: '#a8d46f',
-                darkItemSelectedColor: '#132019',
-                itemBorderRadius: 10,
+                darkItemBg: '#1c2c24',
+                darkItemColor: '#b7c6bc',
+                darkItemHoverBg: '#2a3c31',
+                darkItemSelectedBg: '#354e3e',
+                darkItemSelectedColor: '#f1f6ef',
+                itemBorderRadius: 8,
               },
             },
           }}

@@ -1,0 +1,39 @@
+{
+  "status": "PASS",
+  "evidence": "BROWSER UI with isolated demo API and controlled error/long-content fixtures; no real retrieval/model claims",
+  "checks": [
+    "default collection entry; development labels removed",
+    "all four navigation entries",
+    "1440px empty QA: no overflow; composer visible",
+    "Ctrl+Enter, loading, unchanged request contract, Markdown and sources",
+    "navigation preserves draft and conversation",
+    "switching KB clears history and sends to selected KB",
+    "20-message conversation: no overflow; composer visible",
+    "20-message history limit",
+    "500 error and retry preserve committed history and request",
+    "empty KB warning and retry",
+    "late response after KB switch is ignored",
+    "long answer / URL / source name: no overflow; composer visible",
+    "768px answer: no overflow; composer visible",
+    "768px drawer navigation and Escape",
+    "390px answer: no overflow; composer visible",
+    "390px drawer navigation and Escape",
+    "collection list failure, disabled input and reload recovery",
+    "390px no collections: no overflow; composer visible",
+    "no collections: guide and disabled input",
+    "no unhandled browser exceptions"
+  ],
+  "queryRequests": 19,
+  "pageErrors": [],
+  "consoleMessages": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+    "DX-RAG API request failed {code: LLM_UNAVAILABLE, status: 500}",
+    "Failed to load resource: the server responded with a status of 409 (Conflict)",
+    "DX-RAG API request failed {code: COLLECTION_EMPTY, status: 409}",
+    "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+    "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+    "DX-RAG API request failed {code: INTERNAL_ERROR, status: 500}",
+    "DX-RAG API request failed {code: INTERNAL_ERROR, status: 500}"
+  ]
+}
