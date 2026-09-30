@@ -1,0 +1,15 @@
+test_cli_fresh_processes_and_persisted_provenance (test_evaluation.EvaluationTests.test_cli_fresh_processes_and_persisted_provenance) ... ok
+test_contract_fail_fast_before_any_retrieval (test_evaluation.EvaluationTests.test_contract_fail_fast_before_any_retrieval) ... ok
+test_hand_calculated_metrics_and_full_ground_truth (test_evaluation.EvaluationTests.test_hand_calculated_metrics_and_full_ground_truth) ... ok
+test_invalid_retrieval_is_failure_not_zero (test_evaluation.EvaluationTests.test_invalid_retrieval_is_failure_not_zero) ... ok
+test_macro_aggregation_splits_categories_and_empty_groups (test_evaluation.EvaluationTests.test_macro_aggregation_splits_categories_and_empty_groups) ... ok
+test_real_v1_tie_order_across_seeded_processes_with_substituted_store (test_evaluation.EvaluationTests.test_real_v1_tie_order_across_seeded_processes_with_substituted_store) ... ok
+test_repeatability_exposes_tie_changes_and_metric_changes (test_evaluation.EvaluationTests.test_repeatability_exposes_tie_changes_and_metric_changes) ... ok
+test_v1_adapter_public_snapshot_validation_and_depth (test_evaluation.EvaluationTests.test_v1_adapter_public_snapshot_validation_and_depth) ... D:\Python\Python314\Lib\site-packages\chromadb\telemetry\opentelemetry\__init__.py:128: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+  if asyncio.iscoroutinefunction(f):
+ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 16.698s
+
+OK

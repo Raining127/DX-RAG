@@ -1,0 +1,268 @@
+{
+  "schema_version": "1",
+  "contract_version": "0.3",
+  "purpose": "synthetic_fixture",
+  "dataset_version": "t2002-hand-calculated-1",
+  "corpus_version": "synthetic-1",
+  "snapshot_id": "synthetic-snapshot-1",
+  "collection": "never-opened-synthetic",
+  "review": {
+    "role": "SYNTHETIC_TEST",
+    "date": "2026-09-10",
+    "decision_ref": "hand-calculated T2002 unit fixture; NOT Human approval",
+    "status": "APPROVED"
+  },
+  "provenance": {
+    "source": "SYNTHETIC TEST ONLY; no corpus, model, or Human labels",
+    "distribution_basis": "SYNTHETIC TEST ONLY; no corpus, model, or Human labels",
+    "annotation_method": "SYNTHETIC TEST ONLY; no corpus, model, or Human labels",
+    "git_context": "SYNTHETIC TEST ONLY; no corpus, model, or Human labels",
+    "limitations": "SYNTHETIC TEST ONLY; no corpus, model, or Human labels",
+    "ingestion_config": "SYNTHETIC TEST ONLY; no corpus, model, or Human labels",
+    "model_version": "SYNTHETIC TEST ONLY; no corpus, model, or Human labels"
+  },
+  "snapshot": {
+    "corpus_version": "synthetic-1",
+    "snapshot_id": "synthetic-snapshot-1",
+    "chunks": [
+      {
+        "chunk_id": "a",
+        "file_id": "fixture-file",
+        "file_name": "synthetic.txt",
+        "chunk_index": 0,
+        "content_sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      {
+        "chunk_id": "b",
+        "file_id": "fixture-file",
+        "file_name": "synthetic.txt",
+        "chunk_index": 1,
+        "content_sha256": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
+      },
+      {
+        "chunk_id": "c",
+        "file_id": "fixture-file",
+        "file_name": "synthetic.txt",
+        "chunk_index": 2,
+        "content_sha256": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+      },
+      {
+        "chunk_id": "d",
+        "file_id": "fixture-file",
+        "file_name": "synthetic.txt",
+        "chunk_index": 3,
+        "content_sha256": "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4"
+      }
+    ]
+  },
+  "queries": [
+    {
+      "query_id": "ranked",
+      "query_text": "ranked",
+      "query_category": "Direct Fact",
+      "answerable": true,
+      "split": "Dev",
+      "evidence_family_id": "ranked",
+      "corpus_version": "synthetic-1",
+      "snapshot_id": "synthetic-snapshot-1",
+      "coverage_reviewed": true,
+      "review_status": "APPROVED",
+      "review": {
+        "role": "SYNTHETIC_TEST",
+        "date": "2026-09-10",
+        "decision_ref": "hand-calculated T2002 unit fixture; NOT Human approval",
+        "status": "APPROVED"
+      },
+      "coverage_review": {
+        "role": "SYNTHETIC_TEST",
+        "date": "2026-09-10",
+        "decision_ref": "hand-calculated T2002 unit fixture; NOT Human approval",
+        "status": "APPROVED",
+        "full_snapshot_screened": true,
+        "no_positive_omissions": true
+      },
+      "judgments": [
+        {
+          "chunk_id": "a",
+          "file_name": "synthetic.txt",
+          "chunk_index": 0,
+          "human_grade": 3,
+          "review": {
+            "role": "SYNTHETIC_TEST",
+            "date": "2026-09-10",
+            "decision_ref": "hand-calculated T2002 unit fixture; NOT Human approval",
+            "status": "APPROVED"
+          }
+        },
+        {
+          "chunk_id": "b",
+          "file_name": "synthetic.txt",
+          "chunk_index": 1,
+          "human_grade": 2,
+          "review": {
+            "role": "SYNTHETIC_TEST",
+            "date": "2026-09-10",
+            "decision_ref": "hand-calculated T2002 unit fixture; NOT Human approval",
+            "status": "APPROVED"
+          }
+        },
+        {
+          "chunk_id": "c",
+          "file_name": "synthetic.txt",
+          "chunk_index": 2,
+          "human_grade": 1,
+          "review": {
+            "role": "SYNTHETIC_TEST",
+            "date": "2026-09-10",
+            "decision_ref": "hand-calculated T2002 unit fixture; NOT Human approval",
+            "status": "APPROVED"
+          }
+        }
+      ]
+    },
+    {
+      "query_id": "empty",
+      "query_text": "empty",
+      "query_category": "Paraphrase",
+      "answerable": true,
+      "split": "Test",
+      "evidence_family_id": "empty",
+      "corpus_version": "synthetic-1",
+      "snapshot_id": "synthetic-snapshot-1",
+      "coverage_reviewed": true,
+      "review_status": "APPROVED",
+      "review": {
+        "role": "SYNTHETIC_TEST",
+        "date": "2026-09-10",
+        "decision_ref": "hand-calculated T2002 unit fixture; NOT Human approval",
+        "status": "APPROVED"
+      },
+      "coverage_review": {
+        "role": "SYNTHETIC_TEST",
+        "date": "2026-09-10",
+        "decision_ref": "hand-calculated T2002 unit fixture; NOT Human approval",
+        "status": "APPROVED",
+        "full_snapshot_screened": true,
+        "no_positive_omissions": true
+      },
+      "judgments": [
+        {
+          "chunk_id": "a",
+          "file_name": "synthetic.txt",
+          "chunk_index": 0,
+          "human_grade": 3,
+          "review": {
+            "role": "SYNTHETIC_TEST",
+            "date": "2026-09-10",
+            "decision_ref": "hand-calculated T2002 unit fixture; NOT Human approval",
+            "status": "APPROVED"
+          }
+        }
+      ]
+    },
+    {
+      "query_id": "unanswerable",
+      "query_text": "unanswerable",
+      "query_category": "Distractor",
+      "answerable": false,
+      "split": "Dev",
+      "evidence_family_id": "unanswerable",
+      "corpus_version": "synthetic-1",
+      "snapshot_id": "synthetic-snapshot-1",
+      "coverage_reviewed": true,
+      "review_status": "APPROVED",
+      "review": {
+        "role": "SYNTHETIC_TEST",
+        "date": "2026-09-10",
+        "decision_ref": "hand-calculated T2002 unit fixture; NOT Human approval",
+        "status": "APPROVED"
+      },
+      "coverage_review": {
+        "role": "SYNTHETIC_TEST",
+        "date": "2026-09-10",
+        "decision_ref": "hand-calculated T2002 unit fixture; NOT Human approval",
+        "status": "APPROVED",
+        "full_snapshot_screened": true,
+        "no_positive_omissions": true
+      },
+      "judgments": []
+    },
+    {
+      "query_id": "weak-only",
+      "query_text": "weak-only",
+      "query_category": "Multi-chunk",
+      "answerable": false,
+      "split": "Test",
+      "evidence_family_id": "weak-only",
+      "corpus_version": "synthetic-1",
+      "snapshot_id": "synthetic-snapshot-1",
+      "coverage_reviewed": true,
+      "review_status": "APPROVED",
+      "review": {
+        "role": "SYNTHETIC_TEST",
+        "date": "2026-09-10",
+        "decision_ref": "hand-calculated T2002 unit fixture; NOT Human approval",
+        "status": "APPROVED"
+      },
+      "coverage_review": {
+        "role": "SYNTHETIC_TEST",
+        "date": "2026-09-10",
+        "decision_ref": "hand-calculated T2002 unit fixture; NOT Human approval",
+        "status": "APPROVED",
+        "full_snapshot_screened": true,
+        "no_positive_omissions": true
+      },
+      "judgments": [
+        {
+          "chunk_id": "c",
+          "file_name": "synthetic.txt",
+          "chunk_index": 2,
+          "human_grade": 1,
+          "review": {
+            "role": "SYNTHETIC_TEST",
+            "date": "2026-09-10",
+            "decision_ref": "hand-calculated T2002 unit fixture; NOT Human approval",
+            "status": "APPROVED"
+          }
+        }
+      ]
+    }
+  ],
+  "fixture_results": {
+    "ranked": [
+      {
+        "chunk_id": "c",
+        "final_score": 0.5
+      },
+      {
+        "chunk_id": "b",
+        "final_score": 0.5
+      },
+      {
+        "chunk_id": "b",
+        "final_score": 0.5
+      },
+      {
+        "chunk_id": "a",
+        "final_score": 0.5
+      },
+      {
+        "chunk_id": "d",
+        "final_score": 0.5
+      }
+    ],
+    "empty": [],
+    "unanswerable": [
+      {
+        "chunk_id": "d",
+        "final_score": 0.5
+      }
+    ],
+    "weak-only": [
+      {
+        "chunk_id": "c",
+        "final_score": 0.5
+      }
+    ]
+  }
+}

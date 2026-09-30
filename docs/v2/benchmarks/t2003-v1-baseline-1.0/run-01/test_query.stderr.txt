@@ -1,0 +1,15 @@
+test_collection_empty_maps_to_409 (test_query.QueryEndpointTests.test_collection_empty_maps_to_409) ... ok
+test_empty_question_or_collection_returns_invalid_query (test_query.QueryEndpointTests.test_empty_question_or_collection_returns_invalid_query) ... ok
+test_invalid_history_returns_400_without_storage_or_service_work (test_query.QueryEndpointTests.test_invalid_history_returns_400_without_storage_or_service_work) ... ok
+test_invalid_top_k_returns_400_without_storage_or_service_work (test_query.QueryEndpointTests.test_invalid_top_k_returns_400_without_storage_or_service_work) ... ok
+test_llm_and_embedding_errors_use_unified_error_mapping (test_query.QueryEndpointTests.test_llm_and_embedding_errors_use_unified_error_mapping) ... ok
+test_missing_collection_returns_404_without_calling_service (test_query.QueryEndpointTests.test_missing_collection_returns_404_without_calling_service) ... ok
+test_no_matching_content_returns_200_with_empty_sources (test_query.QueryEndpointTests.test_no_matching_content_returns_200_with_empty_sources) ... ok
+test_non_object_body_returns_invalid_query (test_query.QueryEndpointTests.test_non_object_body_returns_invalid_query) ... ok
+test_omitted_optional_fields_use_spec_defaults (test_query.QueryEndpointTests.test_omitted_optional_fields_use_spec_defaults) ... ok
+test_valid_query_returns_exact_response_shape (test_query.QueryEndpointTests.test_valid_query_returns_exact_response_shape) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.214s
+
+OK

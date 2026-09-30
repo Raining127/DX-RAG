@@ -1377,6 +1377,12 @@ Use this workflow for all future DX-RAG Tasks and Phases.
 
 上文第 0–36 节保留用户提供的 Final Workflow V2，作为未来 DX-RAG 学习与工程文档的规范；本附录把它接到现有仓库路径和命令。保留原 workflow 文件路径，避免已有入口失效。V2 取代旧版固定 11 节、Phase 正文按 Task 排列、学习阶段自动更新 ER/Interview 的默认要求；产品契约仍以 SPEC 为准，Task 状态仍以 TASKS 为准。
 
+### 产品版本路由（2026-09-09）
+
+Workflow V2 指工作流版本，与产品 DX-RAG V2 分开。产品 V2 中泛称的 SPEC/TASKS 按 `docs/v2/SPEC.md` > `docs/v2/TASKS.md` > `CLAUDE.md` 解析。V1 历史学习及明确要求的 V1 re-review 仍使用 `docs/SPEC.md` / `docs/TASKS.md` 和 `v1.0.0`，无需追溯迁移。
+
+评估 / 实验类 Task 保留 Task DONE → Task Learning Pass → Phase Gate → Phase Learning Review → Engineering Review → 独立 Interview synthesis 的流程。说明 Research Question、Baseline、改动、Benchmark 发现、接受 / 拒绝原因、权衡、结论有效条件及下一步 Experiment。负向结果不自动导致 Task 失败，也不授权生产集成。
+
 ## A.1 命令、时机与写入范围
 
 | 命令 / 事件 | 前置条件与动作 | 主要输出 | 不隐含的动作 |

@@ -31,8 +31,8 @@ Unless the user explicitly authorizes a different mode, every Phase Gate Review 
 
 - modify any file;
 - fix a finding;
-- modify `docs/SPEC.md`;
-- modify Task status or future Task definitions in `docs/TASKS.md`;
+- modify `docs/v2/SPEC.md` or historical `docs/SPEC.md`;
+- modify Task status or future Task definitions in `docs/v2/TASKS.md` or historical `docs/TASKS.md`;
 - implement or start the next Phase;
 - install dependencies merely to fix or hide a review finding;
 - commit or push.
@@ -53,11 +53,13 @@ At the beginning of the report, state:
 
 ## 2. Source of Truth and Required Reading
 
-Preserve the repository hierarchy:
+Select and report the version under review. For active V2:
 
 ```text
-docs/SPEC.md > docs/TASKS.md > CLAUDE.md
+docs/v2/SPEC.md > docs/v2/TASKS.md > CLAUDE.md
 ```
+
+For an explicitly requested V1 re-review, use historical `docs/SPEC.md` and `docs/TASKS.md` anchored at `v1.0.0`, with current `CLAUDE.md` operational rules. Never apply V2 acceptance requirements retroactively to V1. A draft V2 specification is not an approved acceptance contract; report missing approval instead of silently treating it as frozen.
 
 Before reaching a verdict, read:
 

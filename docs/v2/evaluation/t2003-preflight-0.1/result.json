@@ -1,0 +1,162 @@
+{
+  "started_at_utc": "2026-09-14T09:02:51.380771+00:00",
+  "scope": "LOCAL_ENVIRONMENT_AND_INDEX_READINESS_ONLY",
+  "python": {
+    "executable": "D:\\Python\\Python314\\python.exe",
+    "version": "3.14.6 (tags/v3.14.6:c63aec6, Jun 10 2026, 10:26:10) [MSC v.1944 64 bit (AMD64)]"
+  },
+  "working_directory": "F:\\MyLearning\\Vibe_Coding\\DX-RAG\\code\\backend",
+  "process_overrides": {
+    "HF_HUB_OFFLINE": "1",
+    "TRANSFORMERS_OFFLINE": "1",
+    "ANONYMIZED_TELEMETRY": "False"
+  },
+  "checks": {
+    "frozen_dataset": {
+      "status": "PASS",
+      "details": {
+        "frozen_release_verifier": {
+          "status": "PASS",
+          "dataset_version": "novatech-retrieval-benchmark-1.0.0",
+          "dataset_sha256": "fc20e41444e76137c2ed39eb054ba8fce3eea8f6b8334567452f834539426cde",
+          "manifest_sha256": "76baf53489414b9427e90569bc3b196a7d0a49ba9974ab4d867d9c733ebd9622",
+          "validator": "Full validate_dataset/load_dataset PASS; pure data validation only",
+          "approved_rc_content_comparison": "PASS: release/approval metadata only",
+          "query_count": 40,
+          "judgment_count": 1520,
+          "chunk_count": 38,
+          "counts": {
+            "Dev": {
+              "answerable": 16,
+              "unanswerable": 4
+            },
+            "Test": {
+              "answerable": 16,
+              "unanswerable": 4
+            }
+          },
+          "formal_freeze": "FROZEN",
+          "dataset_promotion": "APPROVED",
+          "benchmark_authorized": false,
+          "benchmark_executed": false,
+          "live_model_index_store": "NOT_CHECKED"
+        },
+        "current_validator": "PASS"
+      }
+    },
+    "dependencies": {
+      "status": "PASS",
+      "details": {
+        "versions": {
+          "fastapi": "0.141.1",
+          "httpx": "0.28.1",
+          "chromadb": "1.5.9",
+          "sentence-transformers": "6.0.1",
+          "langchain-text-splitters": "1.1.2",
+          "torch": "2.14.0",
+          "transformers": "5.16.1"
+        },
+        "snapshot_differences": {},
+        "pip_check": "No broken requirements found."
+      }
+    },
+    "configuration_and_paths": {
+      "status": "PASS",
+      "details": {
+        "snapshot_configuration_match": true,
+        "expected_production_top_k": 5,
+        "min_relevance_score": 0.3,
+        "only_whitelisted_nonsecret_configuration_exported": true
+      }
+    },
+    "model_identity": {
+      "status": "PASS",
+      "details": {
+        "expected_count": 29,
+        "missing": [],
+        "changed": []
+      }
+    },
+    "offline_model_load": {
+      "status": "PASS",
+      "details": {
+        "loaded_through": "app.services.embedding.get_model",
+        "dimension": 512,
+        "max_seq_length": 512,
+        "device": "cpu",
+        "encode_called": false
+      }
+    },
+    "live_collection_inventory": {
+      "status": "PASS",
+      "details": {
+        "collection": "t2001-novatech-pilot-01",
+        "chunks_matched": 38,
+        "files_matched": 4,
+        "public_api_only": true,
+        "ids_text_and_mapping": "MATCH",
+        "persistent_file_hash_changes_during_client_read": [
+          "chroma.sqlite3",
+          "d46a0426-7431-415a-a5e2-1e4b7ea15f42\\data_level0.bin",
+          "d46a0426-7431-415a-a5e2-1e4b7ea15f42\\length.bin"
+        ],
+        "stored_embeddings": "NOT_EXPOSED_BY_PUBLIC_INTERFACE; no private collection access or vector search",
+        "note": "Client initialization can maintain database files; no mutation API was called."
+      }
+    },
+    "implementation_identity": {
+      "status": "PASS",
+      "details": {
+        "head": "fe23d3846c276a7c127c29bc0ea3456b89ebbb89",
+        "v1_tag": "da8be59a60d7f35a2e3c1ab835624946c53d2a55",
+        "product_diff_vs_v1": "EMPTY",
+        "runner_hashes_match_release": true,
+        "working_tree_status": "M CLAUDE.md\n M docs/learning/README.md\n M docs/learning/phase-20-evaluation-foundation.md\n M docs/v2/README.md\n M docs/v2/SPEC.md\n M docs/v2/TASKS.md\n M docs/v2/evaluation/README.md\n?? backend/evaluation/\n?? backend/tests/fixtures/\n?? backend/tests/test_evaluation.py\n?? docs/v2/evaluation/benchmark-candidate-0.1/\n?? docs/v2/evaluation/fact-split-draft-0.1/\n?? docs/v2/evaluation/freeze-review-1.0.0-rc1/\n?? docs/v2/evaluation/novatech-retrieval-benchmark-1.0.0/\n?? docs/v2/evaluation/semantic-dedup-review-0.1/\n?? docs/v2/evaluation/size-corpus-review-0.1/\n?? docs/v2/evaluation/t2002-runner.md\n?? docs/v2/evaluation/t2003-preflight-0.1/",
+        "runner_sources_sha256": {
+          "backend/evaluation/__init__.py": "15f71d3a1db67ac788a70611120b392761078cd353394ca29af6ac5c444247a8",
+          "backend/evaluation/__main__.py": "15e87c17cc9993d58f9c42f6576d06d60845dd49333b1ffad16e66e2cbb23089",
+          "backend/evaluation/dataset.py": "f0f9da1b5deeed5968e5b2b1862949dc435c52153a6727fd7a0614a411914ee2",
+          "backend/evaluation/metrics.py": "55143151173d04af7854c77ce7b7d66b448ba957a1ad336aeb4d3f730b01be2e",
+          "backend/evaluation/runner.py": "3ef134fe8253101baf5de8fe5f85f33ee99472e6cbee9c6a5d05fcb01684a4b0",
+          "backend/evaluation/v1.py": "e3e5804ceee24652f793149821ac04bb6f3ff3b6e9c773d9a5f061b2e6f98a95"
+        },
+        "note": "Workspace contains uncommitted tooling/docs; HEAD alone is insufficient provenance."
+      }
+    }
+  },
+  "benchmark_authorized": false,
+  "benchmark_executed": false,
+  "retrieval_executed": false,
+  "embedding_encode_executed": false,
+  "index_rebuilt": false,
+  "effective_configuration": {
+    "MAX_CHUNK_SIZE": 800,
+    "CHUNK_OVERLAP": 120,
+    "DEFAULT_TOP_K": 5,
+    "MIN_RELEVANCE_SCORE": 0.3,
+    "EMBED_MODEL": "models/bge-small-zh-v1.5",
+    "CHROMA_PERSIST_DIR": "chroma_db",
+    "UPLOAD_DIR": "uploads"
+  },
+  "resolved_paths": {
+    "model": "F:\\MyLearning\\Vibe_Coding\\DX-RAG\\code\\backend\\models\\bge-small-zh-v1.5",
+    "store": "F:\\MyLearning\\Vibe_Coding\\DX-RAG\\code\\backend\\chroma_db"
+  },
+  "model_file_comparison": {
+    "expected_count": 29,
+    "missing": [],
+    "changed": []
+  },
+  "limitations": [
+    "No query execution, embedding encode, vector search, retrieval rankings, metrics, latency or cost measured.",
+    "Public VectorStore exposes IDs/text/metadata but not stored vectors; vector integrity/dimensions and search readiness are not independently established.",
+    "Evidence is point-in-time; recheck after changes or before authorized baseline run. No concurrent writes should occur during baseline.",
+    "Frozen dataset benchmark_authorized=false records original scope. Runtime CLI currently validates data approval but does not enforce that authorization field; user execution authorization remains a separate mandatory workflow gate. Do not alter frozen dataset to grant execution.",
+    "Model load is tested offline with process-only overrides; no LLM API call or credential check needed for retrieval-only baseline.",
+    "V1 tied-score ordering risk and evaluation depth 10 vs production top_k 5 confounder remain."
+  ],
+  "status": "PRECHECK_PASS_WITH_UNTESTED_SEARCH_AND_VECTOR_INTEGRITY",
+  "failed_checks": [],
+  "completed_at_utc": "2026-09-14T09:03:05.186855+00:00",
+  "script_sha256": "d60c3a6024a19ccf65474c1d0b396f634a3c1d6fa36b6abb6d16a9c10a641b6f"
+}

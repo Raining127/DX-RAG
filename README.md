@@ -249,6 +249,8 @@ DX-RAG/
 
 **DX-RAG v1.0.0 — Phase 12 Gate PASS（`PHASE_12_PASS`）。** 当前 Gate 的必需阻塞项已清零，结论及证据范围见 [Phase 12 Gate closure](docs/verification/PHASE-12-GATE-CLOSURE.md)。
 
+**V2 当前状态（2026-09-18）：** [Phase 20 独立 Gate](docs/verification/PHASE-20-GATE-REVIEW.md)为 `PHASE_20_PASS — READY_FOR_PHASE_21`；[Phase Learning Review](docs/learning/phase-20-evaluation-foundation.md)已整合。保留真实/模拟/替代及历史/本轮验证边界；Phase 21 未启动，仍需获批协议、Task 与执行授权。V1 发布状态不变。
+
 v1 不包含用户认证/授权、服务端对话持久化、流式回答、Milvus 或检索重排序。验收通过不意味着具备面向公网的多用户权限隔离。
 
 发布状态文档使用 v1.0.0；当前 FastAPI 元数据和前端 `package.json` 中的版本字段仍为 `0.1.0`，界面仍有 “Phase 10 / application shell” 遗留文案。这些展示字段不代表当前 Gate 状态。

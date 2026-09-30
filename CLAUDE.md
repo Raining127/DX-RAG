@@ -6,25 +6,37 @@ DX-RAG — enterprise knowledge base Q&A system built on RAG technology (FastAPI
 
 ## Source of Truth
 
-```
-SPEC.md  >  TASKS.md  >  CLAUDE.md
-(product)   (sequencing)   (agent rules)
+```text
+docs/v2/SPEC.md > docs/v2/TASKS.md > CLAUDE.md
+(product)          (sequencing)      (agent rules)
 ```
 
 | Document | Role | Status |
 |----------|------|--------|
-| `docs/SPEC.md` | Product & technical specification | v1.6 FROZEN |
-| `docs/TASKS.md` | Implementation task plan | READY FOR IMPLEMENTATION |
-| `CLAUDE.md` | Agent operational contract | Active |
+| `docs/v2/SPEC.md` | Active V2 product & technical specification | Current Phase 20 scope approved; future V2 scope remains DRAFT; see Section 1.1 |
+| `docs/v2/TASKS.md` | Active V2 evaluation, experiment and implementation sequencing | T2001/T2002/T2003 DONE; Dataset Contract 0.3 FROZEN; Phase 20 independent Gate PASS (2026-09-18); Phase 21 not started |
+| `CLAUDE.md` | Current agent operational contract | Active |
 
-**Conflict resolution:** SPEC.md takes precedence for product behavior. TASKS.md takes precedence for implementation sequencing. If a Task appears inconsistent with SPEC, mark it `BLOCKED` and report — do not silently choose.
+**Conflict resolution:** `docs/v2/SPEC.md` takes precedence for V2 product behavior; `docs/v2/TASKS.md` controls sequencing. If they conflict, block the affected Task and report; do not silently choose.
+
+### Historical V1 Baseline
+
+- Tag `v1.0.0`: `da8be59a60d7f35a2e3c1ab835624946c53d2a55`.
+- `docs/SPEC.md`: v1.7 FROZEN, released V1 contract.
+- `docs/TASKS.md`: V1 task history, 55 Tasks DONE across 13 Phases.
+
+These define the released V1 baseline and are read-only historical references during normal V2 work. Preserve existing verification, retrospective and learning evidence. Historical claims of sole authority and V1 section numbers apply to V1 only. Explicit V1 re-reviews use these historical contracts; normal V2 execution uses the active hierarchy above.
 
 ## Current State
 
-- **SPEC:** v1.6 FROZEN, 0 Blocking Questions
-- **Tasks:** 55 implementation Tasks across 13 phases
-- **Implementation status:** `docs/TASKS.md` is the authoritative source for all Task statuses
-- **Before starting any Task:** Read TASKS.md to determine the current state — do not rely on CLAUDE.md for which Tasks are DONE, TODO, or in-progress
+- Latest (2026-09-18): independent Phase 20 Gate is **PHASE_20_PASS — READY_FOR_PHASE_21**; report: [Phase 20 Gate](docs/verification/PHASE-20-GATE-REVIEW.md). Eleven ACs PASS; 0 BLOCKER/MAJOR/MINOR, 4 INFO. Gate independently reran 67 tests and offline evidence checks; no new live Benchmark, model/index initialization or file-writing CLI test. Historical real retrieval and all limits remain explicit. Phase Learning Review is consolidated in [Technical Learning](docs/learning/phase-20-evaluation-foundation.md), with reader/validation status in Appendix C; original Task notes are preserved separately. A subsequent independent [Phase 20 Engineering Review](docs/learning/engineering-review/phase-20-engineering-review.md) now records six decision assessments, costs, failure/consistency risks and upgrade triggers; reader/verification details are in its Appendix D. Interview synthesis is not performed. Phase 21 still requires approved protocol/Tasks and explicit authorization; not started. This status sync does not change SPEC behavior or Task DONE states.
+- Historical completion (2026-09-14): user authorized T2003 in SPEC §1.10; complete V1 Hybrid baseline captured and AC-2003-1–4 PASS. Evidence: `docs/v2/benchmarks/t2003-v1-baseline-1.0/README.md`. Three real 40-query rounds; 5 queries change rank, 6 change score maps, 1 changes metrics. Public logical inventory/model/release/product hashes unchanged; Chroma file bytes changed, cause unknown. T2003 DONE does not confer Phase 20 Gate PASS or authorize experiments. Earlier T2003 TODO/unauthorized statements below describe their historical scope and are superseded only by this later authorization/completion.
+- V1 released; historical Phase 12 PASS is recorded in `docs/verification/PHASE-12-GATE-CLOSURE.md`, not newly verified by this bootstrap.
+- V2: Evaluation-Driven RAG Optimization. Current Phase 20 scope approved. Human project owner approved T2001 DONE and Dataset Contract 0.3 FROZEN with T2001 Final Gate PASS on 2026-09-10. This does not authorize T2002/T2003, runner/metric implementation, dataset construction, benchmark execution, retrieval experiments or product changes.
+- Post-release README and Learning & Engineering Workflow improvements are retained.
+- Subsequent authorization: user `implement T2002`, recorded in SPEC §1.3, authorized its implementation and testing. T2002 DONE on 2026-09-11; historical T2001-only authorization statements do not revoke this later instruction. T2003/dataset construction/production changes remain separately gated.
+- Before starting any V2 Task, read `docs/v2/TASKS.md` for current status and approval/dependencies. Do not infer readiness from this file.
+- Benchmark construction approvals (2026-09-11–14): all 40 queries, 1,520 grades, coverage, core facts/20 families, Dev/Test, 20 dedup groups and SC01/SC02 scope were approved. Formal novatech-retrieval-benchmark-1.0.0 is FROZEN/promotion APPROVED. Five superseded review directories are now archived: `docs/v2/evaluation/archives/README.md`; original paths are historical. No complete T2003 Benchmark authorization.
 
 ## Core Rule — One Task At A Time
 
@@ -32,8 +44,8 @@ Work on exactly **one** Task ID. Complete it before starting another. Never pre-
 
 ## Before Starting ANY Task
 
-1. Read the Task entry in `docs/TASKS.md`
-2. Read all referenced SPEC sections
+1. Read the Task entry in `docs/v2/TASKS.md` and confirm `docs/v2/SPEC.md` approval for its scope
+2. Read all referenced `docs/v2/SPEC.md` sections and explicitly inherited V1 contracts
 3. Verify Task dependencies are satisfied
 4. Inspect current repository state
 5. Output a concise implementation plan (Task ID, goal, files to touch, steps, verification) — then proceed
@@ -44,7 +56,7 @@ Work on exactly **one** Task ID. Complete it before starting another. Never pre-
 Read → Plan → Implement → Test → Verify ACs → Review Diff → Mark DONE → Task Learning Pass → Report
 ```
 
-Update Task status in TASKS.md:
+Update Task status in `docs/v2/TASKS.md`:
 - `TODO → IN_PROGRESS` when starting
 - `IN_PROGRESS → BLOCKED` if a genuine conflict arises
 - `IN_PROGRESS → DONE` only after verification passes
@@ -58,40 +70,56 @@ Every code change must be **directly required** by the current Task, a reference
 - Add error handling, logging, type hints not asked for
 - Pre-build features from later phases
 - "While I'm here" improvements
-- Add abstractions the SPEC didn't request
+- Add abstractions `docs/v2/SPEC.md` did not request
 
 Clean up orphaned imports/variables your change creates. Leave pre-existing dead code alone.
 
 ## SPEC Freeze Policy
 
-SPEC.md is FROZEN. Do not modify it during normal implementation. If implementation exposes a genuine conflict (two SPEC requirements cannot coexist, required behavior is undefined, API contradicts Data Model):
+`docs/v2/SPEC.md` began as DRAFT. Section 1.1 now records approval of the current Phase 20 scope and execution authorization for T2001 only. Future V2 scope remains DRAFT. Scope approval does not authorize T2002/T2003 or any retrieval experiment; later execution requires explicit authorization and satisfied dependencies.
 
-1. **STOP** implementation of the affected behavior
-2. **Do NOT** make a product decision yourself
-3. Mark the Task `BLOCKED`
-4. Report: conflicting SPEC locations, why they conflict, impact, minimum decision needed
+```text
+Draft V2 SPEC -> Human Review -> Freeze / Approve -> Execute Task
+-> Test / Benchmark -> Evidence -> ADR / Human Decision
+-> Explicit SPEC amendment if required
+```
+
+Record human approval and its scope in `docs/v2/SPEC.md` before execution. Do not silently rewrite requirements during implementation or after an unexpected experiment result. Negative results are evidence, not permission to change success criteria.
+
+If requirements conflict or required behavior is undefined:
+
+1. **STOP** implementation of the affected behavior.
+2. **Do NOT** make a product decision yourself.
+3. Mark the affected Task `BLOCKED` in `docs/v2/TASKS.md`.
+4. Report exact specification paths/sections, impact and minimum decision needed.
+
+`docs/SPEC.md` remains the frozen historical V1 specification.
 
 ## Dependencies
 
 - Verify `Dependencies` in the Task entry before starting
 - If prerequisites are not done, report `BLOCKED_BY_TASK_DEPENDENCY` — do not silently implement them
-- No new third-party dependency unless required by SPEC or the Task cannot reasonably proceed without it. Before adding, explain: name, necessity, why existing deps insufficient, impact
+- No new third-party dependency unless required by `docs/v2/SPEC.md` or the Task cannot reasonably proceed without it. Before adding, explain: name, necessity, why existing deps insufficient, impact
 
 ## API & Data Contracts
 
-- API contracts (SPEC Section 6) are authoritative — do not rename endpoints, change HTTP methods, request/response fields, status codes, or error codes
+- Existing V1 API contracts (`docs/SPEC.md` Section 6) remain inherited by `docs/v2/SPEC.md` until explicitly amended there and sequenced in `docs/v2/TASKS.md`; they are authoritative — do not rename endpoints, change HTTP methods, request/response fields, status codes, or error codes
 - **Identity rules:** `file_id` = file identity (UUID). `chunk_id` = chunk identity (UUID). `file_name` = display only. `chunk_index` = ordering only. Never substitute these.
-- No universal success response wrapper (explicitly prohibited by SPEC Section 7.7)
+- No universal success response wrapper (explicitly prohibited by `docs/SPEC.md` Section 7.7)
 
-## Retrieval Invariants (DO NOT CHANGE)
+## V1 Retrieval Baseline - Historical Contract
 
 - `keyword_score * 0.3 + vector_score * 0.7 = final_score`
 - `MIN_RELEVANCE_SCORE = 0.30`
 - Pipeline order: Retrieve → Merge → Calculate final_score → Sort DESC → Relevance Filter → Top-K
 - Score boundary: `similarity_score` (VectorStore output) → `vector_score` (VectorRetriever) → `final_score` (Hybrid) → `relevance_score` (public API)
-- No BM25, no reranker, no RRF fusion in v1
+- No BM25, no reranker, no RRF fusion in the released V1 baseline.
 
-## Ingestion Invariants (DO NOT CHANGE)
+Preserve this behavior, its existing threshold, Top-K and pipeline long enough to capture a reproducible V1 benchmark. Do not silently replace or remove the baseline before that evidence exists. V2 alternatives require explicit authorization in both `docs/v2/SPEC.md` and `docs/v2/TASKS.md`, after the Phase 20 baseline gate. These are historical baseline rules, not permanent prohibitions on V2 experiments.
+
+## Inherited Ingestion Contract
+
+Preserved from `docs/SPEC.md`; changes require explicit V2 specification amendment and Task authorization.
 
 Pipeline: Validate → Save → Parse → Clean → Chunk → Embed → Store → Invalidate keyword index
 
@@ -110,9 +138,9 @@ Three outcomes:
 ## Testing & Acceptance Criteria
 
 - Run smallest relevant verification first (unit → API → integration)
-- Before marking DONE, verify every AC assigned to the Task in TASKS.md Section 19
+- Before marking DONE, verify every AC assigned to the Task in `docs/v2/TASKS.md` and its referenced `docs/v2/SPEC.md` requirements (V1 re-reviews use `docs/TASKS.md` Section 19)
 - Report AC IDs verified. If an AC depends on a future integration Task, state that explicitly.
-- DONE requires: implementation complete, behavior matches SPEC, tests pass, applicable ACs pass, API contract respected, error handling present, no unrelated changes
+- DONE requires: implementation complete, deliverables match `docs/v2/SPEC.md`, applicable tests/benchmarks and ACs pass, API contract respected, error handling present where applicable, no unrelated changes
 
 ## Diff Review
 
@@ -148,27 +176,43 @@ After completing a Task, report concisely:
 
 ## Phase Gate Review
 
-When asked to run a Phase Gate Review, first read and follow `docs/learning/templates/phase-gate-review-template.md`. Treat the review as **REVIEW-ONLY** unless the user explicitly authorizes otherwise: independently verify the Phase against SPEC, TASKS, implementation, tests, and complete repository state; treat existing review verdicts as context, not acceptance evidence; do not modify files, `docs/SPEC.md`, Task status, or future Task definitions, and do not start the next Phase. Return the verdict and report structure defined by the canonical Gate Review protocol.
+When asked to run a Phase Gate Review, first read and follow `docs/learning/templates/phase-gate-review-template.md`. Treat the review as **REVIEW-ONLY** unless the user explicitly authorizes otherwise: independently verify the Phase against the version-specific specification and task paths, implementation, tests, and complete repository state; treat existing review verdicts as context, not acceptance evidence; do not modify files, either version's specification, Task status, or future Task definitions, and do not start the next Phase. Return the verdict and report structure defined by the canonical Gate Review protocol.
 
 ## Learning & Engineering Workflow V2
 
-Use `docs/learning/templates/phase-learning-pass-workflow.md` as the canonical Final Learning & Engineering Workflow V2 for all future DX-RAG Tasks and Phases. Its repository binding defines command routing, evidence vocabulary, ownership, preservation and reader checks. Product behavior and Task sequencing still follow SPEC/TASKS; this workflow does not change their authority.
+Use `docs/learning/templates/phase-learning-pass-workflow.md` as the canonical Final Learning & Engineering Workflow V2 for all future DX-RAG Tasks and Phases. Its repository binding defines command routing, evidence vocabulary, ownership, preservation and reader checks. For V2, product behavior and Task sequencing follow `docs/v2/SPEC.md` / `docs/v2/TASKS.md`; this workflow does not change their authority.
 
 | Command / event | Responsibility | Structure |
 |---|---|---|
-| After an implementation Task is verified and marked DONE; or `Txxxx learning pass` | Capture fresh Task-aware understanding: component names first, concepts, code, flow, rationale, difficulties, verification, limitations and Phase-consolidation inputs | `docs/learning/templates/phase-learning-template.md`, Part A |
+| After an evaluation, experiment or implementation Task is verified and marked DONE; or `Txxxx learning pass` | Capture fresh Task-aware understanding: component names first, concepts, code, flow, rationale, difficulties, verification, limitations and Phase-consolidation inputs | `docs/learning/templates/phase-learning-template.md`, Part A |
 | `Phase X learning review` (legacy `Phase X learning pass`) | Consolidate Task material into concept-centric Technical Learning after all Tasks are DONE and Gate state is established; reorganize rather than append a summary | Same template, Part B |
 | `Phase X engineering review` | Independently evaluate decisions, constraints, alternatives, costs, failure/consistency, upgrade triggers and Known Gaps after Gate, preferably after learning consolidation | `docs/learning/templates/phase-engineering-review-template.md` |
 
 Preferred Phase sequence: all Tasks DONE → Gate → if FAIL, authorized remediation/tests/Gate re-review → established Gate state → Phase Learning Review → Engineering Review. Unresolved blockers remain explicit; documentation completion never upgrades Gate status or next-Phase readiness. The Gate protocol above stays independent and REVIEW-ONLY by default.
 
-Read current implementation, tests/evidence, relevant SPEC/TASKS and historical findings before writing. Teach Why before How and concepts before symbols; keep real code depth and accurate Python/TypeScript explanations. Phase Learning's main narrative must remain understandable with Task/Gate/Finding/AC identifiers hidden. Engineering Review must answer when each important design stops being appropriate, without becoming another tutorial or Gate report.
+Read current implementation, tests/evidence, relevant `docs/v2/SPEC.md` / `docs/v2/TASKS.md` (or explicit V1 review contracts) and historical findings before writing. Teach Why before How and concepts before symbols; keep real code depth and accurate Python/TypeScript explanations. Phase Learning's main narrative must remain understandable with Task/Gate/Finding/AC identifiers hidden. Engineering Review must answer when each important design stops being appropriate, without becoming another tutorial or Gate report.
 
 Keep historical closure, current implementation and later verification distinct. Do not upgrade STATIC/UNIT/MOCKED/SUBSTITUTED evidence into REAL/LIVE/E2E; state exact boundaries and whether checks were rerun. Preserve existing ADRs, meaningful evidence, limitations and historical terminology.
 
-Interview Guide is a separate derived artifact, synthesized from consolidated Learning, Engineering Reviews, current code and project status. Learning/review commands do not automatically update interview answers or other reviews. Preserve old interview assets and historical workflows; migrate other Phase documents only when explicitly requested. Do not modify code, tests, SPEC/TASKS, Gate records or start another Task/Phase merely to complete a documentation command.
+Interview Guide is a separate derived artifact, synthesized from consolidated Learning, Engineering Reviews, current code and project status. Learning/review commands do not automatically update interview answers or other reviews. Preserve old interview assets and historical workflows; migrate other Phase documents only when explicitly requested. Do not modify code, tests, `docs/v2/SPEC.md` / `docs/v2/TASKS.md` or historical V1 contracts, Gate records or start another Task/Phase merely to complete a documentation command.
 
-## Explicitly Out of Scope for v1
+For experiment-oriented Tasks, the same Task Learning Pass -> Phase Gate -> Phase Learning Review -> Engineering Review -> independent Interview synthesis flow remains active. Explain the research question, baseline, change, benchmark, acceptance/rejection rationale, trade-off, validity conditions and next experiment. Workflow V2 names the learning workflow revision, independently of product V2. Do not migrate historical V1 documents merely to use newer templates.
+
+## V2 Experiment Governance
+
+Distinguish Evaluation Tasks (measurement), Experiment Tasks (controlled candidate comparison), and Implementation Tasks (approved production integration). Follow:
+
+```text
+Research Question -> Baseline -> Candidate -> Controlled Experiment
+-> Benchmark - Analysis - ADR / Decision - Production Integration
+```
+
+Experimental code does not authorize production adoption. Record architecture decisions in `docs/v2/adr/` with Context, Decision, Alternatives, Evidence, Trade-offs and Consequences. Report unsupported decisions for human judgment. A failed experiment can complete its engineering Task when the approved protocol and evidence requirements are satisfied; candidate superiority is not a universal acceptance criterion.
+
+## V1 Historical Scope Boundary
+
+The following table describes released V1 exclusions. It does not automatically prohibit V2 experiments or enroll these features into V2. They remain excluded unless explicitly introduced by `docs/v2/SPEC.md` and sequenced in `docs/v2/TASKS.md`.
+
 
 | Category | Item |
 |----------|------|
@@ -180,4 +224,12 @@ Interview Guide is a separate derived artifact, synthesized from consolidated Le
 
 ## Git Policy
 
-Do not commit unless explicitly asked. Inspect diff/status when useful. Do not rewrite history, force push, or discard user modifications.
+Do not commit or create branches unless explicitly asked. Do not create, move or recreate tags (especially `v1.0.0`), reset historical commits, merge branches, or delete historical evidence without explicit authorization. Inspect diff/status when useful. Do not rewrite history, force push, or discard user modifications.
+
+- Historical freeze-review RC (SPEC §1.6) is archived; its original pending status preceded the final approval in SPEC §1.7. Use `docs/v2/evaluation/novatech-retrieval-benchmark-1.0.0/README.md` for current frozen data and `docs/v2/evaluation/archives/README.md` for history. Do not edit frozen evidence.
+
+- Current dataset release (2026-09-14, SPEC §1.7): `docs/v2/evaluation/novatech-retrieval-benchmark-1.0.0/README.md` is FROZEN and promotion APPROVED under H-BC01-FREEZE-PROMOTION-1.0.0-2026-09-14. Full data validator and approved-RC content/hash checks PASS. Previous RC and evidence PENDING states are historical; do not mutate those captured artifacts. No Benchmark authorization/execution; T2003 remains TODO, live model/index/store readiness unchecked. Release files are uncommitted workspace artifacts.
+
+- T2003 preflight (2026-09-14, SPEC §1.8): `docs/v2/evaluation/t2003-preflight-0.1/README.md` records scoped PASS for frozen data, dependencies/config, 29 model file hashes, offline model loading and live 38-chunk public inventory matching. Chroma persistence file hashes changed during client reads (cause unproven); stored vectors/search remain unverified. No encode/retrieval/Benchmark executed; T2003 TODO and separate authorization required. CLI does not enforce dataset benchmark_authorized; workflow authorization remains mandatory.
+
+- Authorized minimal smoke (2026-09-14, SPEC §1.9): `docs/v2/evaluation/t2003-smoke-0.1/README.md` PASS. Exactly one neutral non-Benchmark encode (512 finite normalized values) and one public vector search top_k=1 succeeded. Frozen dataset/model unchanged; 38-chunk full public logical inventory unchanged before/after. Chroma persistence bytes changed, cause not established. This confirms basic vector path only, not Hybrid baseline or full vector integrity; T2003 Benchmark remains unauthorized/TODO.

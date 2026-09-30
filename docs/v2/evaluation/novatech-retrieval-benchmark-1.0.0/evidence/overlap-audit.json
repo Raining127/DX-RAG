@@ -1,0 +1,171 @@
+{
+  "status": "DRAFT",
+  "automated_structural_validation": "PASS",
+  "semantic_fact_review": "PENDING",
+  "source_annotations_unchanged": true,
+  "query_count": 40,
+  "human_grade_count": 1520,
+  "family_count": 20,
+  "largest_family_query_count": 8,
+  "cross_split_core_fact_edges": [],
+  "cross_split_support_only_facts": [
+    {
+      "fact_id": "F25",
+      "kind": "support_only",
+      "Dev": [
+        "BC01-Q018",
+        "BC01-Q031"
+      ],
+      "Test": [
+        "BC01-Q014"
+      ]
+    },
+    {
+      "fact_id": "F47",
+      "kind": "support_only",
+      "Dev": [
+        "BC01-Q031"
+      ],
+      "Test": [
+        "BC01-Q032"
+      ]
+    }
+  ],
+  "cross_split_positive_chunks": [
+    {
+      "chunk_alias": "E6",
+      "Dev": [
+        "BC01-Q031"
+      ],
+      "Test": [
+        "BC01-Q028"
+      ]
+    },
+    {
+      "chunk_alias": "E9",
+      "Dev": [
+        "BC01-Q012"
+      ],
+      "Test": [
+        "BC01-Q026"
+      ]
+    },
+    {
+      "chunk_alias": "X7",
+      "Dev": [
+        "BC01-Q018",
+        "BC01-Q031"
+      ],
+      "Test": [
+        "BC01-Q028"
+      ]
+    },
+    {
+      "chunk_alias": "X8",
+      "Dev": [
+        "BC01-Q011",
+        "BC01-Q018",
+        "BC01-Q031"
+      ],
+      "Test": [
+        "BC01-Q014",
+        "BC01-Q016",
+        "BC01-Q020",
+        "BC01-Q032"
+      ]
+    },
+    {
+      "chunk_alias": "I3",
+      "Dev": [
+        "BC01-Q025"
+      ],
+      "Test": [
+        "BC01-Q010"
+      ]
+    },
+    {
+      "chunk_alias": "I5",
+      "Dev": [
+        "BC01-Q011",
+        "BC01-Q027"
+      ],
+      "Test": [
+        "BC01-Q026"
+      ]
+    },
+    {
+      "chunk_alias": "I9",
+      "Dev": [
+        "BC01-Q025"
+      ],
+      "Test": [
+        "BC01-Q026"
+      ]
+    }
+  ],
+  "exact_normalized_duplicate_questions": [],
+  "semantic_dedup_review": "PENDING",
+  "pilot_overlap": [
+    {
+      "pilot_query": "PILOT-CQ-001",
+      "overlap": "source_only",
+      "facts": [],
+      "explanation": "协作时段与 Q001 到岗/午休/下班分属 E2 内不同规则。"
+    },
+    {
+      "pilot_query": "PILOT-CQ-002",
+      "overlap": "source_only",
+      "facts": [],
+      "explanation": "密码长度/复用与 MFA、账号借用不同；同为 I1 来源。"
+    },
+    {
+      "pilot_query": "PILOT-CQ-003",
+      "overlap": "source_only",
+      "facts": [],
+      "explanation": "考勤补记与 Q001 作息是 E2 内不同规则。"
+    },
+    {
+      "pilot_query": "PILOT-CQ-004",
+      "overlap": "core",
+      "facts": [
+        "F21"
+      ],
+      "explanation": "异常 MFA 的 IT 报告与证据保留，和 Q012 的安全事件处置有共同核心事实。"
+    },
+    {
+      "pilot_query": "PILOT-CQ-005",
+      "overlap": "core",
+      "facts": [
+        "F28",
+        "F29"
+      ],
+      "explanation": "上海培训住宿上限及不得套普通差旅标准；相关连通组整体入 Dev。"
+    },
+    {
+      "pilot_query": "PILOT-CQ-006",
+      "overlap": "core",
+      "facts": [
+        "F08",
+        "F10",
+        "F11",
+        "F13"
+      ],
+      "explanation": "远程资格、申请、VPN/MFA；相关连通组整体入 Dev。"
+    }
+  ],
+  "all_38_source_chunks_exposed_in_pilot_review": true,
+  "test_is_blind_or_source_independent": false,
+  "target_gap": {
+    "answerable_missing": 8,
+    "unanswerable_missing": 0,
+    "per_split_answerable_missing": 4,
+    "smaller_dataset_exception": "NOT_APPROVED"
+  },
+  "limitations": [
+    "Semantic fact boundaries are proposed, not Human-approved.",
+    "No core-fact crossing is conditional on this mapping; does not prove absence of leakage.",
+    "All source texts were reviewed during Pilot; Test is not unseen policy/corpus.",
+    "Shared positive chunks and support-only rules can aid retrieval across splits.",
+    "32A/8U is below the 40A/8U contract target; no readiness/promotion claim."
+  ]
+}

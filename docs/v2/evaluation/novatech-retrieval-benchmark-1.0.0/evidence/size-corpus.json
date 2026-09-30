@@ -1,0 +1,196 @@
+{
+  "version": "reviewed-size-corpus-0.1",
+  "date": "2026-09-14",
+  "status": "SIZE_CORPUS_APPROVED_NOT_FROZEN",
+  "source_hashes": {
+    "contract": "6c09605e01242b0658da85a7d49dfdc52ce5ca0f491ff0ca68c22130f0d7fd40",
+    "snapshot": "a2d314a9a284a1782c77376e53702a610b22ae9a3160a213ca338a55637ddd80",
+    "annotations": "f6201a86d1b91c4af00eaf91529549cd999776dc584cfd02cdabbbde0bc407e4",
+    "split": "577c3f9b08c767733b9bb8a1702f374dbbc5f50b8debbccc1477f8a9a03f8d51",
+    "dedup": "7852cc22ae157c271a3bb87dbeb9dc5eb0156a8edfb44af8febd4c8546e417d8"
+  },
+  "decisions": [
+    {
+      "decision_id": "SC01",
+      "subject": "Accept current 32A+8U size and per-split category gaps for this dataset scope",
+      "recommendation": "ACCEPT_WITH_DISCLOSED_LIMITATIONS",
+      "human_decision": "APPROVED",
+      "human_decision_ref": "H-BC01-SIZE-CORPUS-SC01-SC02-2026-09-14"
+    },
+    {
+      "decision_id": "SC02",
+      "subject": "Select the exact four NovaTech source documents and frozen 38-chunk snapshot; keep 40 BC01 queries and exclude six Pilot queries",
+      "recommendation": "SELECT_EXISTING_FROZEN_CORPUS",
+      "human_decision": "APPROVED",
+      "human_decision_ref": "H-BC01-SIZE-CORPUS-SC01-SC02-2026-09-14"
+    }
+  ],
+  "target": {
+    "answerable": 40,
+    "unanswerable": 8,
+    "per_split_answerable": 20,
+    "per_split_unanswerable": 4,
+    "per_split_answerable_category": 5
+  },
+  "proposed": {
+    "answerable": 32,
+    "unanswerable": 8,
+    "answerable_shortfall": 8,
+    "counts": {
+      "Dev": {
+        "answerable": 16,
+        "unanswerable": 4,
+        "answerable_categories": {
+          "Direct Fact": 4,
+          "Paraphrase": 3,
+          "Distractor": 5,
+          "Multi-chunk": 4
+        },
+        "category_gaps": {
+          "Direct Fact": 1,
+          "Paraphrase": 2,
+          "Distractor": 0,
+          "Multi-chunk": 1
+        }
+      },
+      "Test": {
+        "answerable": 16,
+        "unanswerable": 4,
+        "answerable_categories": {
+          "Direct Fact": 4,
+          "Paraphrase": 5,
+          "Distractor": 3,
+          "Multi-chunk": 4
+        },
+        "category_gaps": {
+          "Direct Fact": 1,
+          "Paraphrase": 0,
+          "Distractor": 2,
+          "Multi-chunk": 1
+        }
+      }
+    },
+    "snapshot_id": "t2001-novatech-pilot-01",
+    "corpus_version": "novatech-pilot-0.1",
+    "sources": [
+      {
+        "file_name": "employee_handbook.md",
+        "repository_path": "docs/v2/evaluation/pilot-corpus/employee_handbook.md",
+        "sha256": "4aeb39679a4714f4289aa3ffab1a9324616b0396ea01693faf01ca6d803a5057",
+        "bytes": 5279,
+        "verified_sha256": "4aeb39679a4714f4289aa3ffab1a9324616b0396ea01693faf01ca6d803a5057",
+        "chunk_count": 10
+      },
+      {
+        "file_name": "travel_policy.md",
+        "repository_path": "docs/v2/evaluation/pilot-corpus/travel_policy.md",
+        "sha256": "a418e9bb9141beb2d7b426f4ee6ed07e8f2843488e6e8ce9b1dc6a9da7aad81f",
+        "bytes": 5210,
+        "verified_sha256": "a418e9bb9141beb2d7b426f4ee6ed07e8f2843488e6e8ce9b1dc6a9da7aad81f",
+        "chunk_count": 9
+      },
+      {
+        "file_name": "expense_policy.md",
+        "repository_path": "docs/v2/evaluation/pilot-corpus/expense_policy.md",
+        "sha256": "ab8061b1b369ce9148770dc239bc138f4629af46069c7efe7ab96fb5a8465de4",
+        "bytes": 6215,
+        "verified_sha256": "ab8061b1b369ce9148770dc239bc138f4629af46069c7efe7ab96fb5a8465de4",
+        "chunk_count": 9
+      },
+      {
+        "file_name": "it_security_policy.md",
+        "repository_path": "docs/v2/evaluation/pilot-corpus/it_security_policy.md",
+        "sha256": "74bd596f2909db288d9ac6d857e702fde0e0757fa73dcba62ddf6a5ce3c6761b",
+        "bytes": 5799,
+        "verified_sha256": "74bd596f2909db288d9ac6d857e702fde0e0757fa73dcba62ddf6a5ce3c6761b",
+        "chunk_count": 10
+      }
+    ],
+    "query_ids": [
+      "BC01-Q001",
+      "BC01-Q002",
+      "BC01-Q003",
+      "BC01-Q004",
+      "BC01-Q005",
+      "BC01-Q006",
+      "BC01-Q007",
+      "BC01-Q008",
+      "BC01-Q009",
+      "BC01-Q010",
+      "BC01-Q011",
+      "BC01-Q012",
+      "BC01-Q013",
+      "BC01-Q014",
+      "BC01-Q015",
+      "BC01-Q016",
+      "BC01-Q017",
+      "BC01-Q018",
+      "BC01-Q019",
+      "BC01-Q020",
+      "BC01-Q021",
+      "BC01-Q022",
+      "BC01-Q023",
+      "BC01-Q024",
+      "BC01-Q025",
+      "BC01-Q026",
+      "BC01-Q027",
+      "BC01-Q028",
+      "BC01-Q029",
+      "BC01-Q030",
+      "BC01-Q031",
+      "BC01-Q032",
+      "BC01-Q033",
+      "BC01-Q034",
+      "BC01-Q035",
+      "BC01-Q036",
+      "BC01-Q037",
+      "BC01-Q038",
+      "BC01-Q039",
+      "BC01-Q040"
+    ],
+    "excluded_pilot_query_ids": [
+      "PILOT-CQ-001",
+      "PILOT-CQ-002",
+      "PILOT-CQ-003",
+      "PILOT-CQ-004",
+      "PILOT-CQ-005",
+      "PILOT-CQ-006"
+    ]
+  },
+  "limitations": [
+    "Single fictional organization; AI-assisted original policy corpus, not real employee queries or production prevalence.",
+    "Only four policy domains and 38 chunks; not a large-corpus, cross-company or real-world generalization benchmark.",
+    "Per-category cells contain 3–5 answerable questions; category weights differ across Dev and Test; avoid treating their aggregates as directly comparable quality changes.",
+    "Known Pilot exposure; seven positive chunks and two supporting rules cross splits; Test is not blind or source-independent. Do not tune on Test.",
+    "Eight unanswerables all have one grade-1 policy neighbor and no grade>=2; limited to near-policy missing-information cases, not full negative-query coverage.",
+    "Unanswerables are excluded from main answerable Recall/MRR/nDCG; retained separately, not evidence of generation refusal quality.",
+    "No benchmark result exists; small scale is accepted only if Human decides; formal version approval remains separate."
+  ],
+  "formal_freeze": "PENDING",
+  "dataset_promotion": "PENDING",
+  "benchmark_authorized": false,
+  "benchmark_executed": false,
+  "corpus_expanded": false,
+  "validation": {
+    "source_files_match_snapshot": true,
+    "counts_recomputed_from_approved_queries": true,
+    "dedup_20_groups_approved": true,
+    "live_store_model_index_readiness": "NOT_CHECKED"
+  },
+  "source_review_sha256": "49e3a0d77f4205269b56a625fde885fbb459e1a972ea52ccfefa8f216660a909",
+  "human_decision": {
+    "decision_ref": "H-BC01-SIZE-CORPUS-SC01-SC02-2026-09-14",
+    "date": "2026-09-14",
+    "reviewer_role": "Human project owner",
+    "user_statement": "SC01、SC02 按建议通过：接受本次 32A+8U 规模、各 split 类别缺口及已列明的适用范围局限；选择现有四份原文和冻结的 38 块作为本次最终语料，题集仅保留 Q001–Q040，不并入六道 Pilot 题；正式版本冻结与 promotion 暂不确认，不运行 Benchmark。",
+    "accepted_decision_ids": [
+      "SC01",
+      "SC02"
+    ],
+    "limitations": "ACCEPTED_AS_DISCLOSED",
+    "scope": "Exactly the original four files and frozen 38 chunks; only BC01-Q001–Q040; exclude PILOT-CQ-001–006.",
+    "formal_freeze": "PENDING",
+    "dataset_promotion": "PENDING",
+    "benchmark_authorized": false
+  }
+}

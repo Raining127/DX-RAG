@@ -3,6 +3,8 @@
 > **适用于**: 正在通过 DX-RAG 项目学习现代全栈 + RAG 开发的学习者
 > **前置知识**: 基础 Python / JavaScript / TypeScript
 
+产品 V2 从 [docs/v2/README.md](../v2/README.md) 进入，当前契约为 `docs/v2/SPEC.md` / `docs/v2/TASKS.md`。Workflow V2 指学习工作流版本。Phase 0–12 地图及其中的 `docs/TASKS.md` 引用保留 V1 历史语境。
+
 ---
 
 ## 学习方式
@@ -63,6 +65,10 @@ Gate FAIL 后，按已有授权完成 remediation/tests，再独立 re-review；
 以下 Phase 地图保存既有历史状态；Task 当前状态仍以 `docs/TASKS.md` 为准。历史 Learning Review 早于 Gate 等情况不作为新工作流的默认例外。
 
 ---
+
+## 产品 V2 学习素材
+
+- [Phase 20 — 检索评估基础](./phase-20-evaluation-foundation.md)：2026-09-18 按概念整合的 canonical Technical Learning，覆盖真值/身份、指标与 Runner、真实基线和证据边界，含代码精读、真实案例、15 道自测及一页复习。三个 Task DONE；[独立 Gate](../verification/PHASE-20-GATE-REVIEW.md)为 PHASE_20_PASS — READY_FOR_PHASE_21。新版本读者/文档验证见附录 C；[原 Task 学习素材](./phase-20-task-learning-history-2026-09-18.md)逐字节保留（含历史 reader findings 和修订记录）。[Engineering Review](./engineering-review/phase-20-engineering-review.md)已形成，分析六项决策、失败/一致性、Known Gaps 与升级触发条件；读者及文档检查见其附录 D。Interview synthesis 未执行，Phase 21 未启动。
 
 ## Phase 学习地图
 
@@ -382,6 +388,8 @@ Current learning themes: prove failure state, preserve immutable identity across
 - [phase-09-engineering-review.md](./engineering-review/phase-09-engineering-review.md) — File Management API（T0901–T0903：metadata projection、persisted preview、irreversible cascade delete、path safety / partial failure / scale analysis；2026-09-04）
 - [phase-10-engineering-review.md](./engineering-review/phase-10-engineering-review.md) — Frontend Foundation（T1001–T1002：typed API client、controlled App Shell、runtime/interaction evidence、failure taxonomy 与 scale analysis；2026-09-04）
 - [phase-11-engineering-review.md](./engineering-review/phase-11-engineering-review.md) — Frontend Features（T1101–T1105：shared collection owner、feature-local state、identity reconciliation、cross-feature freshness / concurrency gaps 与 scale analysis；2026-09-07）
+
+- [phase-20-engineering-review.md](./engineering-review/phase-20-engineering-review.md) — Evaluation Foundation（六项测量/数据/工具决策；成本、状态责任、失败、已知缺口、升级条件；保留历史与本轮证据边界，不重发 Gate 或批准 Candidate）
 
 ### 面试指南
 
