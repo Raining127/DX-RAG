@@ -88,7 +88,7 @@ function load(relative) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX,
       esModuleInterop: true, target: ts.ScriptTarget.ES2020 },
   }).outputText;
-  vm.runInNewContext(compiled, { exports, require(name) {
+  vm.runInNewContext(compiled, { exports, process: { env: {} }, require(name) {
     if (name === 'react') return hooks;
     if (name === '@/lib/api-client') return api;
     if (name.startsWith('@/')) {

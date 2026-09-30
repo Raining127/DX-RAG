@@ -1,12 +1,13 @@
 'use client';
 
-import { Layout } from 'antd';
+import { Button, Drawer, Layout } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import FileUpload from '@/components/FileUpload';
 import FileManager from '@/components/FileManager';
 import KnowledgeBaseManager from '@/components/KnowledgeBaseManager';
 import QAPanel from '@/components/QAPanel';
 import SideMenu, { type MenuKey } from '@/components/SideMenu';
+import WorkspaceIcon from '@/components/WorkspaceIcon';
 import { ApiError, listCollections } from '@/lib/api-client';
 import type {
   CollectionMutation,
@@ -24,24 +25,24 @@ interface PanelDefinition {
 
 const PANELS: Record<MenuKey, PanelDefinition> = {
   'knowledge-base': {
-    eyebrow: 'COLLECTIONS / 01',
+    eyebrow: '你的知识空间',
     title: '知识库管理',
-    description: '管理彼此隔离的知识空间，为后续上传、检索与问答建立清晰边界。',
+    description: '按主题整理资料，为每个知识空间建立清晰的边界。',
   },
   upload: {
-    eyebrow: 'INGESTION / 02',
+    eyebrow: '让资料成为知识',
     title: '文件上传',
-    description: '将原始资料送入解析、切分与向量化流水线，并保留可追踪的处理结果。',
+    description: '选择知识库并上传文档，完成后即可基于资料提问。',
   },
   qa: {
-    eyebrow: 'RETRIEVAL / 03',
+    eyebrow: '连接问题与知识',
     title: '知识问答',
-    description: '在指定知识库中检索上下文，让回答与可核验来源保持同一条证据链。',
+    description: '从你的资料中寻找答案，每次回答都可以展开查看参考来源。',
   },
   files: {
-    eyebrow: 'ARCHIVE / 04',
+    eyebrow: '资料一目了然',
     title: '文件管理',
-    description: '查看已入库文件及其处理状态，并通过不可变文件身份执行精确操作。',
+    description: '查看已入库的资料，预览内容并管理文件。',
   },
 };
 
@@ -59,6 +60,8 @@ function getErrorMessage(error: unknown): string {
 
 export default function Home() {
   const [selectedKey, setSelectedKey] = useState<MenuKey>('knowledge-base');
+  const [isNarrowViewport, setIsNarrowViewport] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [fileRevisions, setFileRevisions] = useState<Record<string, number>>({});
   const [collectionState, setCollectionState] =
@@ -69,6 +72,10 @@ export default function Home() {
   const collectionRequestVersionRef = useRef(0);
   const collectionMutationRevisionRef = useRef(0);
   const panel = PANELS[selectedKey];
+  const handlePanelSelect = (key: MenuKey) => {
+    setSelectedKey(key);
+    setMobileNavOpen(false);
+  };
 
   const loadCollections = useCallback(async () => {
     const requestVersion = collectionRequestVersionRef.current + 1;
@@ -188,53 +195,76 @@ export default function Home() {
     <Layout className="app-shell">
       <Sider
         className="app-sider"
-        width={280}
+        width={232}
         breakpoint="lg"
         collapsedWidth={0}
+        collapsed={isNarrowViewport}
+        onBreakpoint={setIsNarrowViewport}
+        trigger={null}
+        aria-hidden={isNarrowViewport}
         aria-label="应用侧边栏"
       >
         <div className="brand-block">
           <div className="brand-mark" aria-hidden="true">
-            DX
+            <WorkspaceIcon name="knowledge-base" />
           </div>
           <div>
-            <p className="brand-name">DX—RAG</p>
-            <p className="brand-caption">Knowledge workspace</p>
+            <p className="brand-name">DX-RAG</p>
+            <p className="brand-caption">知识工作台</p>
           </div>
         </div>
 
-        <div className="rail-label">WORKSPACES</div>
-        <SideMenu selectedKey={selectedKey} onSelect={setSelectedKey} />
+        <div className="rail-label">工作空间</div>
+        <SideMenu selectedKey={selectedKey} onSelect={handlePanelSelect} />
 
         <div className="sider-footer">
-          <span className="status-dot" aria-hidden="true" />
           <div>
-            <p>Foundation online</p>
-            <span>Phase 10 · application shell</span>
+            <p>让知识，触手可及。</p>
+            <span>整理资料 · 提问 · 查看来源</span>
           </div>
         </div>
       </Sider>
 
+      <Drawer
+        className="mobile-navigation"
+        title="DX-RAG · 知识工作台"
+        placement="left"
+        width={280}
+        open={isNarrowViewport && mobileNavOpen}
+        onClose={() => setMobileNavOpen(false)}
+      >
+        <div id="mobile-workspace-navigation">
+          <SideMenu selectedKey={selectedKey} onSelect={handlePanelSelect} />
+        </div>
+      </Drawer>
+
       <Layout className="workspace-layout">
         <header className="workspace-header">
-          <div>
-            <span className="header-kicker">LOCAL KNOWLEDGE SYSTEM</span>
-            <span className="header-separator" aria-hidden="true" />
-            <span className="header-version">V1 / TRUSTED NETWORK</span>
+          <div className="workspace-breadcrumb">
+            <Button
+              className="mobile-menu-toggle"
+              type="text"
+              aria-label="打开导航"
+              aria-expanded={mobileNavOpen}
+              aria-controls="mobile-workspace-navigation"
+              icon={<WorkspaceIcon name="menu" />}
+              onClick={() => setMobileNavOpen(true)}
+            />
+            <span className="header-kicker">知识工作台</span>
+            <span className="header-separator" aria-hidden="true">/</span>
+            <span className="header-current">{panel.title}</span>
           </div>
-          <span className="shell-state">SHELL READY</span>
+          <span className="workspace-badge">
+            {process.env.NEXT_PUBLIC_PREVIEW_MODE === '1' ? '演示预览' : '本地工作空间'}
+          </span>
         </header>
 
-        <Content className="workspace-content">
+        <Content className={`workspace-content${selectedKey === 'qa' ? ' workspace-content-qa' : ''}`}>
           <section className="panel-heading" aria-labelledby="panel-title">
             <div>
               <p className="panel-eyebrow">{panel.eyebrow}</p>
               <h1 id="panel-title">{panel.title}</h1>
               <p className="panel-description">{panel.description}</p>
-            </div>
-            <div className="phase-stamp" aria-label="当前阶段 Phase 10">
-              <span>PHASE</span>
-              <strong>10</strong>
             </div>
           </section>
 

@@ -2,12 +2,13 @@
 
 import { Menu } from 'antd';
 import type { MenuProps } from 'antd';
+import WorkspaceIcon from '@/components/WorkspaceIcon';
 
 const MENU_ENTRIES = [
-  { key: 'knowledge-base', label: '知识库管理', index: '01' },
-  { key: 'upload', label: '文件上传', index: '02' },
-  { key: 'qa', label: '知识问答', index: '03' },
-  { key: 'files', label: '文件管理', index: '04' },
+  { key: 'knowledge-base', label: '知识库管理' },
+  { key: 'upload', label: '文件上传' },
+  { key: 'qa', label: '知识问答' },
+  { key: 'files', label: '文件管理' },
 ] as const;
 
 export type MenuKey = (typeof MENU_ENTRIES)[number]['key'];
@@ -21,8 +22,8 @@ const menuItems: MenuProps['items'] = MENU_ENTRIES.map((entry) => ({
   key: entry.key,
   label: (
     <span className="side-menu-label">
-      <span className="side-menu-index" aria-hidden="true">
-        {entry.index}
+      <span className="side-menu-icon">
+        <WorkspaceIcon name={entry.key} />
       </span>
       <span>{entry.label}</span>
     </span>

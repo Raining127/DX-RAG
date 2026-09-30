@@ -4,7 +4,6 @@ import {
   Alert,
   Button,
   Collapse,
-  Empty,
   Input,
   Select,
   Skeleton,
@@ -12,6 +11,7 @@ import {
 } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import WorkspaceIcon from '@/components/WorkspaceIcon';
 import { ApiError, queryQA } from '@/lib/api-client';
 import {
   type CollectionSourceProps,
@@ -74,12 +74,19 @@ export default function QAPanel({
   const [pendingQuestion, setPendingQuestion] = useState('');
   const [queryState, setQueryState] = useState<QueryState>('idle');
   const [queryError, setQueryError] = useState('');
-  const conversationEndRef = useRef<HTMLDivElement>(null);
+  const conversationRef = useRef<HTMLDivElement>(null);
   const requestVersionRef = useRef(0);
   const handledMutationRevisionRef = useRef(0);
 
   useEffect(() => {
-    conversationEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const conversation = conversationRef.current;
+    if (conversation) {
+      conversation.scrollTo({
+        top: conversation.scrollHeight,
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'auto' : 'smooth',
+      });
+    }
   }, [history, pendingQuestion, queryState]);
 
   const resetConversation = useCallback(() => {
@@ -198,13 +205,16 @@ export default function QAPanel({
         items={[
           {
             key: 'sources',
-            label: `查看来源 · ${message.sources.length}`,
+            label: `参考来源 · ${message.sources.length}`,
             children: (
               <ol className="qa-source-list">
                 {message.sources.map((source) => (
                   <li key={source.chunk_id}>
-                    <span>{source.file_name}</span>
-                    <code>{source.relevance_score.toFixed(3)}</code>
+                    <span className="qa-source-file">
+                      <WorkspaceIcon name="files" />
+                      <span>{source.file_name}</span>
+                    </span>
+                    <span className="qa-source-score">相关性 <code>{source.relevance_score.toFixed(3)}</code></span>
                   </li>
                 ))}
               </ol>
@@ -225,7 +235,7 @@ export default function QAPanel({
     <section className="qa-panel" aria-label="知识问答">
       <header className="qa-toolbar">
         <div className="qa-collection-control">
-          <span className="qa-section-label">ACTIVE KNOWLEDGE BASE</span>
+          <span className="qa-section-label">当前知识库</span>
           {collectionState === 'loading' ? (
             <Skeleton.Input active size="small" />
           ) : null}
@@ -245,8 +255,8 @@ export default function QAPanel({
           ) : null}
         </div>
         <div className="qa-history-meter" aria-label={`对话历史 ${history.length} 条`}>
-          <span>{String(history.length).padStart(2, '0')}</span>
-          <small>/ {MAX_HISTORY_MESSAGES} MESSAGES</small>
+          <span>{history.length}</span>
+          <small>/ {MAX_HISTORY_MESSAGES} 条消息</small>
         </div>
       </header>
 
@@ -265,26 +275,17 @@ export default function QAPanel({
         />
       ) : null}
 
-      <div className="qa-conversation" data-state={queryState} aria-live="polite">
+      <div className="qa-conversation" ref={conversationRef} data-state={queryState} aria-live="polite" aria-busy={queryState === 'loading'}>
         {history.length === 0 && !pendingQuestion && collectionState !== 'error' ? (
           <div className="qa-idle">
-            <span className="qa-idle-mark" aria-hidden="true">?</span>
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={
-                collectionState === 'empty' ? (
-                  <div>
-                    <strong>先创建一个知识库</strong>
-                    <span>创建并上传文档后，即可开始基于证据的问答。</span>
-                  </div>
-                ) : (
-                  <div>
-                    <strong>从一个可核验的问题开始</strong>
-                    <span>回答会基于所选知识库，并附上相关来源。</span>
-                  </div>
-                )
-              }
-            />
+            <div className="qa-idle-symbol"><WorkspaceIcon name="qa" /></div>
+            <h2>{collectionState === 'empty' ? '先创建一个知识库' : '你的资料，有问有答'}</h2>
+            <p>{collectionState === 'empty'
+              ? '创建知识库并上传文档后，就可以在这里提问。'
+              : '选择知识库，描述你的问题。让分散的资料，成为清晰的答案。'}</p>
+            <div className="qa-idle-notes">
+              <span>支持多轮追问</span><span aria-hidden="true">·</span><span>来源可展开查看</span>
+            </div>
           </div>
         ) : null}
 
@@ -294,8 +295,8 @@ export default function QAPanel({
             key={message.id}
           >
             <div className="qa-message-meta">
-              <span>{message.role === 'user' ? 'YOU' : 'DX—RAG'}</span>
-              <span>{message.role === 'user' ? 'QUESTION' : 'GROUNDED ANSWER'}</span>
+              <span>{message.role === 'user' ? '你' : 'DX-RAG · 知识助手'}</span>
+              <span>{message.role === 'user' ? '问题' : '基于当前知识库'}</span>
             </div>
             <div className="qa-message-body">
               {message.role === 'assistant' ? (
@@ -313,8 +314,8 @@ export default function QAPanel({
         {pendingQuestion ? (
           <article className="qa-message qa-message-user qa-message-pending">
             <div className="qa-message-meta">
-              <span>YOU</span>
-              <span>QUESTION</span>
+              <span>你</span>
+              <span>问题</span>
             </div>
             <div className="qa-message-body">
               <p>{pendingQuestion}</p>
@@ -323,10 +324,10 @@ export default function QAPanel({
         ) : null}
 
         {queryState === 'loading' ? (
-          <article className="qa-message qa-message-assistant qa-loading-answer">
+          <article className="qa-message qa-message-assistant qa-loading-answer" role="status">
             <div className="qa-message-meta">
-              <span>DX—RAG</span>
-              <span>RETRIEVING</span>
+              <span>DX-RAG · 知识助手</span>
+              <span>正在回答</span>
             </div>
             <div className="qa-message-body">
               <Spin size="small" />
@@ -352,7 +353,6 @@ export default function QAPanel({
             }
           />
         ) : null}
-        <div ref={conversationEndRef} />
       </div>
 
       <footer className="qa-composer">
@@ -371,7 +371,7 @@ export default function QAPanel({
           }}
         />
         <div className="qa-composer-actions">
-          <span>CTRL + ENTER TO SEND</span>
+          <span><kbd>Ctrl</kbd> + <kbd>Enter</kbd> 发送 · 支持多轮追问</span>
           <Button
             type="primary"
             size="large"

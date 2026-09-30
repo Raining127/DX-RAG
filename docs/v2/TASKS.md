@@ -152,3 +152,19 @@
 | 27 — V2 最终验收（Final V2 Acceptance） | 审计获批契约及证据 | 必要的前置工作完成；验收标准已获批 |
 
 未来依赖、Candidate 及采用标准必须在执行前定义。这些标题不代表采用相关技术，也不将 Experiment 标为 PASS。
+
+## 独立前端优化
+
+### TUI01 — 整体布局与知识问答页优化
+
+**状态：** DONE（2026-09-30）；AC-UI01-1～4 PASS。**类型：** UI Implementation Task。
+**授权：** 本次用户指令，见 SPEC §8。**依赖：** 现有 F017 实现；从 main 创建的独立 worktree / `codex/frontend-optimization`。
+
+- **AC-UI01-1：** 修改前检查实际运行页面并保留桌面/窄屏截图；整体布局及问答页采用简洁专业风格。
+- **AC-UI01-2：** 390px、768px、1440px 页面无横向溢出；导航可用；问答输入区可见且长答案在对话区滚动；来源与长文件名可读。
+- **AC-UI01-3：** 既有组件回归通过；API / 请求语义、历史上限、切库清空、请求竞态保护与四功能页面状态保持。
+- **AC-UI01-4：** 前端构建通过；浏览器验证导航、问答成功/加载/错误/重试/空知识库/来源/切库与历史；提供预览启动方式及演示数据边界。
+
+**计划：** 截图检查 → 修改 app shell / 主题 / SideMenu / QAPanel 和相关 CSS → 组件与构建检查 → 浏览器验证及截图 → 验收与 Task Learning Pass。
+
+**完成证据：** [验收与预览说明](../verification/TUI01/README.md)、[浏览器 20/20](../verification/TUI01/browser.json)、[Task Learning Pass](../learning/frontend-layout-task-learning.md)。TypeScript、生产构建、组件联动 5/5 和上传边界 2/2 通过。页面在隔离演示 API 上验证；无真实模型/检索质量或性能提升声明。后端、API client、其他三个业务组件和冻结历史契约无变化。
