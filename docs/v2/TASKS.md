@@ -133,11 +133,13 @@
 
 ### Phase 20 出口门禁
 
-**当前 Gate（2026-09-18）：PHASE_20_PASS — READY_FOR_PHASE_21。** [独立报告](../verification/PHASE-20-GATE-REVIEW.md)核对 11 项 AC 均 PASS，无 BLOCKER/MAJOR/MINOR，4 项 INFO；本轮 67 项测试与离线证据验证，不包含新 live Benchmark 或写文件 CLI 测试。历史真实三轮、波动、持久化边界及未测量项完整保留。[Phase Learning Review](../learning/phase-20-evaluation-foundation.md)已按概念整合，读者/文档检查见其附录 C；原 Task 素材已保留。Engineering Review 和 Interview synthesis 尚未执行。Task 状态保持 DONE，路线图不变；Phase 21 仍需单独协议、Task 批准与执行授权，未启动。
+**当前 Gate（2026-09-18）：PHASE_20_PASS — READY_FOR_PHASE_21。** [独立报告](../verification/PHASE-20-GATE-REVIEW.md)核对 11 项 AC 均 PASS，无 BLOCKER/MAJOR/MINOR，4 项 INFO；本轮 67 项测试与离线证据验证，不包含新 live Benchmark 或写文件 CLI 测试。历史真实三轮、波动、持久化边界及未测量项完整保留。[Phase Learning Review](../learning/phase-20-evaluation-foundation.md)已按概念整合，读者/文档检查见其附录 C；原 Task 素材已保留。[Engineering Review](../learning/engineering-review/phase-20-engineering-review.md)已形成，读者/文档检查见其附录 D；Interview synthesis 尚未执行。Task 状态保持 DONE，路线图不变；Phase 21 仍需单独协议、Task 批准与执行授权，未启动。
 
 三个 Task 均为 DONE 且具备 AC 证据后，使用 `docs/learning/templates/phase-gate-review-template.md` 开展独立 Phase Gate。检索 Experiment 必须以 Gate PASS 为前提，但 PASS 不授权自动启动未来 Phase。随后按保留的工作流完成 Phase Learning Review、Engineering Review 和独立 Interview synthesis。本次 Bootstrap 不作出任何 Gate 裁决。
 
 ## 后续路线图 — 仅为纲要，不是可执行 Task
+
+**推进顺序确认（2026-09-30）：** 项目负责人采纳「Phase 21 融合实验 → Phase 22 重排序实验 → 阶段验收 → 流式回答」，并授权将已验收的 `v2/evaluation` 经合并审查收敛到 `main`。此处记录工作优先级；不改变下表其余 V2 路线图，也不批准具体 Candidate、实验协议或生产实现。流式回答需在开工前单独定义 SPEC 范围、Task 和验收条件。当前仅执行主线合并，Phase 21 及后续功能尚未启动。
 
 | Phase | 研究 / 工程方向 | 进入条件 |
 |---|---|---|
