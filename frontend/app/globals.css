@@ -914,6 +914,46 @@ select {
   font-size: 13px;
 }
 
+.qa-turn-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.qa-turn-notice {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-left: 3px solid #c5a967;
+  border-radius: 0 6px 6px 0;
+  background: #faf8f1;
+  color: #665b3f;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.qa-turn-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.qa-stop-button.ant-btn {
+  min-width: 112px;
+  height: 38px;
+  border-color: #adbea5;
+  color: var(--signal-dark);
+  background: #fff;
+  box-shadow: none;
+}
+.qa-stop-button.ant-btn:focus-visible,
+.qa-turn-actions .ant-btn:focus-visible {
+  outline: 2px solid #42654c;
+  outline-offset: 2px;
+}
+
 .qa-markdown h1, .qa-markdown h2, .qa-markdown h3, .qa-markdown h4 {
   margin: 24px 0 12px;
   font-weight: 600;
@@ -1072,6 +1112,7 @@ select {
 }
 .qa-composer-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -1674,6 +1715,9 @@ select {
     font-size: 10px;
   }
   .qa-composer .ant-btn-primary {
+    min-width: 90px;
+  }
+  .qa-stop-button.ant-btn {
     min-width: 90px;
   }
   .qa-collection-error {
