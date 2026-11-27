@@ -1,9 +1,12 @@
 """Keyword and vector retrieval services."""
 
+import asyncio
 import re
 import time
 from collections.abc import Mapping
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Set, Tuple
+
+import anyio
 
 from app.core.config import settings
 from app.core.errors import AppError
@@ -15,6 +18,11 @@ try:
 except ImportError:  # pragma: no cover - dependency is installed in production
     OpenAI = None  # type: ignore[assignment,misc]
 
+try:
+    from openai import AsyncOpenAI
+except ImportError:  # pragma: no cover - preserve the existing synchronous client
+    AsyncOpenAI = None  # type: ignore[assignment,misc]
+
 
 _ALPHANUMERIC_PATTERN = re.compile(r"[a-zA-Z0-9]+")
 _CHINESE_PATTERN = re.compile(r"[\u4e00-\u9fff]+")
@@ -23,6 +31,13 @@ _VECTOR_WEIGHT = 0.7
 _DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 _DEEPSEEK_MODEL = "deepseek-chat"
 _RETRY_BACKOFF_SECONDS = (1.0, 2.0)
+# Keep the first-text/empty-answer check aligned with JavaScript String.trim().
+# Python str.strip() differs for characters such as U+FEFF and U+0085.
+_JS_TRIM_WHITESPACE = (
+    "\u0009\u000a\u000b\u000c\u000d\u0020\u00a0\u1680"
+    "\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a"
+    "\u2028\u2029\u202f\u205f\u3000\ufeff"
+)
 _RETRYABLE_EXCEPTION_NAMES = {
     "APIConnectionError",
     "APITimeoutError",
@@ -478,6 +493,196 @@ class DeepSeekClient:
         raise AppError("LLM_UNAVAILABLE")
 
 
+class RetryableStreamError(AppError):
+    """A transient model error whose retry safety depends on cleanup."""
+
+    def __init__(self) -> None:
+        super().__init__("LLM_UNAVAILABLE")
+        self.retryable: bool = True
+
+
+class AsyncDeepSeekClient:
+    """Adapt one DeepSeek streaming attempt into incremental answer events.
+
+    Injected clients belong to the caller. A client created for an attempt and
+    the upstream response stream are closed before its terminal event is yielded.
+    Retries and an overall deadline belong to the orchestration layer.
+    """
+
+    def __init__(self, client: Optional[Any] = None) -> None:
+        self.client = client
+
+    def _get_client(self) -> Tuple[Any, bool]:
+        if self.client is not None:
+            return self.client, False
+
+        api_key = settings.get_deepseek_key()
+        if not api_key:
+            raise AppError("LLM_NOT_CONFIGURED")
+        if AsyncOpenAI is None:
+            raise AppError("LLM_UNAVAILABLE")
+        try:
+            return AsyncOpenAI(
+                api_key=api_key,
+                base_url=_DEEPSEEK_BASE_URL,
+                timeout=settings.LLM_TIMEOUT,
+                max_retries=0,
+            ), True
+        except Exception as exc:
+            raise AppError("LLM_UNAVAILABLE") from exc
+
+    @staticmethod
+    def _field(value: Any, name: str, default: Any = None) -> Any:
+        return value.get(name, default) if isinstance(value, Mapping) else getattr(
+            value, name, default
+        )
+
+    @staticmethod
+    async def _close_stream(stream: Any) -> None:
+        # Older SDKs expose the underlying response even if the stream itself
+        # has no public close method. Both forms release the HTTP connection.
+        close = getattr(stream, "close", None)
+        if close is None:
+            close = getattr(getattr(stream, "response", None), "aclose", None)
+        if close is None:
+            raise RuntimeError("The model stream cannot be closed")
+        await close()
+
+    async def stream_answer(
+        self,
+        system_prompt: str,
+        history_text: str,
+        context_text: str,
+        question: str,
+    ) -> AsyncIterator[Dict[str, str]]:
+        """Yield text deltas followed by one completed/incomplete result.
+
+        This method performs one upstream attempt. A consumer that stops before
+        a terminal result must close the async generator to release the stream.
+        """
+        client, owns_client = self._get_client()
+        stream = None
+        terminal: Optional[Dict[str, str]] = None
+        interrupted = False
+        retryable_error: Optional[RetryableStreamError] = None
+        try:
+            user_message = DeepSeekClient._build_user_message(
+                history_text, context_text, question
+            )
+            stream = await client.chat.completions.create(
+                model=_DEEPSEEK_MODEL,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message},
+                ],
+                temperature=settings.LLM_TEMPERATURE,
+                max_tokens=settings.LLM_MAX_TOKENS,
+                stream=True,
+            )
+
+            prefix = ""
+            has_text = False
+            finish_reason: Optional[str] = None
+            async for chunk in stream:
+                if self._field(chunk, "error"):
+                    raise AppError("LLM_RESPONSE_ERROR")
+                choices = self._field(chunk, "choices")
+                if not isinstance(choices, (list, tuple)):
+                    raise AppError("LLM_RESPONSE_ERROR")
+                # A usage-only chunk may have no choices; it is not a finish.
+                if not choices:
+                    continue
+
+                choice = choices[0]
+                delta = self._field(choice, "delta")
+                if delta is None:
+                    raise AppError("LLM_RESPONSE_ERROR")
+                content = self._field(delta, "content")
+                reason = self._field(choice, "finish_reason")
+                if content is not None and not isinstance(content, str):
+                    raise AppError("LLM_RESPONSE_ERROR")
+                if reason is not None and (not isinstance(reason, str) or not reason):
+                    raise AppError("LLM_RESPONSE_ERROR")
+                if finish_reason is not None and (content or reason is not None):
+                    raise AppError("LLM_RESPONSE_ERROR")
+
+                if content:
+                    if not has_text:
+                        prefix += content
+                        if prefix.strip(_JS_TRIM_WHITESPACE):
+                            has_text = True
+                            yield {"type": "delta", "text": prefix}
+                            prefix = ""
+                    else:
+                        yield {"type": "delta", "text": content}
+                if reason is not None:
+                    finish_reason = reason
+
+            if finish_reason is None:
+                raise AppError("LLM_RESPONSE_ERROR")
+            if finish_reason == "stop":
+                terminal = (
+                    {"type": "done"} if has_text
+                    else {"type": "incomplete", "reason": "empty"}
+                )
+            elif finish_reason == "length":
+                terminal = {"type": "incomplete", "reason": "length"}
+            else:
+                terminal = {"type": "incomplete", "reason": "other"}
+        except AppError:
+            interrupted = True
+            raise
+        except Exception as exc:
+            interrupted = True
+            status_code = DeepSeekClient._status_code(exc)
+            if DeepSeekClient._is_auth_error(exc, status_code):
+                raise AppError("LLM_AUTH_FAILED") from exc
+            if status_code is not None and status_code != 429 and not 500 <= status_code <= 599:
+                raise AppError("LLM_RESPONSE_ERROR") from exc
+            if DeepSeekClient._is_retryable_error(exc, status_code):
+                retryable_error = RetryableStreamError()
+                raise retryable_error from exc
+            raise AppError("LLM_RESPONSE_ERROR") from exc
+        except BaseException:
+            # Preserve generator closure and task cancellation through cleanup.
+            interrupted = True
+            raise
+        finally:
+            # Preserve a pending error/cancellation while still attempting both
+            # cleanups. A cleanup failure on a successful path prevents `done`.
+            cleanup_error: Optional[BaseException] = None
+            # A client disconnect can repeatedly cancel awaits in an AnyIO task
+            # group. Shield the cleanup itself, then propagate the cancellation.
+            with anyio.CancelScope(shield=True):
+                if stream is not None:
+                    try:
+                        await self._close_stream(stream)
+                    except BaseException as exc:
+                        cleanup_error = exc
+                if owns_client:
+                    try:
+                        await client.close()
+                    except BaseException as exc:
+                        if cleanup_error is None or isinstance(exc, asyncio.CancelledError):
+                            cleanup_error = exc
+            if cleanup_error is not None and retryable_error is not None:
+                # A new request must not start while the old stream may remain open.
+                retryable_error.retryable = False
+            if isinstance(cleanup_error, asyncio.CancelledError):
+                # Cancellation may arrive while closing the upstream stream;
+                # attempt the client close too, then propagate cancellation.
+                raise cleanup_error
+            if cleanup_error is not None and not isinstance(cleanup_error, Exception):
+                raise cleanup_error
+            if cleanup_error is not None and not interrupted:
+                raise AppError("LLM_UNAVAILABLE") from cleanup_error
+
+        # Close upstream before handing off the terminal state: a consumer may
+        # stop iterating as soon as it receives this event.
+        assert terminal is not None
+        yield terminal
+
+
 class QAService:
     """Orchestrate retrieval, RAG prompt assembly, and answer generation."""
 
@@ -512,14 +717,14 @@ class QAService:
             self.llm_client = DeepSeekClient()
         return self.llm_client
 
-    def answer(
+    def prepare(
         self,
         question: str,
         collection_name: str,
         top_k: int,
         history: List[Dict[str, object]],
-    ) -> Dict[str, object]:
-        """Run the complete QA pipeline for one query.
+    ) -> Tuple[List[Dict[str, object]], str, str]:
+        """Prepare retrieval results, context, and history without calling the LLM.
 
         A collection with no persisted chunks is rejected before retrieval or
         LLM work.  A non-empty collection whose retrieval results are removed
@@ -534,6 +739,19 @@ class QAService:
         )
         context_text = assemble_context(results)
         history_text = process_history(history)
+        return results, context_text, history_text
+
+    def answer(
+        self,
+        question: str,
+        collection_name: str,
+        top_k: int,
+        history: List[Dict[str, object]],
+    ) -> Dict[str, object]:
+        """Run the complete QA pipeline for one query."""
+        results, context_text, history_text = self.prepare(
+            question, collection_name, top_k, history
+        )
         answer_text = self._get_llm_client().generate_answer(
             SYSTEM_PROMPT,
             history_text,

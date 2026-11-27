@@ -813,6 +813,38 @@ class QAServiceTests(unittest.TestCase):
         self.store.get_chunk_count.return_value = 2
         self.llm_client.generate_answer.return_value = "### Answer"
 
+    def test_prepare_returns_context_and_history_without_calling_llm(self) -> None:
+        results = [
+            {
+                "chunk_id": "chunk-1",
+                "file_id": "file-1",
+                "file_name": "notes.md",
+                "content": "Relevant information",
+                "final_score": 0.9,
+            }
+        ]
+        self.retriever.hybrid_search.return_value = results
+        history = [
+            {"role": "user", "content": f"message-{index}"}
+            for index in range(21)
+        ]
+
+        prepared_results, context, history_text = self.service.prepare(
+            "Question", "test-collection", 5, history
+        )
+
+        self.assertEqual(prepared_results, results)
+        self.assertEqual(context, "[来源: notes.md]\nRelevant information")
+        self.assertEqual(
+            history_text,
+            "\n".join(f"User: message-{index}" for index in range(1, 21)),
+        )
+        self.store.get_chunk_count.assert_called_once_with("test-collection")
+        self.retriever.hybrid_search.assert_called_once_with(
+            "Question", "test-collection", 5
+        )
+        self.llm_client.generate_answer.assert_not_called()
+
     def test_answer_runs_full_pipeline_and_returns_sources(self) -> None:
         results = [
             {
@@ -881,6 +913,52 @@ class QAServiceTests(unittest.TestCase):
                 "collection_name": "test-collection",
             },
         )
+
+    def test_sources_include_results_omitted_from_limited_context(self) -> None:
+        self.retriever.hybrid_search.return_value = [
+            {
+                "chunk_id": "chunk-1",
+                "file_id": "file-1",
+                "file_name": "document.md",
+                "content": "First",
+                "final_score": 0.9,
+            },
+            {
+                "chunk_id": "chunk-2",
+                "file_id": "file-1",
+                "file_name": "document.md",
+                "content": "Second",
+                "final_score": 0.8,
+            },
+        ]
+
+        with patch.object(settings, "MAX_CONTEXT_CHARS", 30):
+            answer = self.service.answer("Question", "test-collection", 5, [])
+
+        self.llm_client.generate_answer.assert_called_once_with(
+            SYSTEM_PROMPT, "", "[来源: document.md]\nFirst", "Question"
+        )
+        self.assertEqual(
+            [(source["file_id"], source["chunk_id"]) for source in answer["sources"]],
+            [("file-1", "chunk-1"), ("file-1", "chunk-2")],
+        )
+
+    def test_llm_failure_precedes_source_assembly(self) -> None:
+        self.retriever.hybrid_search.return_value = [
+            {
+                "chunk_id": "chunk-1",
+                "file_name": "notes.md",
+                "content": "Relevant information",
+                "final_score": 0.9,
+            }
+        ]
+        self.llm_client.generate_answer.side_effect = AppError("LLM_UNAVAILABLE")
+
+        with self.assertRaises(AppError) as raised:
+            self.service.answer("Question", "test-collection", 5, [])
+
+        self.assertEqual(raised.exception.code, "LLM_UNAVAILABLE")
+        self.llm_client.generate_answer.assert_called_once()
 
     def test_empty_collection_raises_before_retrieval_or_llm(self) -> None:
         self.store.get_chunk_count.return_value = 0

@@ -48,6 +48,39 @@ function createPreviewServer() {
         send(200, { old_name: name, new_name: body.new_name, message: 'Renamed in demo memory' }); return;
       }
     }
+    if (pathname === '/api/query/stream' && req.method === 'POST') {
+      const files = collections.get(body.collection_name);
+      if (!files) { fail(404, 'COLLECTION_NOT_FOUND', '知识库不存在'); return; }
+      if (!files.length) { fail(409, 'COLLECTION_EMPTY', '知识库暂无文档'); return; }
+
+      const sources = files.map(file => ({ file_id: file.file_id, file_name: file.file_name,
+        chunk_id: randomUUID(), relevance_score: 0.872 }));
+      const text = Array.from(answer);
+      let offset = 0;
+      let timer;
+      let closed = false;
+      res.once('close', () => { closed = true; clearTimeout(timer); });
+      res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache' });
+      const sendEvent = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+      const sendNext = () => {
+        if (closed) return;
+        if (offset < text.length) {
+          sendEvent('delta', { text: text.slice(offset, offset + 32).join('') });
+          offset += 32;
+          if (!closed) timer = setTimeout(sendNext, 80);
+        } else {
+          sendEvent('done', { sources });
+          res.end();
+        }
+      };
+      sendEvent('status', { stage: 'retrieving' });
+      if (!closed) timer = setTimeout(() => {
+        if (closed) return;
+        sendEvent('status', { stage: 'generating' });
+        if (!closed) timer = setTimeout(sendNext, 120);
+      }, 180);
+      return;
+    }
     if (pathname === '/api/query' && req.method === 'POST') {
       await new Promise(resolve => setTimeout(resolve, 650));
       const files = collections.get(body.collection_name);

@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     LLM_MAX_TOKENS: int = 2048
     LLM_TIMEOUT: int = 60
     LLM_MAX_RETRIES: int = 2
+    STREAM_QUERY_TIMEOUT: float = 240.0
 
     # --- Retrieval ---
     DEFAULT_TOP_K: int = 5

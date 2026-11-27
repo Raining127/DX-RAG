@@ -296,7 +296,7 @@ export default function Home() {
               data-panel-key="qa"
               hidden={selectedKey !== 'qa'}
             >
-              <QAPanel {...collectionSource} />
+              <QAPanel {...collectionSource} isActive={selectedKey === 'qa'} />
             </div>
             <div
               className="feature-panel"

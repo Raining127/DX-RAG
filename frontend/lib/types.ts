@@ -85,6 +85,14 @@ export interface QueryResponse {
   collection_name: string;
 }
 
+/** Events delivered by the streaming query endpoint after runtime validation. */
+export type QueryStreamEvent =
+  | { type: "status"; stage: string }
+  | { type: "delta"; text: string }
+  | { type: "done"; sources: Source[] }
+  | { type: "incomplete"; reason: string }
+  | { type: "error"; code: string; message: string };
+
 export interface FileRecord {
   file_id: string;
   file_name: string;

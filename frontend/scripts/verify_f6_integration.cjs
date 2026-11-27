@@ -76,9 +76,11 @@ const api = {
     return { old_name: oldName, new_name: newName };
   },
   async deleteCollection(name) { server.delete(name); return { name }; },
-  async queryQA(question, kb, topK, history) {
-    calls.push(['query', kb, history.length]);
-    return { answer: 'fixture answer', sources: [], query: question, collection_name: kb };
+  async streamQueryQA(question, kb, options) {
+    calls.push(['query', kb, options.history.length, question]);
+    options.onEvent({ type: 'status', stage: 'generating' });
+    options.onEvent({ type: 'delta', text: 'fixture answer' });
+    options.onEvent({ type: 'done', sources: [] });
   },
 };
 function load(relative) {
@@ -88,7 +90,7 @@ function load(relative) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX,
       esModuleInterop: true, target: ts.ScriptTarget.ES2020 },
   }).outputText;
-  vm.runInNewContext(compiled, { exports, process: { env: {} }, require(name) {
+  vm.runInNewContext(compiled, { exports, AbortController, process: { env: {} }, require(name) {
     if (name === 'react') return hooks;
     if (name === '@/lib/api-client') return api;
     if (name.startsWith('@/')) {
@@ -167,7 +169,8 @@ async function main() {
   await settle();
   const historyCount = () => all(trees.QAPanel, node => node.props?.className === 'qa-history-meter')[0].props['aria-label'];
   const previousHistory = historyCount();
-  assert.ok(previousHistory.includes('2'));
+  assert.equal(previousHistory, '当前会话 1 轮对话');
+  assert.deepEqual(calls.filter(call => call[0] === 'query').at(-1), ['query', 'kb-a', 0, 'preserve this draft']);
   const first = rows()[0];
   find(actions(first), antd.Button).props.onClick(); await settle();
   assert.ok(text(trees.FileManager).includes('persisted fixture'));

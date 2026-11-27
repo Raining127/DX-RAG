@@ -10,6 +10,11 @@ const requests = [];
 const pageErrors = [];
 const consoleMessages = [];
 const pass = name => { passed.push(name); console.log('PASS ' + name); };
+const sse = (event, data) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+const answerStream = (answer, sources = []) =>
+  sse('status', {stage: 'generating'}) + sse('delta', {text: answer}) + sse('done', {sources});
+const sseResponse = body => ({ status: 200, contentType: 'text/event-stream',
+  headers: {'Access-Control-Allow-Origin': '*'}, body });
 
 (async () => {
   fs.mkdirSync(out, { recursive: true });
@@ -18,7 +23,7 @@ const pass = name => { passed.push(name); console.log('PASS ' + name); };
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
     page.on('pageerror', error => pageErrors.push(error.message));
     page.on('console', message => { if (['error', 'warning'].includes(message.type())) consoleMessages.push(message.text()); });
-    page.on('request', request => { if (new URL(request.url()).pathname === '/api/query') requests.push(request.postDataJSON()); });
+    page.on('request', request => { if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/query/stream') requests.push(request.postDataJSON()); });
     await page.goto(base, { timeout: 60000 });
     await page.waitForLoadState('networkidle');
     const input = page.getByRole('textbox', { name: '输入问题' });
@@ -51,7 +56,7 @@ const pass = name => { passed.push(name); console.log('PASS ' + name); };
     await screenshot('desktop-qa-empty');
     await input.fill('如何使用知识库？');
     await input.press('Control+Enter');
-    await page.getByText('正在检索证据并组织回答…').waitFor();
+    await page.locator('.qa-turn-status').filter({ hasText: '正在检索资料' }).waitFor();
     assert.ok(await page.getByRole('button', { name: '发送问题' }).isDisabled());
     await page.locator('.qa-conversation[data-state="success"]').waitFor();
     assert.deepEqual(requests[0], { question: '如何使用知识库？', collection_name: 'product-handbook', history: [] });
@@ -80,31 +85,34 @@ const pass = name => { passed.push(name); console.log('PASS ' + name); };
     pass('switching KB clears history and sends to selected KB');
     for (let i = 0; i < 11; i++) await send('继续追问 ' + i);
     assert.equal(requests.at(-1).history.length, 20);
-    assert.equal(await page.locator('.qa-message').count(), 20);
-    await layout('20-message conversation');
-    pass('20-message history limit');
+    assert.equal(await page.locator('.qa-message').count(), 24);
+    assert.equal(await page.getByText('工程规范有哪些？', { exact: true }).count(), 1);
+    await layout('entire visible conversation');
+    pass('all conversation visible; request history limited to 20 messages');
 
     let failNext = true;
-    await page.route('**/api/query', async route => {
+    await page.route('**/api/query/stream', async route => {
+      if (route.request().method() !== 'POST') return route.continue();
       if (failNext) {
         failNext = false;
-        await route.fulfill({ status: 500, json: { error: { code: 'LLM_UNAVAILABLE', message: 'Controlled failure', details: {} } } });
+        await route.fulfill({ status: 500, headers: {'Access-Control-Allow-Origin': '*'}, json: { error: { code: 'LLM_UNAVAILABLE', message: 'Controlled failure', details: {} } } });
       } else await route.continue();
     });
     await input.fill('失败后重试');
     await page.getByRole('button', { name: '发送问题' }).click();
-    await page.getByText('问答请求失败', { exact: true }).waitFor();
+    await page.getByText('问答模型暂时不可用，请稍后重试。', { exact: true }).waitFor();
     const failedRequest = requests.at(-1);
-    assert.equal(await page.locator('.qa-message-assistant').count(), 10);
-    await page.locator('.qa-query-error').getByRole('button').click();
+    assert.equal(await page.locator('.qa-message-assistant').count(), 12);
+    await page.getByRole('button', { name: '重新生成' }).click();
     await page.locator('.qa-conversation[data-state="success"]').waitFor();
     assert.deepEqual(requests.at(-1), failedRequest);
-    await page.unroute('**/api/query');
+    await page.unroute('**/api/query/stream');
     pass('500 error and retry preserve committed history and request');
     await choose('empty-workspace');
     await input.fill('空库问题');
     await page.getByRole('button', { name: '发送问题' }).click();
-    await page.getByText('知识库暂时无法回答', { exact: true }).waitFor();
+    await page.getByText('知识库暂无文档，请先上传文件。', { exact: true }).waitFor();
+    assert.ok(await page.getByRole('button', { name: '重新生成' }).isVisible());
     pass('empty KB warning and retry');
 
     await choose('product-handbook');
@@ -112,33 +120,39 @@ const pass = name => { passed.push(name); console.log('PASS ' + name); };
     let entered;
     const routeEntered = new Promise(resolve => { entered = resolve; });
     const gate = new Promise(resolve => { release = resolve; });
-    await page.route('**/api/query', async route => {
+    await page.route('**/api/query/stream', async route => {
+      if (route.request().method() !== 'POST') return route.continue();
       entered(); await gate;
-      await route.fulfill({ json: { answer: '旧知识库的延迟回答', sources: [], query: '竞态检查', collection_name: 'product-handbook' } });
+      // The browser may already have aborted the intercepted request.
+      await route.fulfill(sseResponse(answerStream('旧知识库的延迟回答'))).catch(() => {});
     });
     await input.fill('竞态检查');
     await page.getByRole('button', { name: '发送问题' }).click();
     await routeEntered;
+    const failed = page.waitForEvent('requestfailed', {
+      predicate: request => request.method() === 'POST' && new URL(request.url()).pathname === '/api/query/stream',
+    });
     await choose('engineering-notes');
-    const response = page.waitForResponse('**/api/query');
-    release(); await response;
+    release(); await failed;
     await page.evaluate(() => new Promise(requestAnimationFrame));
     assert.equal(await page.locator('.qa-message').count(), 0);
-    await page.unroute('**/api/query');
+    await page.unroute('**/api/query/stream');
     pass('late response after KB switch is ignored');
 
     const longFileName = '很长的参考文件名'.repeat(16) + '.md';
-    await page.route('**/api/query', route => route.fulfill({ json: {
-      answer: '## 长内容\n\n' + ('正文内容包含一个长链接 https://example.test/' + 'a'.repeat(200) + '\n\n').repeat(12)
-        + '\n```text\n' + 'long_code_'.repeat(80) + '\n```',
-      sources: [{ file_id: 'fixture-file', chunk_id: 'fixture-chunk', file_name: longFileName, relevance_score: 0.456 }],
-      query: '长内容检查', collection_name: 'engineering-notes',
-    } }));
+    await page.route('**/api/query/stream', route => {
+      if (route.request().method() !== 'POST') return route.continue();
+      const answer = '## 长内容\n\n' + ('正文内容包含一个长链接 https://example.test/' + 'a'.repeat(200) + '\n\n').repeat(12)
+        + '\n```text\n' + 'long_code_'.repeat(80) + '\n```';
+      return route.fulfill(sseResponse(answerStream(answer, [
+        { file_id: 'fixture-file', chunk_id: 'fixture-chunk', file_name: longFileName, relevance_score: 0.456 },
+      ])));
+    });
     await send('长内容检查');
     await page.locator('.qa-sources .ant-collapse-header').last().click();
     assert.ok(await page.locator('.qa-conversation').evaluate(element => element.scrollHeight > element.clientHeight));
     await layout('long answer / URL / source name');
-    await page.unroute('**/api/query');
+    await page.unroute('**/api/query/stream');
 
     // Clear long-content fixture before capturing the normal responsive page.
     await choose('product-handbook');

@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from app.core.errors import AppError
 from app.main import app
+from app.services.qa import QAService
 
 
 class QueryEndpointTests(unittest.TestCase):
@@ -91,6 +92,29 @@ class QueryEndpointTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["sources"], [])
+
+    def test_empty_llm_answer_remains_successful_json_response(self) -> None:
+        self.store.get_chunk_count.return_value = 1
+        retriever = Mock()
+        retriever.hybrid_search.return_value = []
+        llm_client = Mock()
+        llm_client.generate_answer.return_value = ""
+        service = QAService(
+            vector_store=self.store,
+            hybrid_retriever=retriever,
+            llm_client=llm_client,
+        )
+
+        with patch("app.api.query.ChromaVectorStore", return_value=self.store), patch(
+            "app.api.query.QAService", return_value=service
+        ):
+            response = self._post({"question": "问题", "collection_name": "kb"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            {"answer": "", "sources": [], "query": "问题", "collection_name": "kb"},
+        )
 
     def test_collection_empty_maps_to_409(self) -> None:
         self.service.answer.side_effect = AppError("COLLECTION_EMPTY")

@@ -66,6 +66,7 @@ _ERROR_CATALOG: Dict[str, tuple] = {
     "INVALID_QUERY": (400, "查询问题不能为空"),
     "INVALID_TOP_K": (400, "top_k参数超出有效范围"),
     "INVALID_HISTORY_FORMAT": (400, "历史记录格式无效"),
+    "QUERY_TIMEOUT": (504, "问答请求超时，请重试"),
     "LLM_NOT_CONFIGURED": (500, "DeepSeek API密钥未配置"),
     "LLM_AUTH_FAILED": (500, "DeepSeek API认证失败"),
     "LLM_UNAVAILABLE": (502, "LLM服务不可用，重试已耗尽"),
